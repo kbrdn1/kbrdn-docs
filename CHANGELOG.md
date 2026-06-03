@@ -24,3 +24,11 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   deploy workflow.
 - Nix dev shell (`flake.nix`).
 - PLAN.md — full roadmap.
+- gwm docs navigation skeleton: four-group sidebar (Démarrer / Guides /
+  Référence / Concepts) and stub pages for `tui`, `doctor`, `cli`, `gwm-toml`,
+  `worktrees`, `bootstrap`, `trust-ledger` (content filled in follow-up issues).
+
+### Changed
+
+- gwm site: renamed `guides/getting-started` to `guides/prise-en-main` and
+  wired the splash hero action to the new slug.

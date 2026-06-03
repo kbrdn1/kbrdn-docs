@@ -28,7 +28,23 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Démarrer',
-          items: [{ slug: 'guides/installation' }, { slug: 'guides/getting-started' }],
+          items: [{ slug: 'guides/installation' }, { slug: 'guides/prise-en-main' }],
+        },
+        {
+          label: 'Guides',
+          items: [{ slug: 'guides/tui' }, { slug: 'guides/doctor' }],
+        },
+        {
+          label: 'Référence',
+          items: [{ slug: 'reference/cli' }, { slug: 'reference/gwm-toml' }],
+        },
+        {
+          label: 'Concepts',
+          items: [
+            { slug: 'concepts/worktrees' },
+            { slug: 'concepts/bootstrap' },
+            { slug: 'concepts/trust-ledger' },
+          ],
         },
       ],
     }),
