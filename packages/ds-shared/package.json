@@ -1,0 +1,16 @@
+{
+  "name": "@kbrdn/ds-shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Starlight design system: theme tokens, component overrides, reusable MDX components.",
+  "exports": {
+    "./styles/theme.css": "./styles/theme.css",
+    "./components/Footer.astro": "./components/Footer.astro",
+    "./components/RepoCard.astro": "./components/RepoCard.astro"
+  },
+  "peerDependencies": {
+    "@astrojs/starlight": ">=0.39.0",
+    "astro": ">=6.0.0"
+  }
+}

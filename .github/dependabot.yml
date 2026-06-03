@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directories:
+      - '/'
+      - '/packages/ds-shared'
+      - '/sites/gwm'
+    target-branch: 'dev'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+      timezone: 'Europe/Paris'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+      - 'chore'
+    commit-message:
+      prefix: '⬆️ chore(deps)'
+      include: 'scope'
+    groups:
+      astro-stack:
+        patterns:
+          - 'astro'
+          - '@astrojs/*'
+      starlight:
+        patterns:
+          - 'starlight-*'
+      tooling:
+        patterns:
+          - 'oxlint'
+          - 'prettier*'
+          - 'typescript'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    target-branch: 'dev'
+    schedule:
+      interval: 'monthly'
+    labels:
+      - 'ci'
+      - 'dependencies'
+    commit-message:
+      prefix: '⬆️ ci(actions)'
+      include: 'scope'

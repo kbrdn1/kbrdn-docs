@@ -1,0 +1,32 @@
+---
+// Override du Footer Starlight, partagé par tous les sites produits.
+// Rend le footer par défaut puis ajoute une ligne commune (consistance).
+// Réf. : https://starlight.astro.build/guides/overriding-components/
+import Default from '@astrojs/starlight/components/Footer.astro';
+
+const year = new Date().getFullYear();
+---
+
+<Default />
+
+<div class="kbrdn-footer">
+  <p>
+    Documentation construite avec <a href="https://starlight.astro.build">Starlight</a>
+    · © {year}
+    <a href="https://kbrdn.dev">Kylian Bardini</a>
+  </p>
+</div>
+
+<style>
+  .kbrdn-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--sl-color-gray-5);
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    text-align: center;
+  }
+  .kbrdn-footer a {
+    color: var(--sl-color-text-accent);
+  }
+</style>

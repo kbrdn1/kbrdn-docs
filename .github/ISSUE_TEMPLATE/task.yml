@@ -1,0 +1,53 @@
+name: '📋 Task'
+description: 'Maintenance interne, refactor, docs, ou chore'
+title: '[Task]: '
+labels: ['chore']
+assignees: []
+
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Qu'est-ce qui doit être fait ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Pourquoi est-ce utile maintenant ?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - refactor (pas de changement de comportement)
+        - docs (contenu, README, CHANGELOG)
+        - chore (deps, scripts, config)
+        - ci (workflows, déploiement)
+        - design (thème, composant partagé)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critères d'acceptation
+      placeholder: |
+        - [ ] bun run check passe (oxlint + prettier + astro check)
+        - [ ] bun run build passe
+        - [ ] CHANGELOG mis à jour sous [Unreleased]
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / liens
+    validations:
+      required: false

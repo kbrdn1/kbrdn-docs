@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: README & docs
+    url: https://github.com/kbrdn1/kbrdn-docs#readme
+    about: Structure du monorepo, quickstart, conventions.
+  - name: Discussions
+    url: https://github.com/kbrdn1/kbrdn-docs/discussions
+    about: Questions, idées, retours généraux (pas de bug report).

@@ -1,0 +1,43 @@
+---
+title: gwm
+description: Git Worktree Manager — CLI + TUI pour gérer les worktrees Git, avec bootstrap par repo.
+template: splash
+hero:
+  tagline: Gérez vos worktrees Git partout, en CLI comme en TUI.
+  actions:
+    - text: Prise en main
+      link: /guides/getting-started/
+      icon: right-arrow
+    - text: Code source
+      link: https://github.com/kbrdn1/gwm-cli
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
+
+<CardGrid stagger>
+  <Card title="CLI + TUI" icon="seti:rust">
+    Crée, liste et supprime des worktrees en une commande, ou pilote-les depuis une TUI ratatui.
+  </Card>
+  <Card title="Bootstrap par repo" icon="setting">
+    Un fichier `.gwm.toml` décrit conventions de branche, copies de fichiers, gardes regex et hooks
+    shell.
+  </Card>
+  <Card title="libgit2 natif" icon="approve-check">
+    Opérations de worktree via libgit2 vendored — pas de shell-out fragile.
+  </Card>
+  <Card title="Conventions intégrées" icon="open-book">
+    `gwm create feat 12 ma-feature` crée la branche `feat/#12-ma-feature` et le worktree en une
+    fois.
+  </Card>
+</CardGrid>
+
+## Le dépôt
+
+<RepoCard
+  owner="kbrdn1"
+  repo="gwm-cli"
+  description="Git Worktree Manager en Rust (CLI + TUI), libgit2 natif, bootstrap par repo."
+/>

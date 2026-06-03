@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+bun.lock
+bun.lockb
+flake.lock
+CHANGELOG.md

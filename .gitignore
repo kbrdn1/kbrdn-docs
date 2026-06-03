@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+.output/
+
+# Cloudflare / Wrangler
+.wrangler/
+
+# Env & local
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.log
+
+# Nix
+result
+result-*
+
+# NB: Bun's lockfile (bun.lock) IS committed — do not ignore it.

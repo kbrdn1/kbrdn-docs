@@ -1,0 +1,13 @@
+/* gwm — override produit par-dessus le thème partagé (@kbrdn/ds-shared).
+   Accent vert, clin d'œil au branding git / terminal. */
+:root {
+  --sl-color-accent-low: #1a2e05;
+  --sl-color-accent: #4d7c0f;
+  --sl-color-accent-high: #d9f99d;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d9f99d;
+  --sl-color-accent: #3f6212;
+  --sl-color-accent-high: #1a2e05;
+}

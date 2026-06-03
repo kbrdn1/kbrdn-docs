@@ -1,0 +1,43 @@
+---
+// Composant MDX réutilisable, partagé par tous les sites produits.
+// Usage dans un .mdx :
+//   import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
+//   <RepoCard owner="kbrdn1" repo="gwm-cli" description="..." />
+interface Props {
+  owner: string;
+  repo: string;
+  description?: string;
+}
+
+const { owner, repo, description } = Astro.props;
+const href = `https://github.com/${owner}/${repo}`;
+---
+
+<a class="kbrdn-repo-card" href={href} target="_blank" rel="noopener noreferrer">
+  <span class="kbrdn-repo-card__name">{owner}/{repo}</span>
+  {description && <span class="kbrdn-repo-card__desc">{description}</span>}
+</a>
+
+<style>
+  .kbrdn-repo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: var(--kbrdn-radius, 0.5rem);
+    text-decoration: none;
+    transition: border-color 0.2s ease;
+  }
+  .kbrdn-repo-card:hover {
+    border-color: var(--sl-color-text-accent);
+  }
+  .kbrdn-repo-card__name {
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .kbrdn-repo-card__desc {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+</style>

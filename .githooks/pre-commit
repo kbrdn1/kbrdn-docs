@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+# Opt-in pre-commit hook for kbrdn-docs.
+#
+# Enable with:   git config core.hooksPath .githooks
+# Bypass once:   git commit --no-verify
+#
+# Gates run only when relevant files are staged (O(1) short-circuit otherwise),
+# so contributors who touch unrelated files pay nothing per commit:
+#   1. prettier --check on staged, supported files
+#   2. oxlint when JS/TS is staged
+#   3. astro check on the sites when site/shared source changed
+set -eu
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+# 1. Formatting.
+fmt_files=$(printf '%s\n' "$staged" | grep -E '\.(js|mjs|ts|tsx|jsx|astro|json|md|mdx|css|ya?ml)$' || true)
+if [ -n "$fmt_files" ]; then
+  echo "pre-commit: prettier --check (staged)"
+  # shellcheck disable=SC2086
+  bunx prettier --check $fmt_files || {
+    echo "✗ formatting issues — run 'bun run format' and re-stage." >&2
+    exit 1
+  }
+fi
+
+# 2. Lint.
+lint_files=$(printf '%s\n' "$staged" | grep -E '\.(js|mjs|ts|tsx|jsx)$' || true)
+if [ -n "$lint_files" ]; then
+  echo "pre-commit: oxlint"
+  bun run lint || exit 1
+fi
+
+# 3. Type / content check when a site or the shared package changed.
+if printf '%s\n' "$staged" | grep -qE '^(sites/|packages/ds-shared/)'; then
+  echo "pre-commit: astro check"
+  bun --filter='*' run check || exit 1
+fi
+
+exit 0

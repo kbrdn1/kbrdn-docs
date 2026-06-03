@@ -1,0 +1,6 @@
+# Bun configuration — kbrdn-docs monorepo.
+# Bun is the only supported package manager / runtime for this repo.
+
+[install]
+# Keep caret ranges as written in package.json (no auto-pin to exact).
+exact = false

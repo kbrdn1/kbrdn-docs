@@ -1,0 +1,40 @@
+name: '✨ Feature request'
+description: 'Nouveau contenu, composant partagé, ou amélioration de la plateforme'
+title: '[Feature]: '
+labels: ['feature']
+assignees: []
+
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Type
+      options:
+        - contenu (nouvelle page / guide / produit)
+        - composant partagé (ds-shared)
+        - thème / design
+        - plateforme (build, CI, versioning, déploiement)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème / besoin
+      description: Quel manque ou friction motive cette demande ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposition
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+    validations:
+      required: false

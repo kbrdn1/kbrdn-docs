@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: oxlint + prettier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+      - run: bun install --frozen-lockfile
+      - name: oxlint
+        run: bun run lint
+      - name: prettier --check
+        run: bun run format:check
+
+  build:
+    name: astro check + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+      - run: bun install --frozen-lockfile
+      - name: astro check (all sites)
+        run: bun --filter='*' run check
+      - name: build (all sites)
+        run: bun run build
+      - name: upload gwm build
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-gwm
+          path: sites/gwm/dist
+          if-no-files-found: error
