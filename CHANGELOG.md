@@ -45,3 +45,7 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   `milestones`, `issue_template`, `pr_template`, `aliases`, defaults &
   validation rules), cross-checked against `gwm-cli` `config.rs` and
   `gwm.toml.example`.
+- gwm docs: filled the `reference/cli` page (converted to `.mdx`) — the full
+  subcommand reference (worktrees, config, branch/commit, GitHub, TUI/themes,
+  multiplexer/shell, doctor/trust, aliases) with flags, examples and the
+  0/1/2 exit-code table, cross-checked against `gwm-cli` `src/cli.rs`.
