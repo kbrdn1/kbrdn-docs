@@ -32,3 +32,7 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 
 - gwm site: renamed `guides/getting-started` to `guides/prise-en-main` and
   wired the splash hero action to the new slug.
+- gwm docs: filled the `guides/installation` page (converted to `.mdx`) with the
+  real install channels — Homebrew tap, `cargo binstall`, Cargo from source
+  (MSRV 1.82), prebuilt binaries, Nix flake — using Starlight `Tabs` / `Steps` /
+  `Aside`, cross-checked against `gwm-cli`.
