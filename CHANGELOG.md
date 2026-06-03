@@ -59,3 +59,8 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   codes, and the TOFU trust ledger (threat model, gate decision tree,
   `gwm trust` surface, ledger format), cross-checked against `gwm-cli`
   `src/doctor.rs` and `src/trust.rs`.
+- gwm docs: filled the `concepts/worktrees` and `concepts/bootstrap` pages
+  (converted to `.mdx`) — the worktree model & naming convention (kebab-case
+  normalization, `gwm-base` anchor) and the bootstrap pipeline (copies, regex
+  guards, fallbacks, no-symlink, lifecycle hooks, `when:` predicates),
+  cross-checked against `gwm-cli` `src/naming.rs` and `src/bootstrap.rs`.
