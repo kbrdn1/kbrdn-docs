@@ -54,3 +54,8 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   launchers (placeholders, fullscreen, base resolution) and tmux/zellij
   integration, cross-checked against `gwm-cli` `src/tui/`, `launcher.rs` and
   `multiplexer.rs`.
+- gwm docs: filled the `guides/doctor` and `concepts/trust-ledger` pages
+  (converted to `.mdx`) — the 8 `gwm doctor` health checks with 0/1/2 exit
+  codes, and the TOFU trust ledger (threat model, gate decision tree,
+  `gwm trust` surface, ledger format), cross-checked against `gwm-cli`
+  `src/doctor.rs` and `src/trust.rs`.
