@@ -1,0 +1,142 @@
+---
+title: Bootstrap par repo
+description: Le pipeline de bootstrap de gwm — copies, guards regex, fallbacks, no-symlink, hooks de cycle de vie et prédicats when.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Le pipeline de bootstrap prépare un worktree neuf à partir des règles de
+[`.gwm.toml`](/reference/gwm-toml/). Il s'exécute **après** un `git worktree add`
+réussi, sur chaque `gwm create` (sauf `--no-bootstrap`) et chaque `gwm bootstrap`,
+et est ré-exécutable depuis la TUI via la touche `b`.
+
+<Aside type="caution" title="Protégé par le trust ledger">
+  Chaque point d'entrée passe d'abord par la [barrière de confiance TOFU](/concepts/trust-ledger/) :
+  la première fois contre le `.gwm.toml` d'un dépôt, gwm demande confirmation (CLI) ou refuse avec
+  une indication (TUI) avant qu'aucune étape ne s'exécute. Le pipeline lance des commandes shell
+  arbitraires — d'où la frontière de confiance.
+</Aside>
+
+## Ordre d'exécution
+
+```text
+gwm create / gwm bootstrap
+       ↓
+trust gate (TOFU)            prompt / refus sur (origin, hash) non approuvé
+       ↓
+pre_bootstrap hooks          [[hooks.pre_bootstrap]] optionnels
+       ↓
+(1) [[bootstrap.copy]]       duplique des fichiers main → worktree
+       ↓
+(2) [[bootstrap.guard]]      deny-list regex chaque fichier copié
+       ↓
+(3) [bootstrap.fallback.*]   matérialise un contenu inline si une source requise manque
+       ↓
+(4) [[bootstrap.no_symlink]] refuse d'hériter des symlinks listés
+       ↓
+post_bootstrap hooks         [[hooks.post_bootstrap]] optionnels
+       ↓
+✓ worktree prêt — rapport ✓ / ! / ✗ par étape
+```
+
+L'ordre n'est pas arbitraire : copies d'abord (pour donner à inspecter aux
+guards), guards immédiatement après (échouer vite sur un `.env` de prod **avant**
+que des hooks ne tirent de vraies données), fallbacks, puis no-symlink en dernier
+parmi les étapes fichier, et enfin les commandes shell (seule étape à effets de
+bord externes). Les entrées legacy `[[bootstrap.command]]` sont traitées comme des
+hooks `post_create`.
+
+## Rapports d'étape
+
+| Sigle | Sévérité | Effet sur le worktree                                         |
+| :---- | :------- | :------------------------------------------------------------ |
+| `✓`   | succès   | rien                                                          |
+| `!`   | warning  | l'étape est ignorée/partielle ; le pipeline continue          |
+| `✗`   | échec    | le pipeline s'interrompt ; le worktree est **rollback**       |
+| `·`   | skip     | l'étape ne s'est pas exécutée (informatif, ex. prédicat faux) |
+
+Même convention que [`gwm doctor`](/guides/doctor/). Un `✗` annule et supprime le
+worktree fraîchement créé — la ré-exécution est sûre.
+
+## Copies de fichiers
+
+`[[bootstrap.copy]]` duplique des fichiers du checkout principal vers le worktree
+(`.env.testing`, `.envrc`, secrets vendorisés…). `required = true` abort si la
+source manque, sauf si un `fallback` la sauve. Schéma complet :
+[`.gwm.toml` → `[[bootstrap.copy]]`](/reference/gwm-toml/).
+
+## Guards regex
+
+`[[bootstrap.guard]]` examine chaque fichier copié face à une deny-list de
+patterns regex. L'incident d'origine : un `.env` pointant vers l'hôte AWS RDS de
+**production** copié dans un worktree, puis un `migrate:fresh --seed` lancé contre
+la prod. La parade institutionnelle : ne jamais copier un `.env` aveuglément.
+
+```toml
+[[bootstrap.guard]]
+name = "no-aws-rds"
+deny_patterns = ['amazonaws\.com', '\.rds\.']
+on_match      = "seed-from-example"     # abort | seed-from-example
+example_file  = ".env.example"
+```
+
+- `on_match = "abort"` (défaut) — une correspondance interrompt le bootstrap (`✗`)
+  et rollback le worktree, en affichant le pattern et la ligne fautifs.
+- `on_match = "seed-from-example"` — substitue le fichier par `example_file`
+  (rapporté `!`), pour repartir d'une base connue comme sûre (sqlite local…).
+
+Les patterns utilisent la crate [`regex`](https://docs.rs/regex) (façon Perl, sans
+look-around). Utilisez les chaînes littérales TOML (`'...'`) pour la regex brute.
+Le guard ne s'exécute que référencé par `[[bootstrap.copy]].guards = [...]` ;
+[`gwm doctor`](/guides/doctor/) (check 2) valide ces références.
+
+## Vérifications no-symlink
+
+`[[bootstrap.no_symlink]]` refuse d'hériter d'un symlink au chemin listé
+(typiquement `vendor/`, `node_modules/`) — un lien errant polluerait silencieusement
+la sortie de build du dépôt principal. S'exécute après les copies pour attraper
+les liens qu'un `cp -R` aurait suivis.
+
+## Hooks de cycle de vie & prédicats `when:`
+
+Les `[[hooks.*]]` enveloppent la création, le bootstrap et la suppression
+(`pre_create`, `post_create`, `pre_bootstrap`, `post_bootstrap`, `pre_remove`,
+`post_remove`). Chaque hook (et le legacy `[[bootstrap.command]]`) peut porter un
+prédicat `when:` qui conditionne son exécution.
+
+| Atome                   | Vrai quand …                                         |
+| :---------------------- | :--------------------------------------------------- |
+| `file_exists:<path>`    | `<worktree>/<path>` existe                           |
+| `cmd_exists:<binary>`   | `<binary>` est sur le `$PATH`                        |
+| `env_set:<NAME>`        | la variable est définie (possiblement vide)          |
+| `env_eq:<NAME>=<value>` | la variable est définie et vaut exactement `<value>` |
+| `glob_exists:<pattern>` | au moins un chemin sous le worktree matche (`**` ok) |
+
+Composition booléenne `!` (NOT), `&&` (AND), `||` (OR) — `!a && b || c` se parse
+`((!a) && b) || c`. Les mots-clés inconnus valent `true` par défaut ;
+[`gwm doctor`](/guides/doctor/) (check 3) les fait remonter en avertissement.
+
+```toml
+[[hooks.post_create]]
+name = "install (bun)"
+run  = "bun install"
+when = "file_exists:package.json && cmd_exists:bun && !env_set:CI"
+```
+
+## Sauter ou rejouer le bootstrap
+
+```sh
+gwm create feat 42 auth --no-bootstrap     # saute tout le pipeline
+gwm bootstrap                              # rejoue sur le worktree du CWD
+gwm bootstrap auth --skip-hooks pre_bootstrap
+```
+
+Utile quand vous scriptez une création en masse, que `.gwm.toml` est en
+transition, ou que vous voulez inspecter le worktree nu avant tout effet de bord.
+
+## Voir aussi
+
+- [Trust ledger (TOFU)](/concepts/trust-ledger/) — la barrière qui protège le pipeline.
+- [Fichier `.gwm.toml`](/reference/gwm-toml/) — la surface TOML de chaque section.
+- [Diagnostic (doctor)](/guides/doctor/) — valide références de guards et grammaire `when:`.
+- [Worktrees & nommage](/concepts/worktrees/) — ce qui précède le bootstrap.
