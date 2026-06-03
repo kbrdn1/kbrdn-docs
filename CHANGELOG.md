@@ -36,3 +36,6 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   real install channels — Homebrew tap, `cargo binstall`, Cargo from source
   (MSRV 1.82), prebuilt binaries, Nix flake — using Starlight `Tabs` / `Steps` /
   `Aside`, cross-checked against `gwm-cli`.
+- gwm docs: filled the `guides/prise-en-main` page (converted to `.mdx`) — the
+  first-use walkthrough (`create` → `list` → `cd`/`gcd` → TUI → `remove` →
+  `doctor`), cross-checked against `gwm-cli`.
