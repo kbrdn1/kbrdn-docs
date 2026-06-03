@@ -1,0 +1,162 @@
+---
+title: La TUI
+description: Naviguer et piloter ses worktrees au clavier — raccourcis, launchers configurables et intégration tmux/zellij.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Lancé sans sous-commande, `gwm` ouvre une TUI (interface ratatui) sur le dépôt
+courant : navigation, filtre fuzzy, création/suppression, launchers et intégration
+multiplexeur — le tout au clavier.
+
+```sh
+gwm
+```
+
+Appuyez sur `?` à tout moment pour l'overlay d'aide, piloté par le keymap résolu
+(il affiche donc toujours vos vrais bindings).
+
+## Navigation (vue liste)
+
+| Touche    | Action                                                                |
+| :-------- | :-------------------------------------------------------------------- |
+| `↑` / `k` | worktree précédent (défile la sidebar quand elle a le focus)          |
+| `↓` / `j` | worktree suivant                                                      |
+| `g g`     | premier worktree                                                      |
+| `G`       | dernier worktree                                                      |
+| `/`       | ouvrir la barre de filtre fuzzy (`Enter` confirme · `Esc` efface)     |
+| `f` / `r` | rafraîchir la liste des worktrees                                     |
+| `Tab`     | échanger le focus entre la liste et la sidebar                        |
+| `Enter`   | afficher le chemin sélectionné dans la barre de statut                |
+| `y`       | copier le chemin du worktree (pbcopy / wl-copy / xclip / xsel / clip) |
+| `?`       | overlay d'aide                                                        |
+| `q`       | quitter (`Esc` efface un filtre persistant, sinon quitte)             |
+
+Le filtre utilise le moteur [nucleo-matcher](https://docs.rs/nucleo-matcher) —
+le même que `gwm path / remove`.
+
+## Sidebar de détails
+
+| Touche | Action                                                               |
+| :----- | :------------------------------------------------------------------- |
+| `v`    | afficher / masquer la sidebar de détails                             |
+| `s`    | basculer le mode Details (`commits` ↔ `stashes`)                     |
+| `V`    | faire cycler la disposition (`auto` → côte-à-côte → empilé → `auto`) |
+| `H`    | basculer la position gauche ↔ droite (disposition côte-à-côte)       |
+
+Sur un terminal étroit, la sidebar se place sous la table au lieu de disparaître.
+Le côté par défaut et l'orientation se configurent via `[tui].sidebar_position`
+dans [`.gwm.toml`](/reference/gwm-toml/).
+
+## Créer, supprimer, lier
+
+| Touche | Action                                                                      |
+| :----- | :-------------------------------------------------------------------------- |
+| `n`    | nouveau worktree (formulaire type → issue → description)                    |
+| `d`    | supprimer la sélection (`y` confirme ; compte à rebours quand `p` est armé) |
+| `p`    | armer « supprimer la branche au retrait »                                   |
+| `b`    | relancer le bootstrap sur le worktree sélectionné                           |
+| `o`    | ouvrir le worktree selon `[tui.open]` (`shell` / `editor` / `finder`)       |
+| `O`    | menu d'ouverture issue / PR liée (`i` / `p` → navigateur)                   |
+| `L`    | invite de liaison (`i` ou `p`, puis le numéro)                              |
+| `F`    | rafraîchir l'état d'issue / PR GitHub (fetch `gh`)                          |
+
+<Aside type="note" title="Barrière de confiance TOFU">
+  `n` (nouveau worktree) et `b` (re-bootstrap) passent par le [trust ledger
+  (TOFU)](/concepts/trust-ledger/) : sur un `.gwm.toml` non approuvé, la TUI refuse avec une
+  indication dans la barre de statut (pas de prompt inline) et ne crée **aucun** répertoire —
+  corrigez l'état de confiance depuis un autre terminal puis réessayez.
+</Aside>
+
+L'overlay de confirmation de suppression met le focus par défaut sur **Cancel**
+(le choix sûr) ; `←` / `→` / `Tab` déplacent le focus, `y` / `n` fonctionnent
+toujours. Quand `p` est armé, `y` arme un compte à rebours de sécurité — `y` à
+nouveau le **désarme** sans déclencher.
+
+## Launchers configurables (`l` et `R`)
+
+Deux touches lancent des outils externes pilotés par `.gwm.toml`, partageant la
+même mini-API : lire la section, résoudre les placeholders, découper avec
+`shell-words`, sonder `argv[0]` sur `$PATH`, puis exécuter avec `cwd` = chemin du
+worktree.
+
+| Touche | Section TOML | Défaut                           | Placeholders                           |
+| :----- | :----------- | :------------------------------- | :------------------------------------- |
+| `l`    | `[git_tui]`  | `lazygit -p {path}`, plein écran | `{path}`                               |
+| `R`    | `[review]`   | inerte tant que non configuré    | `{path}`, `{base}`, `{head}`, `{diff}` |
+
+```toml
+[git_tui]
+command    = "lazygit -p {path}"
+fullscreen = true
+
+[review]
+tool         = "lumen"        # OU command = "<votre ligne>"
+fullscreen   = true
+default_base = "main"
+```
+
+Presets `[review].tool` : `lumen`, `claude`, `codex`, `aider`, `gh`. Si `command`
+et `tool` sont définis ensemble, `command` l'emporte (avec un avertissement au
+démarrage).
+
+<Aside type="caution" title="fullscreen = false est synchrone">
+  Avec `fullscreen = false`, la TUI reste dans l'alt-screen et **bloque** jusqu'à la fin du
+  processus enfant (`Command::output()`) — adapté aux outils rapides en print seul (`claude
+  --print`, `gh pr view --web`). Choisissez `fullscreen = true` pour tout outil long, afin que la
+  TUI soit suspendue et le terminal utilisable.
+</Aside>
+
+### Résolution de la base (`{base}`)
+
+Le placeholder `{base}` suit cette chaîne — le premier résultat non vide gagne :
+
+1. `branch.<name>.merge` — l'upstream de la branche, s'il existe.
+2. `branch.<name>.gwm-base` — le tronc d'origine, posé par `gwm create`.
+3. `[review].default_base` — le fallback configuré.
+4. `dev` — seulement s'il existe localement.
+5. `main` — sentinelle finale (garantie non vide).
+
+Le placeholder `{diff}` est **paresseux** : un fichier temporaire contenant
+`git diff {base}..{head}` n'est matérialisé que si le template le référence.
+`gwm doctor` sonde les binaires `[git_tui]` (manquant → échec) et `[review]`
+(manquant → avertissement).
+
+## Intégration tmux / zellij
+
+À l'intérieur d'une session de multiplexeur, ces commandes ouvrent une fenêtre /
+un onglet / un panneau dont le shell démarre dans le worktree matché — sans `cd`
+manuel.
+
+```sh
+gwm tmux auth          # nouvelle fenêtre tmux dans le worktree matché
+gwm tmux auth -p       # split du panneau courant (--split)
+gwm zellij auth        # nouvel onglet zellij
+gwm zellij auth -p     # nouveau panneau dans l'onglet courant
+```
+
+- **tmux** : `new-window -c <path>` (ou `split-window -c <path>` avec `-p`).
+  Nécessite `$TMUX`.
+- **zellij** : `new-tab --cwd <path>` (zellij ≥ 0.40) ou `new-pane --cwd` avec
+  `-p`. Nécessite `$ZELLIJ`.
+
+En dehors d'une session, la commande **refuse** avec une erreur claire plutôt que
+de lancer un serveur orphelin. Le `<pattern>` utilise le même matcher fuzzy ;
+une ambiguïté sort `1` et liste les candidats.
+
+## Keymap & thèmes
+
+Chaque binding ci-dessus est une **valeur par défaut**. Le bloc `[tui.keys]` de
+`.gwm.toml` remappe n'importe quelle action (y compris des chords comme `g g`) ;
+`[theme]` re-skinne toute la TUI par rôles sémantiques. `gwm tui keys` et
+`gwm theme list` / `gwm theme show <name>` les inspectent. Schéma complet, liste
+des actions rebindables et rôles de thème : [`.gwm.toml`](/reference/gwm-toml/).
+
+`Ctrl+C` et les touches contextuelles `Esc` / `Enter` sont des échappatoires
+codées en dur, hors keymap.
+
+## Voir aussi
+
+- [Prise en main](/guides/prise-en-main/) — créer un premier worktree.
+- [Commandes CLI](/reference/cli/) — `tmux`, `zellij`, `theme`, `tui keys`.
+- [Fichier `.gwm.toml`](/reference/gwm-toml/) — `[tui]`, `[tui.keys]`, `[git_tui]`, `[review]`, `[theme]`.
