@@ -8,9 +8,9 @@ import { Aside } from '@astrojs/starlight/components';
 gwm exécute le pipeline `[[bootstrap.*]]` de `.gwm.toml` sous votre utilisateur —
 copies, guards regex, vérifications no-symlink et **commandes shell arbitraires**.
 Cloner un dépôt et lancer `gwm create` équivaut donc à `curl … | sh` envers
-quiconque a rédigé le `.gwm.toml`. Le trust ledger (issue #95) établit une
-frontière explicite entre « j'ai cloné ce remote » et « ce remote peut exécuter
-des commandes en mon nom ».
+quiconque a rédigé le `.gwm.toml`. Le trust ledger (TOFU, _Trust On First Use_)
+établit une frontière explicite entre « j'ai cloné ce remote » et « ce remote
+peut exécuter des commandes en mon nom ».
 
 ## Modèle de menace
 
