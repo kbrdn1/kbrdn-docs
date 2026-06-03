@@ -1,0 +1,489 @@
+---
+title: Fichier .gwm.toml
+description: Schéma complet du fichier de configuration par dépôt — worktree, bootstrap, hooks, launchers, TUI, thème, doctor, GitHub et alias.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`.gwm.toml` vit à la racine du dépôt. Sans lui, gwm utilise des valeurs par
+défaut raisonnables (chemin `~/cc-worktree/<repo>/<type>-<issue>-<desc>`, pas de
+bootstrap, `lazygit -p {path}` sur la touche `l`). Avec lui, vous configurez
+chaque facette : nommage de branche, copies de fichiers, gardes de sécurité,
+launchers, comportement de la TUI et checks de `gwm doctor`.
+
+La version annotée vit dans
+[`examples/gwm.toml.example`](https://github.com/kbrdn1/gwm-cli/blob/main/examples/gwm.toml.example) ;
+`gwm init` écrit ce fichier inchangé. Le même schéma peut aussi vivre à
+`~/.config/gwm/config.toml` comme **configuration globale utilisateur**, fusionnée
+sous le `.gwm.toml` de chaque dépôt.
+
+Pour des lectures scriptables et des éditions sûres (qui préservent commentaires
+et mise en forme via `toml_edit`, puis valident) :
+
+```sh
+gwm config get worktree.base
+gwm config set tui.confirm_countdown_secs 5
+gwm config list --prefix review
+gwm config validate
+```
+
+## `[worktree]`
+
+Conventions de branche et de chemin.
+
+```toml
+[worktree]
+base           = "{home}/cc-worktree/{repo}"
+path_pattern   = "{type}-{issue}-{desc}"
+branch_pattern = "{type}/#{issue}-{desc}"
+```
+
+Placeholders disponibles (le tilde `~/…` est aussi étendu) :
+
+| Placeholder     | Étendu en                                                            |
+| :-------------- | :------------------------------------------------------------------- |
+| `{home}`        | votre répertoire personnel                                           |
+| `{repo}`        | le nom du dépôt                                                      |
+| `{type}`        | le type de branche (`feat`, `fix`, …)                                |
+| `{issue}`       | le numéro d'issue                                                    |
+| `{desc}`        | le slug de description                                               |
+| `{repo_path}`   | le répertoire de travail absolu du dépôt principal                   |
+| `{repo_parent}` | le répertoire contenant le dépôt principal (parent de `{repo_path}`) |
+
+`{repo_path}` / `{repo_parent}` permettent de situer la base relativement au
+dépôt — par exemple un répertoire `worktrees/` voisin :
+
+```toml
+[worktree]
+base = "{repo_parent}/worktrees/{repo}"
+```
+
+### Types de branche supportés
+
+Par défaut : `feat`, `fix`, `hotfix`, `docs`, `test`, `refactor`, `chore`,
+`perf`, `ci`, `build`. Surchargez par dépôt si votre équipe utilise autre chose.
+
+## `[[bootstrap.copy]]`
+
+Copies de fichiers depuis le checkout principal vers le nouveau worktree.
+
+```toml
+[[bootstrap.copy]]
+from = ".env.testing"
+to   = ".env.testing"
+required = true
+fallback = "inline"        # inline | skip | abort
+
+[[bootstrap.copy]]
+from = ".env"
+to   = ".env"
+required = false
+guards = ["no-aws-rds"]    # référence vers un [[bootstrap.guard]]
+```
+
+| Champ      | Type             | Défaut  | Signification                                                                  |
+| :--------- | :--------------- | :------ | :----------------------------------------------------------------------------- |
+| `from`     | string           | —       | chemin source, relatif au checkout principal                                   |
+| `to`       | string           | —       | chemin de destination, relatif au nouveau worktree                             |
+| `required` | bool             | `false` | si `true`, une source manquante abort le bootstrap sauf si `fallback` la sauve |
+| `guards`   | liste de strings | `[]`    | noms de règles `[[bootstrap.guard]]` appliquées après la copie                 |
+| `fallback` | string           | aucun   | `inline` (utilise `[bootstrap.fallback.<key>]`), `skip`, ou `abort`            |
+
+L'ordre d'exécution est détaillé dans [Bootstrap par repo](/concepts/bootstrap/).
+
+## `[[bootstrap.guard]]`
+
+Deny-lists regex sur les fichiers copiés — le cas d'origine « pas d'AWS RDS dans
+`.env` », généralisé.
+
+```toml
+[[bootstrap.guard]]
+name = "no-aws-rds"
+deny_patterns = ["amazonaws\\.com", "\\.rds\\."]
+on_match      = "seed-from-example"     # abort | seed-from-example
+example_file  = ".env.example"
+```
+
+| Champ           | Type             | Défaut    | Signification                                                                |
+| :-------------- | :--------------- | :-------- | :--------------------------------------------------------------------------- |
+| `name`          | string           | —         | référencé par `[[bootstrap.copy]].guards`                                    |
+| `deny_patterns` | liste de strings | `[]`      | patterns regex (crate `regex`) ; correspondance n'importe où dans le fichier |
+| `on_match`      | string           | `"abort"` | `"abort"` ou `"seed-from-example"`                                           |
+| `example_file`  | string           | aucun     | fichier à substituer quand `on_match=seed-from-example`                      |
+
+API complète des patterns : [Bootstrap par repo](/concepts/bootstrap/).
+
+## `[bootstrap.fallback.<key>]`
+
+Contenu inline utilisé quand une source `[[bootstrap.copy]]` requise est
+manquante et que `fallback = "inline"`. Le `<key>` est apparié implicitement en
+faisant correspondre `target` au `to` d'une étape de copie.
+
+```toml
+[bootstrap.fallback.env_testing]
+target  = ".env.testing"
+content = """
+APP_ENV=testing
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+"""
+```
+
+## `[[bootstrap.no_symlink]]`
+
+Refuse d'hériter d'un symlink au chemin listé (typiquement `vendor/`,
+`node_modules/`) — empêche un lien errant de polluer la sortie de build du dépôt
+principal.
+
+```toml
+[[bootstrap.no_symlink]]
+path = "vendor"
+
+[[bootstrap.no_symlink]]
+path = "node_modules"
+```
+
+## `[[bootstrap.command]]` (legacy)
+
+Hooks shell legacy. Les nouvelles configs devraient préférer
+`[[hooks.post_create]]`.
+
+<Aside type="caution">
+  Quand une config définit à la fois des entrées legacy `[[bootstrap.command]]` et n'importe quelles
+  entrées `[hooks.*]`, gwm affiche un avertissement de dépréciation et traite les commandes legacy
+  comme des étapes `post_create` supplémentaires.
+</Aside>
+
+```toml
+[[bootstrap.command]]
+name = "composer install"
+run  = "composer install --no-interaction --prefer-dist"
+when = "file_exists:composer.json"
+env  = { COMPOSER_IGNORE_PLATFORM_REQ = "ext-imagick" }
+```
+
+| Champ  | Type                | Signification                                        |
+| :----- | :------------------ | :--------------------------------------------------- |
+| `name` | string              | affiché dans le rapport de bootstrap                 |
+| `run`  | string              | ligne shell exécutée via `sh -c`                     |
+| `when` | string              | [prédicat `when:`](/concepts/bootstrap/) (optionnel) |
+| `env`  | table string→string | variables d'env supplémentaires (optionnel)          |
+
+## `[[hooks.*]]`
+
+Hooks de cycle de vie autour de la création, du bootstrap et de la suppression.
+Phases : `pre_create`, `post_create`, `pre_bootstrap`, `post_bootstrap`,
+`pre_remove`, `post_remove`.
+
+```toml
+[[hooks.post_create]]
+name = "install deps"
+run  = "npm ci"
+when = "file_exists:package-lock.json"
+on_fail = "warn"            # abort | warn | ignore (défaut: abort)
+env = { CI = "1" }
+```
+
+| Champ     | Type                | Signification                                        |
+| :-------- | :------------------ | :--------------------------------------------------- |
+| `name`    | string              | affiché comme `[phase] name` dans les rapports       |
+| `run`     | string              | ligne shell exécutée via `sh -c`                     |
+| `when`    | string              | [prédicat `when:`](/concepts/bootstrap/) (optionnel) |
+| `env`     | table string→string | variables d'env supplémentaires (optionnel)          |
+| `on_fail` | string              | `abort`, `warn`, ou `ignore` ; défaut `abort`        |
+
+Les commandes et valeurs d'env acceptent les placeholders `{branch}`, `{path}`,
+`{type}`, `{issue}`, `{desc}`, `{user}`, `{owner}`, `{repo}`. Bypass d'urgence :
+
+```sh
+gwm create feat 42 auth --skip-hooks pre_create
+gwm remove auth --force      # implique --skip-hooks pre_remove,post_remove
+```
+
+## `[git_tui]` et `[review]`
+
+Les launchers de la TUI (touches `l` et `R`). Détail, placeholders et résolution
+de la base : [La TUI → Launchers](/guides/tui/).
+
+```toml
+# touche l — défaut implicite si omis
+[git_tui]
+command    = "lazygit -p {path}"
+fullscreen = true
+
+# touche R — inerte tant que non configurée
+[review]
+tool         = "lumen"       # OU command = "<votre ligne>"
+fullscreen   = true
+default_base = "main"        # surcharge optionnelle de la résolution de base
+```
+
+## `[tui]`
+
+Réglages runtime de la TUI de worktree.
+
+```toml
+[tui]
+confirm_countdown_secs = 3   # 0..=5 ; compte à rebours de l'overlay de suppression
+sidebar_position       = "right"   # "right" (défaut) | "left" — bascule en direct avec H
+```
+
+<Aside type="note">
+  Une valeur inconnue de `sidebar_position` est une **erreur de config dure au chargement**.
+  `confirm_countdown_secs = 0` conserve le modal classique à une frappe même quand la suppression de
+  branche est armée.
+</Aside>
+
+## `[tui.keys]`
+
+Keymap configurable. Une surcharge **remplace** le binding par défaut de l'action
+(elle ne fusionne pas) ; une liste vide (`down = []`) débinde l'action.
+
+```toml
+[tui.keys]
+down            = ["j", "Down"]
+up              = ["k", "Up"]
+top             = ["g g"]
+bottom          = ["G", "End"]
+quit            = ["q"]
+command_palette = [":"]
+```
+
+Au sein d'un chord, les espaces séparent les frappes (`"g g"` = appuyer `g` deux
+fois) et `+` sépare les modificateurs (`"Ctrl+x Ctrl+s"`). Modificateurs :
+`Ctrl`, `Alt`, `Shift`. La liste des actions rebindables et la grammaire des
+chords vivent dans [La TUI → Raccourcis](/guides/tui/).
+
+<Aside type="caution" title="Validation au chargement">
+  `[tui.keys]` erreure au chargement sur : action inconnue, chord non parsable, conflit de chord
+  (deux actions sur le même chord), ou collision de préfixe (un chord préfixe strict d'un autre).
+  `Ctrl+C` et les touches contextuelles `Esc` / `Enter` sont des échappatoires codées en dur, hors
+  keymap.
+</Aside>
+
+`gwm tui keys` affiche le keymap résolu avec la source par ligne.
+
+## `[tui.open]`
+
+Ce que fait la touche `o`.
+
+```toml
+[tui.open]
+mode       = "shell"     # shell (défaut) | editor | finder
+shell_cmd  = ""          # surcharge $SHELL quand mode=shell ; vide = unset
+editor_cmd = "hx"        # surcharge $EDITOR quand mode=editor ; vide = unset
+```
+
+Une valeur de `mode` inconnue est une **erreur de config dure au chargement**.
+
+## `[theme]`
+
+Couleurs de la TUI basées sur des rôles sémantiques. Deux boutons : un `preset`
+optionnel (palette intégrée) et un nombre quelconque de surcharges par rôle.
+
+```toml
+[theme]
+preset = "catppuccin"    # optionnel — initialise chaque rôle
+focus  = "#89b4fa"       # surcharge par rôle (l'emporte sur le preset)
+branch = "green"
+```
+
+Presets intégrés : `catppuccin` (`catppuccin-mocha`), `gruvbox` (`gruvbox-dark`),
+`tokyo-night` (`tokyonight`), `claude-dark` (`claude`). `gwm theme list` /
+`gwm theme show <name>` les inspectent.
+
+Rôles : `focus`, `accent`, `branch`, `clean`, `dirty`, `main`, `locked`,
+`prunable`, `muted`, `selection_bg`, `name`, `path`, `staged`, `modified`,
+`untracked`. Chaque rôle accepte une couleur **nommée** (`cyan`, `dark_gray`…),
+un **index de palette 256** (`0`..=`255`), ou un **hex** `#RRGGBB` (la forme
+courte `#RGB` n'est pas supportée).
+
+<Aside type="caution">
+  `[theme]` erreure au chargement sur un `preset` inconnu, une clé de rôle inconnue, ou une valeur
+  de couleur non parsable.
+</Aside>
+
+Détail des rôles et rendu : [La TUI → Thèmes](/guides/tui/).
+
+## `[doctor]`
+
+Réglages de `gwm doctor`. Expose la liste des trunks utilisée par le check de
+branche orpheline.
+
+```toml
+[doctor]
+trunks = ["dev", "main"]
+```
+
+Une branche de style gwm pleinement atteignable depuis l'un de ces trunks est
+préservée (jamais signalée comme orpheline). Liste vide → toute branche gwm non
+réclamée est signalée. Détail : [Diagnostic (doctor)](/guides/doctor/).
+
+## `[gitmoji]`
+
+Surcharge par dépôt de la table `branch_type → :shortcode:` consommée par
+`gwm commit-prefix`, `gwm types --gitmoji` et le hook commit-msg.
+
+```toml
+[gitmoji]
+feat      = ":rocket:"    # 🚀 au lieu de ✨
+migration = ":truck:"     # type de branche personnalisé
+```
+
+Valeurs par défaut : `feat` ✨, `fix` 🐛, `hotfix` 🚑, `docs` 📝, `test` ✅,
+`refactor` ♻, `chore` 🔧, `perf` ⚡, `ci` 👷, `build` 📦. Le bloc est
+**additif** — surcharger une entrée n'efface pas les autres.
+
+## `[[labels]]`
+
+Set de labels GitHub déclaratif poussé par
+[`gwm labels push`](/reference/cli/).
+
+```toml
+[[labels]]
+name        = "bug"
+description = "Something isn't working"
+color       = "d73a4a"    # optionnel — pastel déterministe si omis
+
+[[labels]]
+name        = "good first issue"
+description = "Good for newcomers"
+color       = "7057ff"
+```
+
+| Champ         | Type   | Requis | Signification                                                                   |
+| :------------ | :----- | :----- | :------------------------------------------------------------------------------ |
+| `name`        | string | oui    | nom de label (espaces préservés ; entourez de guillemets)                       |
+| `description` | string | non    | vide/absent = « ne pas changer la description sur le remote »                   |
+| `color`       | string | non    | 6-hex minuscule sans `#` ; si omis, pastel déterministe (hash FNV-1a de `name`) |
+
+Sans bloc `[[labels]]`, `gwm labels {list,push}` sont des no-ops.
+
+## `[[milestones]]`
+
+Set de milestones GitHub déclaratif (même forme que `[[labels]]`).
+
+```toml
+[[milestones]]
+title       = "v0.7.0"
+description = "Configurability sprint"
+due_on      = "2026-07-15"   # YYYY-MM-DD → fin de journée UTC
+state       = "open"         # "open" (défaut) | "closed"
+```
+
+| Champ         | Type   | Requis | Signification                                                            |
+| :------------ | :----- | :----- | :----------------------------------------------------------------------- |
+| `title`       | string | oui    | titre (unique par dépôt)                                                 |
+| `description` | string | non    | vide/absent = inchangé sur le remote                                     |
+| `due_on`      | string | non    | `YYYY-MM-DD` (23:59:59 UTC) ou RFC3339 complet ; absent = pas d'échéance |
+| `state`       | string | non    | `"open"` (défaut) ou `"closed"` (archive déclarativement)                |
+
+## `[issue_template]`
+
+Valeurs par défaut par type de branche pour `gwm new <type> <desc>` — rend un
+formulaire d'issue GitHub depuis `.github/ISSUE_TEMPLATE/`, crée l'issue, puis le
+worktree.
+
+```toml
+[issue_template]
+default = "feature_request.yml"
+
+[issue_template.by_type]
+feat = { template = "feature_request.yml", surface = "cli", title_prefix = "[Feature]: ", labels = ["enhancement"] }
+fix  = { template = "bug_report.yml", title_prefix = "[Bug]: " }
+docs = { template = "task.yml", title_prefix = "[Docs]: " }
+```
+
+| Champ          | Type             | Signification                                    |
+| :------------- | :--------------- | :----------------------------------------------- |
+| `default`      | string           | fichier de repli sous `.github/ISSUE_TEMPLATE/`  |
+| `template`     | string           | surcharge de template par type                   |
+| `surface`      | string           | défaut pour un champ de formulaire `id: surface` |
+| `title_prefix` | string           | surcharge le préfixe `title:` du formulaire      |
+| `labels`       | liste de strings | labels ajoutés à ceux du formulaire              |
+
+Les corps supportent les placeholders `{type}`, `{desc}`, `{repo}`.
+
+## `[pr_template]`
+
+Corps de PR par type de branche pour `gwm pr`.
+
+```toml
+[pr_template]
+default = ".github/pull_request_template.md"
+
+[pr_template.by_type]
+feat = { path = ".github/pr-templates/feat.md" }
+
+[pr_template.by_type.chore]
+body = """
+## Summary
+{desc}
+
+Closes #{issue}
+"""
+```
+
+| Champ     | Type   | Signification                                                   |
+| :-------- | :----- | :-------------------------------------------------------------- |
+| `default` | string | fichier Markdown de repli (relatif au workdir)                  |
+| `path`    | string | fichier Markdown par type (relatif au workdir)                  |
+| `body`    | string | corps inline — l'emporte sur `path` quand les deux sont définis |
+
+Placeholders substitués : `{type}`, `{issue}`, `{desc}`, `{base}`, `{head}`,
+`{repo}`, `{commits}`, `{files_changed}`. Les chemins absolus / parents `..` /
+préfixes de lecteur Windows sont rejetés.
+
+## `[aliases]`
+
+Alias CLI au niveau dépôt — substitution d'argv exécutée avant le parsing clap.
+
+```toml
+[aliases]
+wip = "create feat 0 wip"
+ll  = "list --format names"
+```
+
+Un fallback utilisateur vit à `~/.config/gwm/aliases.toml` ; les alias de dépôt
+l'emportent en cas de collision. `gwm aliases list` affiche la chaîne résolue.
+
+<Aside type="caution">
+  Un nom d'alias ne doit pas masquer une sous-commande / un alias visible intégré (`list`, `switch`,
+  `s`, `cd`), ni être vide, ni contenir de métacaractères shell (`&&`, `||`, `|`, `;`, backticks) —
+  chacun est une erreur de config au chargement. L'expansion est en une seule passe (pas de
+  chaînage).
+</Aside>
+
+## Valeurs par défaut sans `.gwm.toml`
+
+| Réglage                         | Défaut                         |
+| :------------------------------ | :----------------------------- |
+| `[worktree].base`               | `{home}/cc-worktree/{repo}`    |
+| `[worktree].path_pattern`       | `{type}-{issue}-{desc}`        |
+| `[worktree].branch_pattern`     | `{type}/#{issue}-{desc}`       |
+| `[[bootstrap.*]]`               | vide — pas de pipeline         |
+| `[git_tui].command`             | `lazygit -p {path}`            |
+| `[git_tui].fullscreen`          | `true`                         |
+| `[review]`                      | inerte (`R` ne fait rien)      |
+| `[tui].confirm_countdown_secs`  | `3`                            |
+| `[tui].sidebar_position`        | `right`                        |
+| `[tui.keys]`                    | keymap intégré                 |
+| `[tui.open].mode`               | `shell`                        |
+| `[theme].preset`                | aucun — schéma codé en dur     |
+| `[doctor].trunks`               | `["dev", "main"]`              |
+| `[[labels]]` / `[[milestones]]` | vide — no-ops                  |
+| `[issue_template]`              | vide — `gwm new` non configuré |
+| `[pr_template]`                 | vide                           |
+| `[aliases]`                     | vide                           |
+
+## Règles de validation
+
+- Les clés TOML inconnues sont silencieusement ignorées (compatible en avant).
+- `[tui.open].mode` et `[tui].sidebar_position` inconnus **erreurent au chargement**.
+- `[theme]` erreure sur preset / clé de rôle / couleur invalides.
+- `[tui.keys]` erreure sur action inconnue, chord non parsable, conflit ou collision de préfixe.
+- `[aliases]` erreure sur masquage d'intégré, valeur vide, ou métacaractère shell.
+- Les références de guards et la grammaire des prédicats `when:` sont validées par
+  [`gwm doctor`](/guides/doctor/) (checks 2 et 3).
+
+Lancez `gwm doctor` après chaque édition pour attraper les erreurs détectables.
