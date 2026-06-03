@@ -39,3 +39,9 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 - gwm docs: filled the `guides/prise-en-main` page (converted to `.mdx`) — the
   first-use walkthrough (`create` → `list` → `cd`/`gcd` → TUI → `remove` →
   `doctor`), cross-checked against `gwm-cli`.
+- gwm docs: filled the `reference/gwm-toml` page (converted to `.mdx`) — the
+  full `.gwm.toml` schema (`worktree`, `bootstrap.*`, `hooks.*`, launchers,
+  `tui`/`tui.keys`/`tui.open`, `theme`, `doctor`, `gitmoji`, `labels`,
+  `milestones`, `issue_template`, `pr_template`, `aliases`, defaults &
+  validation rules), cross-checked against `gwm-cli` `config.rs` and
+  `gwm.toml.example`.
