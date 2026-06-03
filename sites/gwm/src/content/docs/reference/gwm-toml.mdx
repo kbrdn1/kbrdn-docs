@@ -255,10 +255,10 @@ fois) et `+` sépare les modificateurs (`"Ctrl+x Ctrl+s"`). Modificateurs :
 chords vivent dans [La TUI → Raccourcis](/guides/tui/).
 
 <Aside type="caution" title="Validation au chargement">
-  `[tui.keys]` erreure au chargement sur : action inconnue, chord non parsable, conflit de chord
-  (deux actions sur le même chord), ou collision de préfixe (un chord préfixe strict d'un autre).
-  `Ctrl+C` et les touches contextuelles `Esc` / `Enter` sont des échappatoires codées en dur, hors
-  keymap.
+  `[tui.keys]` lève une erreur au chargement sur : action inconnue, chord non parsable, conflit de
+  chord (deux actions sur le même chord), ou collision de préfixe (un chord préfixe strict d'un
+  autre). `Ctrl+C` et les touches contextuelles `Esc` / `Enter` sont des échappatoires codées en
+  dur, hors keymap.
 </Aside>
 
 `gwm tui keys` affiche le keymap résolu avec la source par ligne.
@@ -299,8 +299,8 @@ un **index de palette 256** (`0`..=`255`), ou un **hex** `#RRGGBB` (la forme
 courte `#RGB` n'est pas supportée).
 
 <Aside type="caution">
-  `[theme]` erreure au chargement sur un `preset` inconnu, une clé de rôle inconnue, ou une valeur
-  de couleur non parsable.
+  `[theme]` lève une erreur au chargement sur un `preset` inconnu, une clé de rôle inconnue, ou une
+  valeur de couleur non parsable.
 </Aside>
 
 Détail des rôles et rendu : [La TUI → Thèmes](/guides/tui/).
@@ -479,10 +479,10 @@ l'emportent en cas de collision. `gwm aliases list` affiche la chaîne résolue.
 ## Règles de validation
 
 - Les clés TOML inconnues sont silencieusement ignorées (compatible en avant).
-- `[tui.open].mode` et `[tui].sidebar_position` inconnus **erreurent au chargement**.
-- `[theme]` erreure sur preset / clé de rôle / couleur invalides.
-- `[tui.keys]` erreure sur action inconnue, chord non parsable, conflit ou collision de préfixe.
-- `[aliases]` erreure sur masquage d'intégré, valeur vide, ou métacaractère shell.
+- `[tui.open].mode` et `[tui].sidebar_position` inconnus **lèvent une erreur au chargement**.
+- `[theme]` lève une erreur sur preset / clé de rôle / couleur invalides.
+- `[tui.keys]` lève une erreur sur action inconnue, chord non parsable, conflit ou collision de préfixe.
+- `[aliases]` lève une erreur en cas de masquage d'un intégré, de valeur vide, ou de métacaractère shell.
 - Les références de guards et la grammaire des prédicats `when:` sont validées par
   [`gwm doctor`](/guides/doctor/) (checks 2 et 3).
 
