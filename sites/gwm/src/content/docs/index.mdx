@@ -14,8 +14,13 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
+
+**gwm** (Git Worktree Manager) crée un worktree isolé par branche en une seule
+commande, en suivant la convention `<type>/#<issue>-<desc>`, et prépare chaque
+worktree via un bootstrap décrit dans `.gwm.toml` — le tout en CLI comme dans une
+TUI ratatui.
 
 <CardGrid stagger>
   <Card title="CLI + TUI" icon="seti:rust">
@@ -32,6 +37,41 @@ import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
     `gwm create feat 12 ma-feature` crée la branche `feat/#12-ma-feature` et le worktree en une
     fois.
   </Card>
+</CardGrid>
+
+## Par où commencer ?
+
+<CardGrid>
+  <LinkCard
+    title="Installation"
+    href="/guides/installation/"
+    description="Homebrew, cargo binstall, Cargo, binaire précompilé ou flake Nix."
+  />
+  <LinkCard
+    title="Prise en main"
+    href="/guides/prise-en-main/"
+    description="create → list → cd → TUI → remove → doctor : le parcours de premier usage."
+  />
+  <LinkCard
+    title="La TUI"
+    href="/guides/tui/"
+    description="Navigation clavier, launchers l/R, intégration tmux/zellij."
+  />
+  <LinkCard
+    title="Fichier .gwm.toml"
+    href="/reference/gwm-toml/"
+    description="Le schéma complet de configuration par dépôt."
+  />
+  <LinkCard
+    title="Commandes CLI"
+    href="/reference/cli/"
+    description="Référence exhaustive des sous-commandes, flags et codes de sortie."
+  />
+  <LinkCard
+    title="Concepts"
+    href="/concepts/worktrees/"
+    description="Worktrees & nommage, bootstrap et trust ledger TOFU."
+  />
 </CardGrid>
 
 ## Le dépôt

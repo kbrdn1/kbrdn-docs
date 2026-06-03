@@ -64,3 +64,7 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   normalization, `gwm-base` anchor) and the bootstrap pipeline (copies, regex
   guards, fallbacks, no-symlink, lifecycle hooks, `when:` predicates),
   cross-checked against `gwm-cli` `src/naming.rs` and `src/bootstrap.rs`.
+- gwm docs: fleshed out the splash landing (`index.mdx`) with a "Par où
+  commencer ?" navigation grid (`LinkCard`) linking the main entry points, and
+  completed the Phase 1 cross-page consistency pass — no dead internal links, no
+  orphan pages.
