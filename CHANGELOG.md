@@ -49,3 +49,8 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   subcommand reference (worktrees, config, branch/commit, GitHub, TUI/themes,
   multiplexer/shell, doctor/trust, aliases) with flags, examples and the
   0/1/2 exit-code table, cross-checked against `gwm-cli` `src/cli.rs`.
+- gwm docs: filled the `guides/tui` page (converted to `.mdx`) — keyboard
+  navigation, details sidebar, create/delete/link overlays, configurable `l`/`R`
+  launchers (placeholders, fullscreen, base resolution) and tmux/zellij
+  integration, cross-checked against `gwm-cli` `src/tui/`, `launcher.rs` and
+  `multiplexer.rs`.
