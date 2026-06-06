@@ -109,7 +109,7 @@ export const expressiveCode = {
   styleOverrides: {
     borderRadius: '0', // coins nets cohérents avec la base
     borderColor: 'var(--sl-color-gray-5)',
-    codeFontFamily: 'var(--sl-font-mono)',
+    codeFontFamily: 'var(--kbrdn-font-code)',
     frames: {
       // titre d'onglet / barre de fenêtre alignés sur les surfaces neutres
       editorTabBarBackground: 'var(--sl-color-gray-6)',

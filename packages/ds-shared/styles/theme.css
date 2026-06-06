@@ -182,6 +182,12 @@
   border: 1px solid var(--sl-color-gray-5);
 }
 
+/* Ligatures de la police de code (Monaspace Neon / OperatorMonoLig) dans les
+   blocs Expressive Code — la famille est posée via expressiveCode.codeFontFamily. */
+.expressive-code code {
+  font-feature-settings: 'calt', 'liga';
+}
+
 /* ═══════════════════════════════════════════════════
    Décorations pilotées par l'accent (héritent de la couleur produit)
    ═══════════════════════════════════════════════════ */
