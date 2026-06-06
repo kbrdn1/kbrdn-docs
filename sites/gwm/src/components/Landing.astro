@@ -1,0 +1,599 @@
+---
+/**
+ * Landing.astro — splash bespoke du site gwm (mono-produit, ne va PAS dans
+ * @kbrdn/ds-shared). Markup adapté de la landing de référence, recoloré en
+ * BLEU CIEL + JAUNE via gwm.css, dans le chrome Starlight (header/sidebar/
+ * footer/search/theme-toggle fournis nativement).
+ *
+ * Le CONTENU vient des vrais strings gwm (Phase 1) : version 0.9.0-rc.1,
+ * MSRV 1.82, CLI positionnel `gwm create <type> <issue> <desc>`, worktrees
+ * sous ~/cc-worktree/<repo>/, schéma .gwm.toml [[bootstrap.copy]] / guard /
+ * no_symlink / [[hooks.post_create]] + trust ledger TOFU.
+ *
+ * Pas de toggle thème maison, pas de typing animation, pas de section-nav,
+ * pas de sprite glyphes animés. Aucune API navigateur au top-level (SSR-safe).
+ */
+import { Code } from '@astrojs/starlight/components';
+
+const installCmd = 'brew install gwm';
+
+/* Schéma .gwm.toml RÉEL (Phase 1). Rendu via Expressive Code (palette
+   « Claude Code » fournie par @kbrdn/ds-shared/expressive-code). */
+const gwmToml = `[worktree]
+base           = "{home}/cc-worktree/{repo}"
+path_pattern   = "{type}-{issue}-{desc}"
+branch_pattern = "{type}/#{issue}-{desc}"
+
+# Copie de fichiers du checkout principal vers le nouveau worktree
+[[bootstrap.copy]]
+from     = ".env.testing"
+to       = ".env.testing"
+required = true
+fallback = "inline"        # inline | skip | abort
+
+[[bootstrap.copy]]
+from     = ".env"
+to       = ".env"
+required = false
+guards   = ["no-aws-rds"]  # référence un [[bootstrap.guard]]
+
+# Deny-list regex appliquée après copie
+[[bootstrap.guard]]
+name          = "no-aws-rds"
+deny_patterns = ["amazonaws\\\\.com", "\\\\.rds\\\\."]
+on_match      = "seed-from-example"   # abort | seed-from-example
+example_file  = ".env.example"
+
+# Refuse d'hériter d'un symlink (build du dépôt principal protégé)
+[[bootstrap.no_symlink]]
+path = "node_modules"
+
+# Hooks de cycle de vie (mécanisme moderne)
+[[hooks.post_create]]
+name    = "install deps"
+run     = "npm ci"
+when    = "file_exists:package-lock.json"
+on_fail = "warn"           # abort | warn | ignore (défaut: abort)
+env     = { CI = "1" }
+
+# [[bootstrap.command]] est l'ancien mécanisme (legacy) — préférer [[hooks.*]]
+
+[doctor]
+trunks = ["dev", "main"]`;
+
+/* Tableau comparatif RÉEL (Phase 1). */
+const comparison = {
+  columns: ['Capacité', 'gwm', 'gwq', 'git worktree'],
+  rows: [
+    {
+      capability: 'Créer un worktree + branche',
+      gwm: 'oui (gwm create <type> <issue> <desc>)',
+      gwq: 'oui (gwq add [-b] <branch> [path])',
+      gitWorktree: 'oui (chemin explicite requis)',
+    },
+    {
+      capability: 'Lister les worktrees',
+      gwm: 'oui (gwm list, --format=table|names, --detect-pr)',
+      gwq: 'oui (gwq list, gwq status)',
+      gitWorktree: 'oui (git worktree list)',
+    },
+    {
+      capability: 'Supprimer / élaguer',
+      gwm: 'oui (gwm remove, gwm prune, --delete-branch)',
+      gwq: 'oui (gwq remove, gwq prune)',
+      gitWorktree: 'oui (git worktree remove / prune)',
+    },
+    {
+      capability: 'Sélecteur fuzzy / cd',
+      gwm: 'oui (TUI + gwm path/switch, gcd via shell-init)',
+      gwq: 'oui (fuzzy finder, gwq cd/get)',
+      gitWorktree: 'non (chemins manuels)',
+    },
+    {
+      capability: 'TUI plein écran',
+      gwm: 'oui (ratatui, lancée par `gwm` seul)',
+      gwq: 'non (fuzzy finder seulement)',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Config par dépôt (.gwm.toml)',
+      gwm: 'oui (versionnée + fallback global)',
+      gwq: 'non (config globale utilisateur)',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Bootstrap (copie .env, hooks, guards)',
+      gwm: 'oui (copy, guard, hooks, no_symlink)',
+      gwq: 'non',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Confiance TOFU sur la config',
+      gwm: 'oui (trust ledger, prompt par défaut)',
+      gwq: 'non (pas de bootstrap exécutable)',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Intégration GitHub (issue/PR)',
+      gwm: 'oui (gwm new, gwm pr, link/open/status)',
+      gwq: 'non',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Préfixe de commit Gitmoji + Conventional',
+      gwm: 'oui (gwm commit-prefix, hook opt-in)',
+      gwq: 'non',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Intégration multiplexeur',
+      gwm: 'oui (gwm tmux / gwm zellij)',
+      gwq: 'partiel (gwq tmux pour sessions)',
+      gitWorktree: 'non',
+    },
+    {
+      capability: 'Diagnostic / undo',
+      gwm: 'oui (gwm doctor 0/1/2, history, undo)',
+      gwq: 'non',
+      gitWorktree: 'non',
+    },
+  ],
+};
+
+/* Mappe le préfixe oui/non/partiel d'une cellule vers ✓ vert / — atténué /
+   ~ jaune, en gardant la parenthèse comme note concise. */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function cell(raw: string): string {
+  const m = raw.match(/^(oui|non|partiel)\s*(?:\((.*)\))?$/i);
+  if (!m) return escapeHtml(raw);
+  const kind = m[1].toLowerCase();
+  const note = m[2] ? escapeHtml(m[2]) : '';
+  const noteHtml = note ? ` <span class="note">${note}</span>` : '';
+  if (kind === 'oui') return `<span class="yes">✓</span>${noteHtml}`;
+  if (kind === 'partiel') return `<span class="partial">~</span>${noteHtml}`;
+  return `<span class="no">—</span>${noteHtml}`;
+}
+---
+
+<div class="gwm-landing">
+  {/* ═══════════════ HERO ═══════════════ */}
+  <section class="section hero">
+    <div class="hero__inner">
+      <div>
+        <span class="badge-available">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          v0.9.0-rc.1 · Rust · MIT
+        </span>
+        <h1><span class="mono">gwm</span> — git worktree manager</h1>
+        <p class="hero__sub">Un worktree isolé par branche, prêt à l'emploi.</p>
+        <p class="hero__lede">
+          gwm crée un worktree Git par branche en une commande, en suivant la convention <span
+            class="ic">&lt;type&gt;/#&lt;issue&gt;-&lt;desc&gt;</span
+          >, et prépare chaque worktree via un bootstrap déclaré dans
+          <span class="ic">.gwm.toml</span> — copies de fichiers, gardes regex, hooks de cycle de vie.
+          CLI complète et TUI ratatui.
+        </p>
+
+        <div class="hero__install">
+          <span class="prompt">$</span>
+          <code id="gwm-install-cmd">{installCmd}</code>
+          <button type="button" id="gwm-copy-btn" data-cmd={installCmd}>Copier</button>
+        </div>
+
+        <div class="hero__ctas">
+          <a class="btn btn--primary" href="https://github.com/kbrdn1/gwm-cli">View on GitHub</a>
+          <a class="btn btn--outline" href="/guides/installation/">Installation</a>
+        </div>
+
+        <div class="hero__meta">
+          <span>MSRV 1.82 · Rust 2024</span>
+          <span>macOS · Linux · Windows</span>
+        </div>
+      </div>
+
+      {/* terminal statique pré-rempli (commandes RÉELLES) */}
+      <div class="term" role="img" aria-label="Démonstration gwm en terminal">
+        <div class="term__bar">
+          <span class="term__lights"><span></span><span></span><span></span></span>
+          <span class="term__title">~/Projects/my-repo — gwm</span>
+        </div>
+        <div class="term__body">
+          <div class="term__line">
+            <span class="pr">$ </span>gwm create feat 123 user-authentication
+          </div>
+          <div class="term__line">
+            <span class="ok">✓</span> branche <span class="b">feat/#123-user-authentication</span>
+          </div>
+          <div class="term__line">
+            <span class="ok">✓</span> worktree <span class="b"
+              >~/cc-worktree/my-repo/feat-123-user-authentication</span
+            >
+          </div>
+          <div class="term__line">
+            <span class="ok">✓</span> bootstrap : 2 fichiers copiés, 1 hook
+          </div>
+          <div class="term__line"></div>
+          <div class="term__line"><span class="pr">$ </span>gwm list</div>
+          <div class="term__line"><span class="dim"> WORKTREE BRANCH STATUS AGE</span></div>
+          <div class="term__line">
+            feat-123-user-authentication <span class="b">feat/#123-user-authentication</span>
+            <span class="y">● dirty</span> 2h
+          </div>
+          <div class="term__line">
+            main (principal) <span class="b">main</span>
+            <span class="ok">✓ clean</span> —
+          </div>
+          <div class="term__line"></div>
+          <div class="term__line">
+            <span class="pr">$ </span>gwm tui<span class="dim"> # TUI ratatui plein écran</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ WHY WORKTREES ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <h2 class="section-label section-label--primary">Pourquoi les worktrees</h2>
+      <p class="serif-lede">
+        Le stash est un contournement. Le worktree <em>est</em> la primitive.
+      </p>
+
+      <div class="why__grid">
+        <div class="why__card">
+          <span class="why__icon">01</span>
+          <h3 class="why__title">Hotfix sans stash</h3>
+          <p class="why__desc">
+            Une urgence en plein milieu d'une feature ? Crée un worktree dédié au hotfix : ton
+            travail en cours reste intact dans le sien, aucun stash, aucun changement de branche
+            dans le checkout principal.
+          </p>
+          <div class="why__sketch">
+            ~/cc-worktree/my-repo/ ├── <span class="pri">feat-123-user-auth/</span>
+            <span class="bl">← en cours</span>
+            └── <span class="pri">fix-200-prod-crash/</span>
+            <span class="gn">← hotfix</span>
+          </div>
+        </div>
+
+        <div class="why__card">
+          <span class="why__icon">02</span>
+          <h3 class="why__title">Agents IA en parallèle</h3>
+          <p class="why__desc">
+            Un répertoire de travail par agent : chacun compile, teste et commit dans son propre
+            worktree sans se marcher dessus. Le dépôt principal reste stable pendant qu'ils itèrent.
+          </p>
+          <div class="why__sketch">
+            ~/cc-worktree/my-repo/ ├── <span class="pri">feat-301-search/</span>
+            <span class="bl">← agent 1</span>
+            └── <span class="pri">feat-302-export/</span>
+            <span class="bl">← agent 2</span>
+          </div>
+        </div>
+
+        <div class="why__card">
+          <span class="why__icon">03</span>
+          <h3 class="why__title">Review de PR à côté</h3>
+          <p class="why__desc">
+            Sortir la branche d'une PR pour la lire et la lancer, sans toucher à ta branche de
+            travail. <span class="ic">gwm remove</span> nettoie le worktree ; la branche survit (sauf
+            <span class="ic">--delete-branch</span>).
+          </p>
+          <div class="why__sketch">
+            ~/cc-worktree/my-repo/ ├── <span class="pri">feat-123-user-auth/</span>
+            <span class="bl">← le tien</span>
+            └── <span class="pri">feat-77-review-pr/</span>
+            <span class="gn">← la PR</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ FEATURES ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <h2 class="section-label section-label--primary">Ce que gwm apporte</h2>
+      <p class="serif-lede">
+        Une couche d'ergonomie au-dessus de <em>git worktree</em>, versionnée par dépôt.
+      </p>
+
+      <div class="features__grid">
+        <article class="feature">
+          <div class="feature__head"><span class="feature__num">01</span> Moteur</div>
+          <h3 class="feature__title">libgit2 vendored</h3>
+          <p class="feature__desc">
+            Opérations de worktree via libgit2 compilé en statique — pas de shell-out fragile vers
+            le binaire <span class="ic">git</span>.
+          </p>
+          <span class="feature__tag">git2 · vendored OpenSSL</span>
+        </article>
+
+        <article class="feature">
+          <div class="feature__head"><span class="feature__num">02</span> Config</div>
+          <h3 class="feature__title">.gwm.toml déclaratif</h3>
+          <p class="feature__desc">
+            Conventions de branche et de chemin, copies de fichiers et hooks décrits dans un fichier
+            versionné, propre à chaque dépôt.
+          </p>
+          <span class="feature__tag">[worktree] · [[bootstrap.copy]]</span>
+        </article>
+
+        <article class="feature">
+          <div class="feature__head"><span class="feature__num">03</span> Sécurité</div>
+          <h3 class="feature__title">Gardes regex sur .env</h3>
+          <p class="feature__desc">
+            Une deny-list regex inspecte les fichiers copiés ; sur correspondance, gwm abandonne ou
+            réamorce depuis un exemple sain.
+          </p>
+          <span class="feature__tag">[[bootstrap.guard]] · deny_patterns</span>
+        </article>
+
+        <article class="feature">
+          <div class="feature__head"><span class="feature__num">04</span> Cycle de vie</div>
+          <h3 class="feature__title">Hooks post_create</h3>
+          <p class="feature__desc">
+            Lance tes commandes de mise en route (deps, génération) aux phases pre/post create,
+            bootstrap et remove, sous condition de fichier.
+          </p>
+          <span class="feature__tag">[[hooks.post_create]] · when · on_fail</span>
+        </article>
+
+        <article class="feature">
+          <div class="feature__head"><span class="feature__num">05</span> Interface</div>
+          <h3 class="feature__title">TUI ratatui</h3>
+          <p class="feature__desc">
+            Lancée par <span class="ic">gwm</span> seul : liste, filtre fuzzy, détails (commits/stashes)
+            et actions clavier sur tes worktrees.
+          </p>
+          <span class="feature__tag">ratatui · nucleo-matcher</span>
+        </article>
+
+        <article class="feature">
+          <div class="feature__head"><span class="feature__num">06</span> Multiplexeur</div>
+          <h3 class="feature__title">tmux & zellij</h3>
+          <p class="feature__desc">
+            Ouvre un worktree dans une nouvelle fenêtre, un onglet ou un split de ton multiplexeur
+            de terminal.
+          </p>
+          <span class="feature__tag">gwm tmux · gwm zellij</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ THE TUI ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <h2 class="section-label section-label--primary">La TUI</h2>
+      <p class="serif-lede">Tes worktrees, <em>navigables</em> au clavier.</p>
+
+      <div class="tui" role="img" aria-label="Aperçu de la TUI ratatui de gwm">
+        <div class="tui__top">
+          <span class="left">
+            <span style="color:var(--color-primary-500)">gwm</span> ~/Projects/my-repo
+            <span class="pill">4 worktrees</span>
+          </span>
+          <span>v0.9.0-rc.1 · /filtre</span>
+        </div>
+
+        <div class="tui__main">
+          <div class="tui__list">
+            <div class="tui__row is-selected">
+              <span class="glyph">▸</span>
+              <span class="br">feat-123-user-authentication</span>
+              <span class="status-dirty">● dirty · 2h</span>
+            </div>
+            <div class="tui__row">
+              <span class="glyph"> </span>
+              <span class="br">fix-98-token-refresh</span>
+              <span class="status-clean">✓ clean · 1d</span>
+            </div>
+            <div class="tui__row">
+              <span class="glyph"> </span>
+              <span class="br">docs-142-config-reference</span>
+              <span class="status-clean">✓ clean · 3d</span>
+            </div>
+            <div class="tui__row">
+              <span class="glyph"> </span>
+              <span class="br">main (principal)</span>
+              <span class="status-clean">✓ clean · —</span>
+            </div>
+          </div>
+
+          <div class="tui__inspect">
+            <span class="lbl">Branche</span>
+            <span class="val"><span class="pri">feat/#123-user-authentication</span></span>
+            <span class="lbl">Chemin</span>
+            <span class="val"
+              >~/cc-worktree/my-repo/<span class="pri">feat-123-user-authentication</span></span
+            >
+            <span class="lbl commits">Derniers commits</span>
+            <span class="val commits"
+              ><span class="hash">a1c4f2e</span> ✨ feat(#123): login form
+              <span class="hash">7b9d013</span> ✅ test(#123): auth guard</span
+            >
+          </div>
+        </div>
+
+        <div class="tui__bar">
+          <span><kbd>j</kbd><kbd>k</kbd> Naviguer</span>
+          <span><kbd>/</kbd> Filtrer</span>
+          <span><kbd>↵</kbd> Chemin</span>
+          <span><kbd>y</kbd> Copier</span>
+          <span><kbd>n</kbd> Nouveau</span>
+          <span><kbd>d</kbd> Supprimer</span>
+          <span><kbd>l</kbd> lazygit</span>
+          <span><kbd>?</kbd> Aide</span>
+          <span><kbd>q</kbd> Quitter</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ CLI EXAMPLES ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <h2 class="section-label section-label--primary">En CLI</h2>
+      <p class="serif-lede">Quelques gestes du quotidien.</p>
+
+      <div class="examples">
+        <article class="example">
+          <div class="example__head">
+            <span class="example__title">Créer un worktree</span>
+            <span class="example__desc">Signature positionnelle ; branche dérivée du pattern.</span>
+          </div>
+          <pre
+            class="example__body claude-code"><span class="k">gwm</span> create feat <span class="t">123</span> user-authentication
+<span class="c">#   → branche feat/#123-user-authentication</span>
+<span class="c">#   → worktree ~/cc-worktree/&lt;repo&gt;/feat-123-user-authentication</span></pre>
+        </article>
+
+        <article class="example">
+          <div class="example__head">
+            <span class="example__title">Issue GitHub puis worktree</span>
+            <span class="example__desc">Crée l'issue depuis ton template, puis le worktree.</span>
+          </div>
+          <pre
+            class="example__body claude-code"><span class="k">gwm</span> new feat add-config-types
+<span class="c"># → created issue #142 — branch feat/#142-add-config-types</span></pre>
+        </article>
+
+        <article class="example">
+          <div class="example__head">
+            <span class="example__title">Lister et se déplacer</span>
+            <span class="example__desc"
+              >Mode table (défaut) ou names ; <span class="ic">path</span> (alias <span class="ic"
+                >cd</span
+              >) pour un cd fuzzy.</span
+            >
+          </div>
+          <pre
+            class="example__body claude-code"><span class="k">gwm</span> list
+<span class="k">gwm</span> list <span class="v">--format</span>=names
+<span class="k">cd</span> <span class="s">"$(gwm path auth)"</span></pre>
+        </article>
+
+        <article class="example">
+          <div class="example__head">
+            <span class="example__title">Bootstrap, sync, remove</span>
+            <span class="example__desc"
+              >Rejouer le bootstrap, mettre à jour, supprimer un worktree.</span
+            >
+          </div>
+          <pre
+            class="example__body claude-code"><span class="k">gwm</span> bootstrap auth
+<span class="k">gwm</span> sync auth <span class="v">--merge</span>
+<span class="k">gwm</span> remove auth <span class="v">--delete-branch</span></pre>
+        </article>
+
+        <article class="example">
+          <div class="example__head">
+            <span class="example__title">Préfixe de commit Gitmoji</span>
+            <span class="example__desc">Déduit de la branche courante.</span>
+          </div>
+          <pre
+            class="example__body claude-code"><span class="k">gwm</span> commit-prefix
+<span class="c"># → :sparkles: feat(#41):</span>
+<span class="k">gwm</span> commit-prefix <span class="v">--unicode</span>
+<span class="c"># → ✨ feat(#41):</span></pre>
+        </article>
+
+        <article class="example">
+          <div class="example__head">
+            <span class="example__title">Confiance TOFU & diagnostic</span>
+            <span class="example__desc"
+              >Le bootstrap passe par un trust ledger ; <span class="ic">doctor</span> sort 0/1/2 pour
+              la CI.</span
+            >
+          </div>
+          <pre
+            class="example__body claude-code"><span class="k">gwm</span> trust list
+<span class="k">gwm</span> trust show
+<span class="k">gwm</span> doctor</pre>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ CONFIG (.gwm.toml) ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <h2 class="section-label section-label--primary">Configuration</h2>
+      <p class="serif-lede">Un <em>.gwm.toml</em> versionné, propre à chaque dépôt.</p>
+      <div style="margin-top:24px">
+        <Code code={gwmToml} lang="toml" title=".gwm.toml" />
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ COMPARE ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <h2 class="section-label section-label--primary">gwm vs. gwq vs. git worktree</h2>
+      <p class="serif-lede">Là où gwm <em>va plus loin</em>.</p>
+
+      <div class="cmp">
+        <table>
+          <thead>
+            <tr>
+              {
+                comparison.columns.map((col, i) => (
+                  <th class={i === 1 ? 'col-gwm' : undefined}>{col}</th>
+                ))
+              }
+            </tr>
+          </thead>
+          <tbody>
+            {
+              comparison.rows.map((row) => (
+                <tr>
+                  <td class="feat">{row.capability}</td>
+                  <td set:html={cell(row.gwm)} />
+                  <td set:html={cell(row.gwq)} />
+                  <td set:html={cell(row.gitWorktree)} />
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════ QUOTE ═══════════════ */}
+  <section class="section">
+    <div class="section__inner">
+      <blockquote class="quote">
+        « Un worktree par contexte : le hotfix, la review, l'agent. On arrête de jongler avec un
+        seul répertoire de travail. »
+        <cite>— la philosophie de gwm</cite>
+      </blockquote>
+    </div>
+  </section>
+</div>
+
+{/* Copy-to-clipboard du hero : script client minimal, SSR-safe (s'exécute côté navigateur). */}
+<script>
+  const btn = document.getElementById('gwm-copy-btn');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      const cmd = btn.getAttribute('data-cmd') || '';
+      try {
+        await navigator.clipboard.writeText(cmd);
+        const original = btn.textContent;
+        btn.textContent = 'Copié';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1500);
+      } catch {
+        /* clipboard indisponible : on ne casse rien */
+      }
+    });
+  }
+</script>

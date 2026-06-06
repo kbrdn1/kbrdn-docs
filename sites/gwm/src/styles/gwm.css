@@ -1,54 +1,938 @@
 /* gwm — override produit par-dessus la base « Claude Dark » (@kbrdn/ds-shared).
-   Variante d'accent BLEU CIEL (primaire) + JAUNE (secondaire) pour différencier
-   le produit gwm. Bleu = blue-500 (#7ab8ff), jaune = yellow-500 (#ffdf61) du
-   DESIGN.md. La base ne définit QUE des neutres + décorations câblées sur
-   `--sl-color-accent` : changer l'accent ici suffit à recolorer tout le produit. */
+   Variante d'accent BLEU CIEL (primaire) + JAUNE (secondaire).
+
+   Stratégie DRY : la landing de référence cascade TOUT l'accent depuis la rampe
+   `--color-primary-*`. On redéfinit ici la rampe complète vers une rampe bleu
+   ciel → tous les usages d'accent des composants bespoke (badge, pulse,
+   section-label--primary, hero .mono, feature__num, why__icon, term prompt,
+   tui glyph/selected, cmp col-gwm, quote border, …) virent au bleu
+   automatiquement. La palette de coloration `.claude-code` n'utilise PAS ces
+   tokens (hex en dur) → elle reste intacte.
+
+   Les @font-face, l'import Inter et les tokens neutres/sémantiques
+   (--color-neutral/green/yellow/blue/purple, --sl-color-*, --sl-font*,
+   --kbrdn-font-code) vivent dans @kbrdn/ds-shared/styles/theme.css (chargé
+   AVANT ce fichier). On ne les redéclare pas ici. */
 
 /* ═══════════════════════════════════════════════════
-   Dark mode — accent bleu ciel
+   Rampe primaire BLEUE — dérivée de blue-500 (#7ab8ff) + bleu dense (#2b8fe0).
+   Partagée dark/light ; les composants choisissent leur teinte selon l'usage.
    ═══════════════════════════════════════════════════ */
 :root {
-  --sl-color-accent-low: #15324f; /* bleu profond — fonds d'accent discrets */
-  --sl-color-accent: #7ab8ff; /* blue-500 — liens, focus, états actifs */
-  --sl-color-accent-high: #cfe7ff; /* bleu clair — texte sur accent (lisible) */
+  --color-primary-950: #0c2740;
+  --color-primary-900: #103a5e;
+  --color-primary-800: #15558f; /* texte d'accent light (AA 7.7) */
+  --color-primary-700: #1a5fa0;
+  --color-primary-600: #2b8fe0; /* surface dense light */
+  --color-primary-500: #7ab8ff; /* accent dark (AA 8.39 sur #1a1a1a) */
+  --color-primary-400: #9ccbff;
+  --color-primary-300: #bfe0ff;
+  --color-primary-200: #d9ecff;
+  --color-primary-100: #eaf4ff;
+  --color-primary-50: #f5faff;
 
-  /* Secondaire jaune (token produit). */
-  --kbrdn-accent-2: #ffdf61; /* yellow-500 */
-  --kbrdn-accent-2-ink: #1a1a1a; /* texte sur jaune (dark sur clair) */
+  /* Alias d'accent neutre : suit la rampe (bleu). */
+  --ui-primary: var(--color-primary-500);
 }
 
 /* ═══════════════════════════════════════════════════
-   Light mode — accent bleu ciel assombri (contraste sur fond clair)
+   Accent Starlight — mappé sur la rampe bleue.
+   En dark, le texte d'accent #7ab8ff passe AA (8.39). En light, le bleu surface
+   #2b8fe0 échoue en texte (3.44) → on force le texte de lien vers #15558f (7.7).
+   ═══════════════════════════════════════════════════ */
+:root {
+  --sl-color-accent-low: #103a5e;
+  --sl-color-accent: #2b8fe0;
+  --sl-color-accent-high: #cfe7ff;
+}
+:root[data-theme='dark'] {
+  --sl-color-accent: #7ab8ff;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d9ecff;
+  --sl-color-accent: #2b8fe0;
+  --sl-color-accent-high: #15558f;
+  --sl-color-text-accent: #15558f; /* liens/texte d'accent AA 7.7 sur fond clair */
+}
+
+/* ═══════════════════════════════════════════════════
+   Light mode — texte d'accent accessible.
+   La rampe est fixe (primary-500 #7ab8ff = accent dark). Sur fond clair, ce bleu
+   échoue en TEXTE (~1.8:1). Conformément à colorRemap #2 (« liens/texte d'accent
+   dérivent d'une teinte sombre en light »), on repointe les usages d'accent
+   posés sur des SURFACES DE PAGE claires vers --color-primary-800 #15558f (AA 7.7).
+   On NE touche PAS .term / .tui : leurs fonds sont codés en dur #0a0a0a dans les
+   deux thèmes → leurs glyphes restent en #7ab8ff (lisibles sur quasi-noir).
    ═══════════════════════════════════════════════════ */
 :root[data-theme='light'] {
-  --sl-color-accent-low: #d6ebff;
-  --sl-color-accent: #2b8fe0; /* bleu plus dense pour AA sur fond clair */
-  --sl-color-accent-high: #0f4a7a;
-
-  --kbrdn-accent-2: #e6c654; /* yellow-600 — meilleur contraste sur clair */
-  --kbrdn-accent-2-ink: #1a1a1a;
+  .section-label--primary,
+  .hero h1 .mono,
+  .hero__sub,
+  .serif-lede em,
+  .why__title,
+  .example__title,
+  .feature__tag {
+    color: var(--color-primary-800);
+  }
+  .badge-available {
+    color: var(--color-primary-800);
+    border-color: color-mix(in srgb, var(--color-primary-800) 35%, transparent);
+    background: color-mix(in srgb, var(--color-primary-800) 6%, transparent);
+  }
+  .why__icon,
+  .feature__num {
+    color: var(--color-primary-800);
+    border-color: color-mix(in srgb, var(--color-primary-800) 45%, transparent);
+  }
+  .cmp th.col-gwm {
+    color: var(--color-primary-800);
+  }
+  .quote {
+    border-left-color: var(--color-primary-700);
+  }
 }
 
 /* ═══════════════════════════════════════════════════
-   Touche jaune (secondaire) — différenciation à deux tons.
-   Réservée aux éléments saillants, pas aux liens (qui restent bleus).
+   Carve-outs JAUNES (accent secondaire chaud).
    ═══════════════════════════════════════════════════ */
-
-/* CTA primaire du hero : jaune plein, encre sombre — pop maximal.
-   Starlight rend le bouton via <a class="sl-link-button primary">. */
-.hero .actions .sl-link-button.primary {
-  background: var(--kbrdn-accent-2);
-  border-color: var(--kbrdn-accent-2);
-  color: var(--kbrdn-accent-2-ink);
-}
-.hero .actions .sl-link-button.primary:hover {
-  background: var(--kbrdn-accent-2);
-  border-color: var(--kbrdn-accent-2);
-  filter: brightness(1.08);
-}
-
-/* Sélection de texte : surlignage jaune (clin d'œil terminal). */
 ::selection {
-  background: var(--kbrdn-accent-2);
-  color: var(--kbrdn-accent-2-ink);
+  background: var(--color-yellow-500); /* #ffdf61 */
+  color: #1a1a1a;
+}
+
+/* ═══════════════════════════════════════════════════
+   Sections (rythme « technique » par bordures hairline).
+   On NE porte PAS les triangles de coin (calés sur 80rem full-bleed →
+   hors-cadre dans la colonne de contenu Starlight) ni le header/section-nav.
+   ═══════════════════════════════════════════════════ */
+.gwm-landing .section {
+  width: 100%;
+  padding: clamp(40px, 6vw, 80px) 0;
+  border-top: 1px solid var(--sl-color-hairline, var(--sl-color-gray-5));
+}
+.gwm-landing .section:first-child {
+  border-top: 0;
+}
+.gwm-landing .section__inner {
+  max-width: 64rem;
+  margin-inline: auto;
+  width: 100%;
+}
+
+/* Eyebrow mono uppercase — signature typographique. */
+.section-label {
+  font-family: var(--sl-font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--sl-color-gray-3);
+  margin-bottom: 16px;
+}
+.section-label--primary {
+  color: var(--color-primary-500);
+}
+
+.serif-lede {
+  font-size: clamp(20px, 2vw, 26px);
+  font-family: var(--sl-font-serif);
+  max-width: 54ch;
+  color: var(--sl-color-white);
+  line-height: 1.3;
+}
+.serif-lede em {
+  color: var(--color-primary-500);
+  font-style: italic;
+}
+
+/* Chip inline (noms de fichiers / flags dans le texte). */
+.ic {
+  font-family: var(--sl-font-mono);
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  padding: 1px 6px;
+  font-size: 0.9em;
+}
+
+/* ═══════════════════════════════════════════════════
+   Badge « disponible » + pulse-dot
+   ═══════════════════════════════════════════════════ */
+.badge-available {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  font-family: var(--sl-font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary-500);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  background: color-mix(in srgb, var(--color-primary-500) 5%, transparent);
+}
+.pulse-dot {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+}
+.pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--color-primary-400);
+  opacity: 0.75;
+  animation: gwm-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.pulse-dot::after {
+  content: '';
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--color-primary-500);
+}
+@keyframes gwm-ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot::before {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   Hero (composite — grille 2 colonnes : pitch + terminal statique)
+   ═══════════════════════════════════════════════════ */
+.hero__inner {
+  max-width: 64rem;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .hero__inner {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 64px;
+  }
+}
+.gwm-landing .hero h1 {
+  margin-top: 16px;
+  font-size: clamp(36px, 5.5vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--sl-color-white);
+}
+.gwm-landing .hero h1 .mono {
+  font-family: var(--sl-font-mono);
+  font-weight: 700;
+  color: var(--color-primary-500);
+}
+.hero__sub {
+  margin-top: 8px;
+  font-family: var(--sl-font-serif);
+  font-style: italic;
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.25;
+  color: var(--color-primary-500);
+  max-width: 30ch;
+}
+.hero__lede {
+  margin-top: 24px;
+  color: var(--sl-color-gray-2);
+  font-size: 16px;
+  line-height: 1.65;
+  max-width: 54ch;
+}
+
+/* install copy-box */
+.hero__install {
+  margin-top: 28px;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--sl-color-gray-4);
+  background: var(--sl-color-gray-6);
+  font-family: var(--sl-font-mono);
+  max-width: 480px;
+}
+.hero__install .prompt {
+  padding: 14px 0 14px 16px;
+  color: var(--color-primary-500);
+  font-size: 14px;
+  user-select: none;
+}
+.hero__install code {
+  padding: 14px 16px 14px 8px;
+  flex: 1;
+  font-size: 14px;
+  color: var(--sl-color-white);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: transparent;
+  border: 0;
+}
+.hero__install button {
+  border: 0;
+  border-left: 1px solid var(--sl-color-gray-4);
+  padding: 0 16px;
+  font-family: var(--sl-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-2);
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero__install button.copied {
+  color: var(--color-green-500);
+}
+.hero__ctas {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  text-decoration: none !important;
+  font-family: var(--sl-font);
+}
+/* CARVE-OUT JAUNE : seul bouton plein passé au jaune (texte sombre, AA 13.24). */
+.btn--primary {
+  background: var(--color-yellow-500);
+  color: #1a1a1a;
+  border-color: var(--color-yellow-500);
+}
+.btn--primary:hover {
+  background: var(--color-yellow-600);
+  border-color: var(--color-yellow-600);
+  color: #1a1a1a;
+}
+.btn--outline {
+  background: transparent;
+  color: var(--sl-color-white);
+  border-color: var(--sl-color-gray-4);
+}
+.btn--outline:hover {
+  background: var(--sl-color-gray-6);
+}
+.hero__meta {
+  margin-top: 24px;
+  font-family: var(--sl-font-mono);
+  font-size: 11px;
+  color: var(--sl-color-gray-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.hero__meta .ok {
+  color: var(--color-green-500);
+}
+
+/* ═══════════════════════════════════════════════════
+   Terminal statique (barre traffic-light, AUCUNE animation)
+   ═══════════════════════════════════════════════════ */
+.term {
+  font-family: var(--sl-font-mono);
+  background: #0a0a0a;
+  color: #e0e0e0;
+  border: 1px solid var(--sl-color-gray-4);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: hidden;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+.term__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+}
+.term__lights {
+  display: inline-flex;
+  gap: 6px;
+}
+.term__lights span {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+}
+.term__lights span:nth-child(1) {
+  background: #ff5f57;
+}
+.term__lights span:nth-child(2) {
+  background: #febc2e;
+}
+.term__lights span:nth-child(3) {
+  background: #28c840;
+}
+.term__title {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #666;
+  letter-spacing: 0.04em;
+}
+.term__body {
+  padding: 18px 20px;
+  flex: 1;
+  margin: 0;
+}
+.term__line {
+  white-space: pre-wrap;
+  font-variant-ligatures: none;
+}
+.term__line .pr {
+  color: var(--color-primary-500);
+  user-select: none;
+}
+.term__line .ok {
+  color: var(--color-green-500);
+}
+.term__line .dim {
+  color: #666;
+}
+.term__line .b {
+  color: var(--color-blue-500);
+}
+.term__line .y {
+  color: var(--color-yellow-500);
+}
+.term__line .v {
+  color: var(--color-purple-500);
+}
+
+/* ═══════════════════════════════════════════════════
+   WHY worktrees — grille à hairlines + sketch ASCII
+   ═══════════════════════════════════════════════════ */
+.why__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--sl-color-gray-5);
+  border: 1px solid var(--sl-color-gray-5);
+  margin-top: 24px;
+}
+@media (min-width: 768px) {
+  .why__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.why__card {
+  background: var(--sl-color-bg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.why__icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sl-color-gray-4);
+  color: var(--color-primary-500);
+  font-family: var(--sl-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+.why__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sl-color-white);
+  letter-spacing: -0.005em;
+}
+.why__desc {
+  font-size: 13.5px;
+  color: var(--sl-color-gray-2);
+  line-height: 1.6;
+}
+.why__sketch {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--sl-color-gray-6);
+  font-family: var(--sl-font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--sl-color-gray-3);
+  white-space: pre;
+  overflow-x: auto;
+  border: 1px dashed var(--sl-color-gray-5);
+}
+.why__sketch .pri {
+  color: var(--color-primary-500);
+}
+.why__sketch .gn {
+  color: var(--color-green-500);
+}
+.why__sketch .bl {
+  color: var(--color-blue-500);
+}
+
+/* ═══════════════════════════════════════════════════
+   FEATURES — cellules numérotées + tag mono
+   ═══════════════════════════════════════════════════ */
+.features__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--sl-color-gray-5);
+  border: 1px solid var(--sl-color-gray-5);
+  margin-top: 24px;
+}
+@media (min-width: 700px) {
+  .features__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .features__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.feature {
+  background: var(--sl-color-bg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.feature__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sl-color-gray-3);
+  font-family: var(--sl-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.feature__num {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sl-color-gray-4);
+  color: var(--color-primary-500);
+  font-weight: 600;
+}
+.feature__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sl-color-white);
+  margin-top: 4px;
+}
+.feature__desc {
+  font-size: 13px;
+  color: var(--sl-color-gray-2);
+  line-height: 1.6;
+}
+.feature__tag {
+  margin-top: auto;
+  font-family: var(--sl-font-mono);
+  font-size: 11px;
+  color: var(--color-primary-500);
+  padding-top: 8px;
+}
+
+/* ═══════════════════════════════════════════════════
+   THE TUI — mockup ratatui statique complet
+   ═══════════════════════════════════════════════════ */
+.tui {
+  margin-top: 24px;
+  font-family: var(--sl-font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  border: 1px solid var(--sl-color-gray-4);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 480px;
+}
+.tui__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #161616;
+  border-bottom: 1px solid #2a2a2a;
+  color: #999;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tui__top .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid #3a3a3a;
+  background: #1a1a1a;
+  color: var(--color-primary-500);
+  font-size: 10px;
+}
+.tui__main {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+@media (min-width: 760px) {
+  .tui__main {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+.tui__list {
+  padding: 16px;
+  border-bottom: 1px solid #2a2a2a;
+  overflow-x: auto;
+}
+@media (min-width: 760px) {
+  .tui__list {
+    border-bottom: 0;
+    border-right: 1px solid #2a2a2a;
+  }
+}
+.tui__row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 8px;
+  color: #b0b0b0;
+  white-space: nowrap;
+}
+.tui__row.is-selected {
+  background: color-mix(in srgb, var(--color-primary-500) 14%, transparent);
+  color: var(--color-primary-300);
+  border-left: 2px solid var(--color-primary-500);
+  padding-left: 6px;
+}
+.tui__row .glyph {
+  color: var(--color-primary-500);
+  text-align: center;
+}
+.tui__row .br {
+  color: var(--color-blue-500);
+}
+.tui__row .status-clean {
+  color: var(--color-green-500);
+}
+.tui__row .status-dirty {
+  color: var(--color-yellow-500);
+}
+.tui__row .status-merge {
+  color: var(--color-purple-500);
+}
+.tui__inspect {
+  padding: 16px;
+}
+.tui__inspect .lbl {
+  color: #666;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+.tui__inspect .val {
+  display: block;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.tui__inspect .val .pri {
+  color: var(--color-primary-500);
+}
+.tui__inspect .commits .hash {
+  color: var(--color-yellow-500);
+}
+.tui__bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 14px;
+  background: #161616;
+  border-top: 1px solid #2a2a2a;
+  color: #666;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.tui__bar kbd {
+  font-family: var(--sl-font-mono);
+  background: #2a2a2a;
+  color: #e0e0e0;
+  padding: 1px 6px;
+  border: 1px solid #3a3a3a;
+  font-size: 10px;
+  border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════
+   Mockups de code .code-block / .claude-code
+   (palette de coloration INCHANGÉE — hex en dur, hors rampe primary)
+   ═══════════════════════════════════════════════════ */
+.code-block {
+  background: var(--sl-color-gray-6);
+  font-family: var(--kbrdn-font-code);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--sl-color-gray-2);
+  border: 1px solid var(--sl-color-gray-5);
+  font-feature-settings: 'calt', 'liga';
+}
+.code-block__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+}
+.code-block__dots {
+  display: inline-flex;
+  gap: 6px;
+}
+.code-block__dots span {
+  width: 10px;
+  height: 10px;
+  background: var(--sl-color-gray-4);
+}
+.code-block__label {
+  font-family: var(--sl-font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sl-color-gray-3);
+}
+.code-block__body {
+  padding: 16px 20px;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--sl-color-white);
+  margin: 0;
+  font-feature-settings: 'calt', 'liga';
+}
+
+/* coloration « Claude Code » INCHANGÉE */
+.claude-code {
+  color: #374151;
+}
+.claude-code .k {
+  color: #c15f3c;
+  font-weight: 500;
+}
+.claude-code .s {
+  color: #16a34a;
+}
+.claude-code .t {
+  color: #b45309;
+}
+.claude-code .f {
+  color: #2563eb;
+}
+.claude-code .c {
+  color: #9ca3af;
+  font-style: italic;
+}
+.claude-code .v {
+  color: #7c3aed;
+}
+.claude-code .a {
+  color: #0d9488;
+}
+:root[data-theme='dark'] .claude-code {
+  color: #b0b0b0;
+}
+:root[data-theme='dark'] .claude-code .k {
+  color: #d4825d;
+}
+:root[data-theme='dark'] .claude-code .s {
+  color: #86e89a;
+}
+:root[data-theme='dark'] .claude-code .t {
+  color: #e8a573;
+}
+:root[data-theme='dark'] .claude-code .f {
+  color: #7ab8ff;
+}
+:root[data-theme='dark'] .claude-code .c {
+  color: #666;
+}
+:root[data-theme='dark'] .claude-code .v {
+  color: #c79bff;
+}
+:root[data-theme='dark'] .claude-code .a {
+  color: #8abfb8;
+}
+
+/* ═══════════════════════════════════════════════════
+   CLI EXAMPLES — cellules
+   ═══════════════════════════════════════════════════ */
+.examples {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+@media (min-width: 900px) {
+  .examples {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.example {
+  border: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-gray-6);
+  display: flex;
+  flex-direction: column;
+}
+.example__head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.example__title {
+  font-family: var(--sl-font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary-500);
+}
+.example__desc {
+  font-size: 13px;
+  color: var(--sl-color-gray-2);
+}
+.example__body {
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-family: var(--kbrdn-font-code);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--sl-color-white);
+  white-space: pre;
+  margin: 0;
+  font-feature-settings: 'calt', 'liga';
+}
+
+/* ═══════════════════════════════════════════════════
+   COMPARE — tableau comparatif (yes/no/partial)
+   ═══════════════════════════════════════════════════ */
+.cmp {
+  margin-top: 24px;
+  overflow-x: auto;
+  border: 1px solid var(--sl-color-gray-5);
+}
+.cmp table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 620px;
+  margin: 0;
+}
+.cmp th,
+.cmp td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  vertical-align: top;
+}
+.cmp thead th {
+  font-family: var(--sl-font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sl-color-gray-3);
+  font-weight: 600;
+}
+.cmp th.col-gwm {
+  color: var(--color-primary-500);
+}
+.cmp tbody tr:last-child td {
+  border-bottom: 0;
+}
+.cmp .feat {
+  font-weight: 500;
+  color: var(--sl-color-white);
+}
+.cmp .yes {
+  color: var(--color-green-500);
+  font-family: var(--sl-font-mono);
+  font-weight: 600;
+}
+.cmp .no {
+  color: var(--sl-color-gray-4);
+  font-family: var(--sl-font-mono);
+}
+.cmp .partial {
+  color: var(--color-yellow-500);
+  font-family: var(--sl-font-mono);
+  font-weight: 600;
+}
+.cmp .note {
+  font-size: 12px;
+  color: var(--sl-color-gray-3);
+}
+
+/* ═══════════════════════════════════════════════════
+   QUOTE serif
+   ═══════════════════════════════════════════════════ */
+.quote {
+  margin-top: 24px;
+  padding: 24px;
+  background: var(--sl-color-gray-6);
+  border-left: 3px solid var(--color-primary-500);
+  font-family: var(--sl-font-serif);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--sl-color-white);
+  max-width: 60ch;
+}
+.quote cite {
+  display: block;
+  margin-top: 14px;
+  font-family: var(--sl-font-mono);
+  font-style: normal;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sl-color-gray-3);
+}
+
+/* ═══════════════════════════════════════════════════
+   « Par où commencer ? » — restyle des LinkCard natifs Starlight
+   ═══════════════════════════════════════════════════ */
+.gwm-landing + * .sl-link-card,
+.sl-link-card {
+  border-color: var(--sl-color-gray-5);
+}
+.sl-link-card:hover {
+  border-color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 4%, transparent);
 }

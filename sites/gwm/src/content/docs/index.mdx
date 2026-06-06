@@ -2,42 +2,59 @@
 title: gwm
 description: Git Worktree Manager — CLI + TUI pour gérer les worktrees Git, avec bootstrap par repo.
 template: splash
-hero:
-  tagline: Gérez vos worktrees Git partout, en CLI comme en TUI.
-  actions:
-    - text: Prise en main
-      link: /guides/prise-en-main/
-      icon: right-arrow
-    - text: Code source
-      link: https://github.com/kbrdn1/gwm-cli
-      icon: external
-      variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Tabs, TabItem, CardGrid, LinkCard } from '@astrojs/starlight/components';
 import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
+import Landing from '../../components/Landing.astro';
 
-**gwm** (Git Worktree Manager) crée un worktree isolé par branche en une seule
-commande, en suivant la convention `<type>/#<issue>-<desc>`, et prépare chaque
-worktree via un bootstrap décrit dans `.gwm.toml` — le tout en CLI comme dans une
-TUI ratatui.
+<Landing />
 
-<CardGrid stagger>
-  <Card title="CLI + TUI" icon="seti:rust">
-    Crée, liste et supprime des worktrees en une commande, ou pilote-les depuis une TUI ratatui.
-  </Card>
-  <Card title="Bootstrap par repo" icon="setting">
-    Un fichier `.gwm.toml` décrit conventions de branche, copies de fichiers, gardes regex et hooks
-    shell.
-  </Card>
-  <Card title="libgit2 natif" icon="approve-check">
-    Opérations de worktree via libgit2 vendored — pas de shell-out fragile.
-  </Card>
-  <Card title="Conventions intégrées" icon="open-book">
-    `gwm create feat 12 ma-feature` crée la branche `feat/#12-ma-feature` et le worktree en une
-    fois.
-  </Card>
-</CardGrid>
+## Installation
+
+<Tabs>
+  <TabItem label="Homebrew">
+
+```sh
+brew tap kbrdn1/tap
+brew install gwm
+```
+
+  </TabItem>
+  <TabItem label="cargo-binstall">
+
+```sh
+cargo binstall gwm
+```
+
+  </TabItem>
+  <TabItem label="Cargo (sources)">
+
+```sh
+git clone https://github.com/kbrdn1/gwm-cli.git
+cd gwm-cli
+cargo install --path .
+```
+
+  </TabItem>
+  <TabItem label="Binaire précompilé">
+
+```sh
+# Télécharger l'archive depuis les GitHub Releases (avec son sidecar .sha256) :
+# Linux x86_64/aarch64, macOS Intel/Apple Silicon, Windows x86_64.
+# Déposer le binaire `gwm` sur le $PATH et le rendre exécutable.
+```
+
+  </TabItem>
+  <TabItem label="Nix">
+
+```sh
+nix run github:kbrdn1/gwm-cli -- list
+nix profile install github:kbrdn1/gwm-cli
+```
+
+  </TabItem>
+</Tabs>
 
 ## Par où commencer ?
 
