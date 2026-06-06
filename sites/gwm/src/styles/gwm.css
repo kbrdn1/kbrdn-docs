@@ -1,13 +1,54 @@
-/* gwm — override produit par-dessus le thème partagé (@kbrdn/ds-shared).
-   Accent vert, clin d'œil au branding git / terminal. */
+/* gwm — override produit par-dessus la base « Claude Dark » (@kbrdn/ds-shared).
+   Variante d'accent BLEU CIEL (primaire) + JAUNE (secondaire) pour différencier
+   le produit gwm. Bleu = blue-500 (#7ab8ff), jaune = yellow-500 (#ffdf61) du
+   DESIGN.md. La base ne définit QUE des neutres + décorations câblées sur
+   `--sl-color-accent` : changer l'accent ici suffit à recolorer tout le produit. */
+
+/* ═══════════════════════════════════════════════════
+   Dark mode — accent bleu ciel
+   ═══════════════════════════════════════════════════ */
 :root {
-  --sl-color-accent-low: #1a2e05;
-  --sl-color-accent: #4d7c0f;
-  --sl-color-accent-high: #d9f99d;
+  --sl-color-accent-low: #15324f; /* bleu profond — fonds d'accent discrets */
+  --sl-color-accent: #7ab8ff; /* blue-500 — liens, focus, états actifs */
+  --sl-color-accent-high: #cfe7ff; /* bleu clair — texte sur accent (lisible) */
+
+  /* Secondaire jaune (token produit). */
+  --kbrdn-accent-2: #ffdf61; /* yellow-500 */
+  --kbrdn-accent-2-ink: #1a1a1a; /* texte sur jaune (dark sur clair) */
 }
 
+/* ═══════════════════════════════════════════════════
+   Light mode — accent bleu ciel assombri (contraste sur fond clair)
+   ═══════════════════════════════════════════════════ */
 :root[data-theme='light'] {
-  --sl-color-accent-low: #d9f99d;
-  --sl-color-accent: #3f6212;
-  --sl-color-accent-high: #1a2e05;
+  --sl-color-accent-low: #d6ebff;
+  --sl-color-accent: #2b8fe0; /* bleu plus dense pour AA sur fond clair */
+  --sl-color-accent-high: #0f4a7a;
+
+  --kbrdn-accent-2: #e6c654; /* yellow-600 — meilleur contraste sur clair */
+  --kbrdn-accent-2-ink: #1a1a1a;
+}
+
+/* ═══════════════════════════════════════════════════
+   Touche jaune (secondaire) — différenciation à deux tons.
+   Réservée aux éléments saillants, pas aux liens (qui restent bleus).
+   ═══════════════════════════════════════════════════ */
+
+/* CTA primaire du hero : jaune plein, encre sombre — pop maximal.
+   Starlight rend le bouton via <a class="sl-link-button primary">. */
+.hero .actions .sl-link-button.primary {
+  background: var(--kbrdn-accent-2);
+  border-color: var(--kbrdn-accent-2);
+  color: var(--kbrdn-accent-2-ink);
+}
+.hero .actions .sl-link-button.primary:hover {
+  background: var(--kbrdn-accent-2);
+  border-color: var(--kbrdn-accent-2);
+  filter: brightness(1.08);
+}
+
+/* Sélection de texte : surlignage jaune (clin d'œil terminal). */
+::selection {
+  background: var(--kbrdn-accent-2);
+  color: var(--kbrdn-accent-2-ink);
 }

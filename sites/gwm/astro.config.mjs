@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { expressiveCode } from '@kbrdn/ds-shared/expressive-code';
 
 // Docs du produit gwm. Hérite du design system partagé (@kbrdn/ds-shared)
 // pour la consistance (footer, tokens), puis surcharge l'accent + la landing.
@@ -16,6 +17,9 @@ export default defineConfig({
         'Git Worktree Manager — CLI + TUI pour gérer les worktrees Git, avec bootstrap par repo.',
       logo: { src: './src/assets/logo.svg', alt: 'gwm' },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kbrdn1/gwm-cli' }],
+
+      // Coloration syntaxique « Claude Code » (palette partagée, coins nets).
+      expressiveCode,
 
       // Composants partagés (overrides) servis depuis le package du monorepo.
       components: {
