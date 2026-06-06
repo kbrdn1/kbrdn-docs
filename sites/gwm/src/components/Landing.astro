@@ -15,7 +15,7 @@
  */
 import { Code } from '@astrojs/starlight/components';
 
-const installCmd = 'brew install gwm';
+const installCmd = 'cargo binstall gwm';
 
 /* Schéma .gwm.toml RÉEL (Phase 1). Rendu via Expressive Code (palette
    « Claude Code » fournie par @kbrdn/ds-shared/expressive-code). */
@@ -227,7 +227,7 @@ function cell(raw: string): string {
           </div>
           <div class="term__line"></div>
           <div class="term__line">
-            <span class="pr">$ </span>gwm tui<span class="dim"> # TUI ratatui plein écran</span>
+            <span class="pr">$ </span>gwm<span class="dim"> # ouvre la TUI ratatui</span>
           </div>
         </div>
       </div>
@@ -309,7 +309,7 @@ function cell(raw: string): string {
             Opérations de worktree via libgit2 compilé en statique — pas de shell-out fragile vers
             le binaire <span class="ic">git</span>.
           </p>
-          <span class="feature__tag">git2 · vendored OpenSSL</span>
+          <span class="feature__tag">git2 · libgit2 vendored</span>
         </article>
 
         <article class="feature">
@@ -561,6 +561,12 @@ function cell(raw: string): string {
           </tbody>
         </table>
       </div>
+      <p class="cmp__source">
+        Colonne <strong>gwm</strong> vérifiée dans cette documentation ; les colonnes
+        <span class="ic">gwq</span> et <span class="ic">git&nbsp;worktree</span> d'après leurs documentations
+        respectives (<a href="https://github.com/d-kuro/gwq">d-kuro/gwq</a>,
+        <a href="https://git-scm.com/docs/git-worktree">git-worktree(1)</a>).
+      </p>
     </div>
   </section>
 

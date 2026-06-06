@@ -12,7 +12,12 @@
    Les @font-face, l'import Inter et les tokens neutres/sémantiques
    (--color-neutral/green/yellow/blue/purple, --sl-color-*, --sl-font*,
    --kbrdn-font-code) vivent dans @kbrdn/ds-shared/styles/theme.css (chargé
-   AVANT ce fichier). On ne les redéclare pas ici. */
+   AVANT ce fichier). On ne les redéclare pas ici.
+
+   SCOPING : tous les composants bespoke sont confinés sous `.gwm-landing`
+   (conteneur racine rendu par Landing.astro) pour éviter toute fuite vers les
+   autres pages Starlight du site. Seuls les blocs de TOKENS (`:root`) et la
+   règle `::selection` (accent jaune voulu site-wide) restent globaux. */
 
 /* ═══════════════════════════════════════════════════
    Rampe primaire BLEUE — dérivée de blue-500 (#7ab8ff) + bleu dense (#2b8fe0).
@@ -65,29 +70,29 @@
    deux thèmes → leurs glyphes restent en #7ab8ff (lisibles sur quasi-noir).
    ═══════════════════════════════════════════════════ */
 :root[data-theme='light'] {
-  .section-label--primary,
-  .hero h1 .mono,
-  .hero__sub,
-  .serif-lede em,
-  .why__title,
-  .example__title,
-  .feature__tag {
+  .gwm-landing .section-label--primary,
+  .gwm-landing .hero h1 .mono,
+  .gwm-landing .hero__sub,
+  .gwm-landing .serif-lede em,
+  .gwm-landing .why__title,
+  .gwm-landing .example__title,
+  .gwm-landing .feature__tag {
     color: var(--color-primary-800);
   }
-  .badge-available {
+  .gwm-landing .badge-available {
     color: var(--color-primary-800);
     border-color: color-mix(in srgb, var(--color-primary-800) 35%, transparent);
     background: color-mix(in srgb, var(--color-primary-800) 6%, transparent);
   }
-  .why__icon,
-  .feature__num {
+  .gwm-landing .why__icon,
+  .gwm-landing .feature__num {
     color: var(--color-primary-800);
     border-color: color-mix(in srgb, var(--color-primary-800) 45%, transparent);
   }
-  .cmp th.col-gwm {
+  .gwm-landing .cmp th.col-gwm {
     color: var(--color-primary-800);
   }
-  .quote {
+  .gwm-landing .quote {
     border-left-color: var(--color-primary-700);
   }
 }
@@ -120,7 +125,7 @@
 }
 
 /* Eyebrow mono uppercase — signature typographique. */
-.section-label {
+.gwm-landing .section-label {
   font-family: var(--sl-font-mono);
   font-size: 11px;
   text-transform: uppercase;
@@ -128,24 +133,24 @@
   color: var(--sl-color-gray-3);
   margin-bottom: 16px;
 }
-.section-label--primary {
+.gwm-landing .section-label--primary {
   color: var(--color-primary-500);
 }
 
-.serif-lede {
+.gwm-landing .serif-lede {
   font-size: clamp(20px, 2vw, 26px);
   font-family: var(--sl-font-serif);
   max-width: 54ch;
   color: var(--sl-color-white);
   line-height: 1.3;
 }
-.serif-lede em {
+.gwm-landing .serif-lede em {
   color: var(--color-primary-500);
   font-style: italic;
 }
 
 /* Chip inline (noms de fichiers / flags dans le texte). */
-.ic {
+.gwm-landing .ic {
   font-family: var(--sl-font-mono);
   background: var(--sl-color-gray-6);
   border: 1px solid var(--sl-color-gray-5);
@@ -156,7 +161,7 @@
 /* ═══════════════════════════════════════════════════
    Badge « disponible » + pulse-dot
    ═══════════════════════════════════════════════════ */
-.badge-available {
+.gwm-landing .badge-available {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -169,13 +174,13 @@
   border: 1px solid color-mix(in srgb, var(--color-primary-500) 30%, transparent);
   background: color-mix(in srgb, var(--color-primary-500) 5%, transparent);
 }
-.pulse-dot {
+.gwm-landing .pulse-dot {
   position: relative;
   display: inline-flex;
   width: 8px;
   height: 8px;
 }
-.pulse-dot::before {
+.gwm-landing .pulse-dot::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -184,7 +189,7 @@
   opacity: 0.75;
   animation: gwm-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
-.pulse-dot::after {
+.gwm-landing .pulse-dot::after {
   content: '';
   position: relative;
   display: inline-block;
@@ -201,7 +206,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pulse-dot::before {
+  .gwm-landing .pulse-dot::before {
     animation: none;
   }
 }
@@ -209,7 +214,7 @@
 /* ═══════════════════════════════════════════════════
    Hero (composite — grille 2 colonnes : pitch + terminal statique)
    ═══════════════════════════════════════════════════ */
-.hero__inner {
+.gwm-landing .hero__inner {
   max-width: 64rem;
   margin-inline: auto;
   display: grid;
@@ -218,7 +223,7 @@
   align-items: center;
 }
 @media (min-width: 900px) {
-  .hero__inner {
+  .gwm-landing .hero__inner {
     grid-template-columns: 1.05fr 0.95fr;
     gap: 64px;
   }
@@ -236,7 +241,7 @@
   font-weight: 700;
   color: var(--color-primary-500);
 }
-.hero__sub {
+.gwm-landing .hero__sub {
   margin-top: 8px;
   font-family: var(--sl-font-serif);
   font-style: italic;
@@ -245,7 +250,7 @@
   color: var(--color-primary-500);
   max-width: 30ch;
 }
-.hero__lede {
+.gwm-landing .hero__lede {
   margin-top: 24px;
   color: var(--sl-color-gray-2);
   font-size: 16px;
@@ -254,7 +259,7 @@
 }
 
 /* install copy-box */
-.hero__install {
+.gwm-landing .hero__install {
   margin-top: 28px;
   display: flex;
   align-items: stretch;
@@ -263,13 +268,13 @@
   font-family: var(--sl-font-mono);
   max-width: 480px;
 }
-.hero__install .prompt {
+.gwm-landing .hero__install .prompt {
   padding: 14px 0 14px 16px;
   color: var(--color-primary-500);
   font-size: 14px;
   user-select: none;
 }
-.hero__install code {
+.gwm-landing .hero__install code {
   padding: 14px 16px 14px 8px;
   flex: 1;
   font-size: 14px;
@@ -280,7 +285,7 @@
   background: transparent;
   border: 0;
 }
-.hero__install button {
+.gwm-landing .hero__install button {
   border: 0;
   border-left: 1px solid var(--sl-color-gray-4);
   padding: 0 16px;
@@ -295,16 +300,16 @@
   align-items: center;
   gap: 6px;
 }
-.hero__install button.copied {
+.gwm-landing .hero__install button.copied {
   color: var(--color-green-500);
 }
-.hero__ctas {
+.gwm-landing .hero__ctas {
   margin-top: 18px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
-.btn {
+.gwm-landing .btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -316,25 +321,25 @@
   font-family: var(--sl-font);
 }
 /* CARVE-OUT JAUNE : seul bouton plein passé au jaune (texte sombre, AA 13.24). */
-.btn--primary {
+.gwm-landing .btn--primary {
   background: var(--color-yellow-500);
   color: #1a1a1a;
   border-color: var(--color-yellow-500);
 }
-.btn--primary:hover {
+.gwm-landing .btn--primary:hover {
   background: var(--color-yellow-600);
   border-color: var(--color-yellow-600);
   color: #1a1a1a;
 }
-.btn--outline {
+.gwm-landing .btn--outline {
   background: transparent;
   color: var(--sl-color-white);
   border-color: var(--sl-color-gray-4);
 }
-.btn--outline:hover {
+.gwm-landing .btn--outline:hover {
   background: var(--sl-color-gray-6);
 }
-.hero__meta {
+.gwm-landing .hero__meta {
   margin-top: 24px;
   font-family: var(--sl-font-mono);
   font-size: 11px;
@@ -343,14 +348,14 @@
   flex-wrap: wrap;
   gap: 18px;
 }
-.hero__meta .ok {
+.gwm-landing .hero__meta .ok {
   color: var(--color-green-500);
 }
 
 /* ═══════════════════════════════════════════════════
    Terminal statique (barre traffic-light, AUCUNE animation)
    ═══════════════════════════════════════════════════ */
-.term {
+.gwm-landing .term {
   font-family: var(--sl-font-mono);
   background: #0a0a0a;
   color: #e0e0e0;
@@ -362,7 +367,7 @@
   display: flex;
   flex-direction: column;
 }
-.term__bar {
+.gwm-landing .term__bar {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -370,63 +375,63 @@
   background: #1a1a1a;
   border-bottom: 1px solid #2a2a2a;
 }
-.term__lights {
+.gwm-landing .term__lights {
   display: inline-flex;
   gap: 6px;
 }
-.term__lights span {
+.gwm-landing .term__lights span {
   width: 10px;
   height: 10px;
   border-radius: 9999px;
 }
-.term__lights span:nth-child(1) {
+.gwm-landing .term__lights span:nth-child(1) {
   background: #ff5f57;
 }
-.term__lights span:nth-child(2) {
+.gwm-landing .term__lights span:nth-child(2) {
   background: #febc2e;
 }
-.term__lights span:nth-child(3) {
+.gwm-landing .term__lights span:nth-child(3) {
   background: #28c840;
 }
-.term__title {
+.gwm-landing .term__title {
   margin-left: 8px;
   font-size: 11px;
-  color: #666;
+  color: #999;
   letter-spacing: 0.04em;
 }
-.term__body {
+.gwm-landing .term__body {
   padding: 18px 20px;
   flex: 1;
   margin: 0;
 }
-.term__line {
+.gwm-landing .term__line {
   white-space: pre-wrap;
   font-variant-ligatures: none;
 }
-.term__line .pr {
+.gwm-landing .term__line .pr {
   color: var(--color-primary-500);
   user-select: none;
 }
-.term__line .ok {
+.gwm-landing .term__line .ok {
   color: var(--color-green-500);
 }
-.term__line .dim {
+.gwm-landing .term__line .dim {
   color: #666;
 }
-.term__line .b {
+.gwm-landing .term__line .b {
   color: var(--color-blue-500);
 }
-.term__line .y {
+.gwm-landing .term__line .y {
   color: var(--color-yellow-500);
 }
-.term__line .v {
+.gwm-landing .term__line .v {
   color: var(--color-purple-500);
 }
 
 /* ═══════════════════════════════════════════════════
    WHY worktrees — grille à hairlines + sketch ASCII
    ═══════════════════════════════════════════════════ */
-.why__grid {
+.gwm-landing .why__grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1px;
@@ -435,18 +440,18 @@
   margin-top: 24px;
 }
 @media (min-width: 768px) {
-  .why__grid {
+  .gwm-landing .why__grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-.why__card {
+.gwm-landing .why__card {
   background: var(--sl-color-bg);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-.why__icon {
+.gwm-landing .why__icon {
   width: 32px;
   height: 32px;
   display: inline-flex;
@@ -458,18 +463,18 @@
   font-size: 12px;
   font-weight: 700;
 }
-.why__title {
+.gwm-landing .why__title {
   font-size: 15px;
   font-weight: 600;
   color: var(--sl-color-white);
   letter-spacing: -0.005em;
 }
-.why__desc {
+.gwm-landing .why__desc {
   font-size: 13.5px;
   color: var(--sl-color-gray-2);
   line-height: 1.6;
 }
-.why__sketch {
+.gwm-landing .why__sketch {
   margin-top: 8px;
   padding: 12px;
   background: var(--sl-color-gray-6);
@@ -481,20 +486,20 @@
   overflow-x: auto;
   border: 1px dashed var(--sl-color-gray-5);
 }
-.why__sketch .pri {
+.gwm-landing .why__sketch .pri {
   color: var(--color-primary-500);
 }
-.why__sketch .gn {
+.gwm-landing .why__sketch .gn {
   color: var(--color-green-500);
 }
-.why__sketch .bl {
+.gwm-landing .why__sketch .bl {
   color: var(--color-blue-500);
 }
 
 /* ═══════════════════════════════════════════════════
    FEATURES — cellules numérotées + tag mono
    ═══════════════════════════════════════════════════ */
-.features__grid {
+.gwm-landing .features__grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1px;
@@ -503,23 +508,23 @@
   margin-top: 24px;
 }
 @media (min-width: 700px) {
-  .features__grid {
+  .gwm-landing .features__grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 @media (min-width: 1024px) {
-  .features__grid {
+  .gwm-landing .features__grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-.feature {
+.gwm-landing .feature {
   background: var(--sl-color-bg);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.feature__head {
+.gwm-landing .feature__head {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -529,7 +534,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.feature__num {
+.gwm-landing .feature__num {
   width: 22px;
   height: 22px;
   display: inline-flex;
@@ -539,18 +544,18 @@
   color: var(--color-primary-500);
   font-weight: 600;
 }
-.feature__title {
+.gwm-landing .feature__title {
   font-size: 15px;
   font-weight: 600;
   color: var(--sl-color-white);
   margin-top: 4px;
 }
-.feature__desc {
+.gwm-landing .feature__desc {
   font-size: 13px;
   color: var(--sl-color-gray-2);
   line-height: 1.6;
 }
-.feature__tag {
+.gwm-landing .feature__tag {
   margin-top: auto;
   font-family: var(--sl-font-mono);
   font-size: 11px;
@@ -561,7 +566,7 @@
 /* ═══════════════════════════════════════════════════
    THE TUI — mockup ratatui statique complet
    ═══════════════════════════════════════════════════ */
-.tui {
+.gwm-landing .tui {
   margin-top: 24px;
   font-family: var(--sl-font-mono);
   font-size: 12.5px;
@@ -574,7 +579,7 @@
   grid-template-rows: auto 1fr auto;
   min-height: 480px;
 }
-.tui__top {
+.gwm-landing .tui__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -587,7 +592,7 @@
   gap: 12px;
   flex-wrap: wrap;
 }
-.tui__top .pill {
+.gwm-landing .tui__top .pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -597,28 +602,28 @@
   color: var(--color-primary-500);
   font-size: 10px;
 }
-.tui__main {
+.gwm-landing .tui__main {
   display: grid;
   grid-template-columns: 1fr;
   min-height: 0;
 }
 @media (min-width: 760px) {
-  .tui__main {
+  .gwm-landing .tui__main {
     grid-template-columns: 1.4fr 1fr;
   }
 }
-.tui__list {
+.gwm-landing .tui__list {
   padding: 16px;
   border-bottom: 1px solid #2a2a2a;
   overflow-x: auto;
 }
 @media (min-width: 760px) {
-  .tui__list {
+  .gwm-landing .tui__list {
     border-bottom: 0;
     border-right: 1px solid #2a2a2a;
   }
 }
-.tui__row {
+.gwm-landing .tui__row {
   display: grid;
   grid-template-columns: 18px 1fr auto;
   gap: 10px;
@@ -627,63 +632,63 @@
   color: #b0b0b0;
   white-space: nowrap;
 }
-.tui__row.is-selected {
+.gwm-landing .tui__row.is-selected {
   background: color-mix(in srgb, var(--color-primary-500) 14%, transparent);
   color: var(--color-primary-300);
   border-left: 2px solid var(--color-primary-500);
   padding-left: 6px;
 }
-.tui__row .glyph {
+.gwm-landing .tui__row .glyph {
   color: var(--color-primary-500);
   text-align: center;
 }
-.tui__row .br {
+.gwm-landing .tui__row .br {
   color: var(--color-blue-500);
 }
-.tui__row .status-clean {
+.gwm-landing .tui__row .status-clean {
   color: var(--color-green-500);
 }
-.tui__row .status-dirty {
+.gwm-landing .tui__row .status-dirty {
   color: var(--color-yellow-500);
 }
-.tui__row .status-merge {
+.gwm-landing .tui__row .status-merge {
   color: var(--color-purple-500);
 }
-.tui__inspect {
+.gwm-landing .tui__inspect {
   padding: 16px;
 }
-.tui__inspect .lbl {
-  color: #666;
+.gwm-landing .tui__inspect .lbl {
+  color: #999;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   display: block;
   margin-bottom: 4px;
 }
-.tui__inspect .val {
+.gwm-landing .tui__inspect .val {
   display: block;
   margin-bottom: 14px;
   white-space: pre-wrap;
   word-break: break-all;
 }
-.tui__inspect .val .pri {
+.gwm-landing .tui__inspect .val .pri {
   color: var(--color-primary-500);
 }
-.tui__inspect .commits .hash {
+.gwm-landing .tui__inspect .commits .hash {
   color: var(--color-yellow-500);
 }
-.tui__bar {
+.gwm-landing .tui__bar {
   display: flex;
   align-items: center;
   gap: 18px;
   padding: 8px 14px;
   background: #161616;
   border-top: 1px solid #2a2a2a;
-  color: #666;
+  color: #999;
   font-size: 11px;
   flex-wrap: wrap;
 }
-.tui__bar kbd {
+.gwm-landing .tui__bar kbd {
   font-family: var(--sl-font-mono);
   background: #2a2a2a;
   color: #e0e0e0;
@@ -694,141 +699,99 @@
 }
 
 /* ═══════════════════════════════════════════════════
-   Mockups de code .code-block / .claude-code
-   (palette de coloration INCHANGÉE — hex en dur, hors rampe primary)
+   Coloration « Claude Code » des exemples CLI
+   (palette INCHANGÉE — hex en dur, hors rampe primary)
    ═══════════════════════════════════════════════════ */
-.code-block {
-  background: var(--sl-color-gray-6);
-  font-family: var(--kbrdn-font-code);
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: var(--sl-color-gray-2);
-  border: 1px solid var(--sl-color-gray-5);
-  font-feature-settings: 'calt', 'liga';
-}
-.code-block__head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--sl-color-gray-5);
-}
-.code-block__dots {
-  display: inline-flex;
-  gap: 6px;
-}
-.code-block__dots span {
-  width: 10px;
-  height: 10px;
-  background: var(--sl-color-gray-4);
-}
-.code-block__label {
-  font-family: var(--sl-font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--sl-color-gray-3);
-}
-.code-block__body {
-  padding: 16px 20px;
-  overflow-x: auto;
-  white-space: pre;
-  color: var(--sl-color-white);
-  margin: 0;
-  font-feature-settings: 'calt', 'liga';
-}
-
-/* coloration « Claude Code » INCHANGÉE */
-.claude-code {
+.gwm-landing .claude-code {
   color: #374151;
 }
-.claude-code .k {
+.gwm-landing .claude-code .k {
   color: #c15f3c;
   font-weight: 500;
 }
-.claude-code .s {
+.gwm-landing .claude-code .s {
   color: #16a34a;
 }
-.claude-code .t {
+.gwm-landing .claude-code .t {
   color: #b45309;
 }
-.claude-code .f {
+.gwm-landing .claude-code .f {
   color: #2563eb;
 }
-.claude-code .c {
+.gwm-landing .claude-code .c {
   color: #9ca3af;
   font-style: italic;
 }
-.claude-code .v {
+.gwm-landing .claude-code .v {
   color: #7c3aed;
 }
-.claude-code .a {
+.gwm-landing .claude-code .a {
   color: #0d9488;
 }
-:root[data-theme='dark'] .claude-code {
+:root[data-theme='dark'] .gwm-landing .claude-code {
   color: #b0b0b0;
 }
-:root[data-theme='dark'] .claude-code .k {
+:root[data-theme='dark'] .gwm-landing .claude-code .k {
   color: #d4825d;
 }
-:root[data-theme='dark'] .claude-code .s {
+:root[data-theme='dark'] .gwm-landing .claude-code .s {
   color: #86e89a;
 }
-:root[data-theme='dark'] .claude-code .t {
+:root[data-theme='dark'] .gwm-landing .claude-code .t {
   color: #e8a573;
 }
-:root[data-theme='dark'] .claude-code .f {
+:root[data-theme='dark'] .gwm-landing .claude-code .f {
   color: #7ab8ff;
 }
-:root[data-theme='dark'] .claude-code .c {
+:root[data-theme='dark'] .gwm-landing .claude-code .c {
   color: #666;
 }
-:root[data-theme='dark'] .claude-code .v {
+:root[data-theme='dark'] .gwm-landing .claude-code .v {
   color: #c79bff;
 }
-:root[data-theme='dark'] .claude-code .a {
+:root[data-theme='dark'] .gwm-landing .claude-code .a {
   color: #8abfb8;
 }
 
 /* ═══════════════════════════════════════════════════
    CLI EXAMPLES — cellules
    ═══════════════════════════════════════════════════ */
-.examples {
+.gwm-landing .examples {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
   margin-top: 24px;
 }
 @media (min-width: 900px) {
-  .examples {
+  .gwm-landing .examples {
     grid-template-columns: 1fr 1fr;
   }
 }
-.example {
+.gwm-landing .example {
   border: 1px solid var(--sl-color-gray-5);
   background: var(--sl-color-gray-6);
   display: flex;
   flex-direction: column;
 }
-.example__head {
+.gwm-landing .example__head {
   padding: 14px 18px;
   border-bottom: 1px solid var(--sl-color-gray-5);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.example__title {
+.gwm-landing .example__title {
   font-family: var(--sl-font-mono);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--color-primary-500);
 }
-.example__desc {
+.gwm-landing .example__desc {
   font-size: 13px;
   color: var(--sl-color-gray-2);
 }
-.example__body {
+.gwm-landing .example__body {
   padding: 16px 20px;
   overflow-x: auto;
   font-family: var(--kbrdn-font-code);
@@ -843,26 +806,26 @@
 /* ═══════════════════════════════════════════════════
    COMPARE — tableau comparatif (yes/no/partial)
    ═══════════════════════════════════════════════════ */
-.cmp {
+.gwm-landing .cmp {
   margin-top: 24px;
   overflow-x: auto;
   border: 1px solid var(--sl-color-gray-5);
 }
-.cmp table {
+.gwm-landing .cmp table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
   min-width: 620px;
   margin: 0;
 }
-.cmp th,
-.cmp td {
+.gwm-landing .cmp th,
+.gwm-landing .cmp td {
   padding: 12px 14px;
   text-align: left;
   border-bottom: 1px solid var(--sl-color-gray-5);
   vertical-align: top;
 }
-.cmp thead th {
+.gwm-landing .cmp thead th {
   font-family: var(--sl-font-mono);
   font-size: 10px;
   text-transform: uppercase;
@@ -870,31 +833,31 @@
   color: var(--sl-color-gray-3);
   font-weight: 600;
 }
-.cmp th.col-gwm {
+.gwm-landing .cmp th.col-gwm {
   color: var(--color-primary-500);
 }
-.cmp tbody tr:last-child td {
+.gwm-landing .cmp tbody tr:last-child td {
   border-bottom: 0;
 }
-.cmp .feat {
+.gwm-landing .cmp .feat {
   font-weight: 500;
   color: var(--sl-color-white);
 }
-.cmp .yes {
+.gwm-landing .cmp .yes {
   color: var(--color-green-500);
   font-family: var(--sl-font-mono);
   font-weight: 600;
 }
-.cmp .no {
+.gwm-landing .cmp .no {
   color: var(--sl-color-gray-4);
   font-family: var(--sl-font-mono);
 }
-.cmp .partial {
+.gwm-landing .cmp .partial {
   color: var(--color-yellow-500);
   font-family: var(--sl-font-mono);
   font-weight: 600;
 }
-.cmp .note {
+.gwm-landing .cmp .note {
   font-size: 12px;
   color: var(--sl-color-gray-3);
 }
@@ -902,7 +865,7 @@
 /* ═══════════════════════════════════════════════════
    QUOTE serif
    ═══════════════════════════════════════════════════ */
-.quote {
+.gwm-landing .quote {
   margin-top: 24px;
   padding: 24px;
   background: var(--sl-color-gray-6);
@@ -914,7 +877,7 @@
   color: var(--sl-color-white);
   max-width: 60ch;
 }
-.quote cite {
+.gwm-landing .quote cite {
   display: block;
   margin-top: 14px;
   font-family: var(--sl-font-mono);
@@ -925,14 +888,14 @@
   color: var(--sl-color-gray-3);
 }
 
-/* ═══════════════════════════════════════════════════
-   « Par où commencer ? » — restyle des LinkCard natifs Starlight
-   ═══════════════════════════════════════════════════ */
-.gwm-landing + * .sl-link-card,
-.sl-link-card {
-  border-color: var(--sl-color-gray-5);
+/* Note de sourcing du tableau comparatif (transparence des faits gwq/git). */
+.gwm-landing .cmp__source {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sl-color-gray-3);
+  max-width: 64ch;
 }
-.sl-link-card:hover {
-  border-color: var(--color-primary-500);
-  background: color-mix(in srgb, var(--color-primary-500) 4%, transparent);
+.gwm-landing .cmp__source a {
+  color: var(--sl-color-text-accent);
 }
