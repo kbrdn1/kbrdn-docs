@@ -6,8 +6,16 @@
   "description": "Shared Starlight design system: theme tokens, component overrides, reusable MDX components.",
   "exports": {
     "./styles/theme.css": "./styles/theme.css",
+    "./expressive-code": {
+      "types": "./expressive-code.d.ts",
+      "default": "./expressive-code.js"
+    },
     "./components/Footer.astro": "./components/Footer.astro",
     "./components/RepoCard.astro": "./components/RepoCard.astro"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.5",
+    "@fontsource-variable/jetbrains-mono": "^5.2.5"
   },
   "peerDependencies": {
     "@astrojs/starlight": ">=0.39.0",

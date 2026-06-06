@@ -1,19 +1,135 @@
-/* @kbrdn/ds-shared — tokens de design partagés par tous les sites produits.
-   Chargé en premier via customCss ; chaque produit surcharge ensuite ses
-   accents dans son propre fichier CSS.
-   Réf. variables : https://starlight.astro.build/guides/css-and-tailwind/ */
+/* @kbrdn/ds-shared — base « Claude Dark » partagée par tous les sites produits.
+   Portage du design system de kbrdn.dev (neutres quasi-noirs, coins nets, typo
+   Inter/JetBrains Mono, déco maison) mappé sur les tokens Starlight `--sl-color-*`.
+
+   Chargé en premier via customCss : pose la fondation (neutres, radius, polices,
+   décorations pilotées par l'accent). Chaque produit ne surcharge ensuite QUE son
+   accent (`--sl-color-accent*`) dans son propre fichier — les décorations câblées
+   sur `--sl-color-accent` héritent donc automatiquement de la couleur du produit.
+
+   Réf. tokens Starlight : https://starlight.astro.build/guides/css-and-tailwind/
+   Réf. design source     : kbrdn.dev-v2/DESIGN.md (Claude Dark Pure). */
+
+/* Polices self-hosted (variable, tree-shaken par fontsource). */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* ═══════════════════════════════════════════════════
+   Dark mode — Claude Dark (Pure)
+   ═══════════════════════════════════════════════════ */
 :root {
-  /* Accent par défaut (bleu neutre) — surchargé par produit. */
-  --sl-color-accent-low: #d9e5ff;
-  --sl-color-accent: #2b6cff;
-  --sl-color-accent-high: #16306b;
+  /* Échelle neutre Claude → grays Starlight (pilote bg, texte, bordures). */
+  --sl-color-white: #f5f5f5; /* neutral-50  — titres, contraste max */
+  --sl-color-gray-1: #e0e0e0; /* neutral-100 */
+  --sl-color-gray-2: #d0d0d0; /* neutral-200 — texte courant */
+  --sl-color-gray-3: #999999; /* neutral-400 — texte atténué */
+  --sl-color-gray-4: #666666; /* neutral-500 */
+  --sl-color-gray-5: #3a3a3a; /* neutral-700 — bordures, code inline */
+  --sl-color-gray-6: #242424; /* neutral-900 — nav / sidebar / surfaces */
+  --sl-color-black: #1a1a1a; /* neutral-950 — fond de page */
 
-  /* Token maison réutilisable par les composants partagés. */
-  --kbrdn-radius: 0.5rem;
+  /* Accent par défaut (bleu neutre) — chaque produit le surcharge. */
+  --sl-color-accent-low: #14304f;
+  --sl-color-accent: #5aa0e6; /* blue-600 du design */
+  --sl-color-accent-high: #cfe5ff;
+
+  /* Polices (hooks Starlight). */
+  --sl-font: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --sl-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Token maison réutilisable. */
+  --kbrdn-radius: 0; /* coins parfaitement nets — signature Claude Dark */
 }
 
+/* ═══════════════════════════════════════════════════
+   Light mode — neutres Claude inversés
+   ═══════════════════════════════════════════════════ */
 :root[data-theme='light'] {
-  --sl-color-accent-low: #b3ccff;
-  --sl-color-accent: #1f5fe0;
-  --sl-color-accent-high: #16306b;
+  --sl-color-white: #1a1a1a; /* neutral-950 — titres */
+  --sl-color-gray-1: #242424; /* neutral-900 */
+  --sl-color-gray-2: #3a3a3a; /* neutral-700 — texte courant */
+  --sl-color-gray-3: #666666; /* neutral-500 — texte atténué */
+  --sl-color-gray-4: #999999; /* neutral-400 */
+  --sl-color-gray-5: #d0d0d0; /* neutral-200 — bordures */
+  --sl-color-gray-6: #e0e0e0; /* neutral-100 — surfaces, code inline */
+  --sl-color-gray-7: #efefef; /* ~neutral-75  — nav bg */
+  --sl-color-black: #f5f5f5; /* neutral-50  — fond de page */
+
+  --sl-color-accent-low: #cfe5ff;
+  --sl-color-accent: #1f6fd0;
+  --sl-color-accent-high: #0f3a78;
+
+  /* En light mode, Starlight fait pointer le texte d'accent (liens) sur
+     `--sl-color-accent`, souvent trop clair pour WCAG AA sur fond clair.
+     On le redirige vers la teinte sombre `accent-high` : chaque produit
+     n'a qu'à définir son triplet d'accent, les liens restent accessibles. */
+  --sl-color-text-accent: var(--sl-color-accent-high);
 }
+
+/* ═══════════════════════════════════════════════════
+   Coins nets (radius 0) — choix VOLONTAIRE et global du design « Claude Dark » :
+   toute la surface UI (cartes, boutons, badges, code, contrôles) est carrée, à
+   l'identique de kbrdn.dev (`--ui-radius: 0`). C'est l'identité partagée par tous
+   les produits, pas un effet de bord — d'où le scope large assumé.
+   Mon CSS (non-layered) prime sur @layer Starlight ; !important couvre les styles
+   de composants scopés (attribut data-astro-cid). Les cercles (50 %, avatars /
+   icônes) ne sont pas ciblés. */
+:where(:root)
+  :is(
+    .card,
+    .sl-link-card,
+    .sl-badge,
+    .sl-link-button,
+    dialog,
+    .starlight-aside,
+    button[data-open-modal],
+    button[data-open-modal] kbd,
+    .toggle,
+    .pagination-links a,
+    pre,
+    table,
+    th,
+    td,
+    .expressive-code .frame,
+    .expressive-code .frame pre,
+    .expressive-code .frame .header
+  ) {
+  border-radius: var(--kbrdn-radius) !important;
+}
+
+/* Code inline : coins nets + léger liseré pour le détacher du texte. */
+.sl-markdown-content :not(pre) > code {
+  border-radius: var(--kbrdn-radius);
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+/* ═══════════════════════════════════════════════════
+   Décorations pilotées par l'accent (héritent de la couleur produit)
+   ═══════════════════════════════════════════════════ */
+
+/* Cartes & link-cards : survol qui révèle l'accent du produit. */
+.card,
+.sl-link-card {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.card:hover,
+.sl-link-card:hover {
+  border-color: var(--sl-color-accent);
+}
+
+/* Asides (note/tip/caution/danger) : bordure gauche nette, déjà colorée
+   par Starlight selon le type — on garde, on supprime juste l'arrondi. */
+.starlight-aside {
+  border-inline-start-width: 3px;
+}
+
+/* Liens de contenu : offset de soulignement plus lisible. */
+.sl-markdown-content a {
+  text-underline-offset: 0.2em;
+}
+
+/* La coloration syntaxique « Claude Code » (palette de tokens, constante et
+   indépendante de l'accent) vit dans `@kbrdn/ds-shared/expressive-code` :
+   Expressive Code colore à la compilation, hors de portée des variables CSS. */
