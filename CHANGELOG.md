@@ -27,6 +27,14 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 - gwm docs navigation skeleton: four-group sidebar (Démarrer / Guides /
   Référence / Concepts) and stub pages for `tui`, `doctor`, `cli`, `gwm-toml`,
   `worktrees`, `bootstrap`, `trust-ledger` (content filled in follow-up issues).
+- `@kbrdn/ds-shared`: ported the "Claude Dark" design system from kbrdn.dev —
+  the Claude neutral scale mapped onto Starlight `--sl-color-*` tokens (dark +
+  light), sharp corners (`radius: 0`), self-hosted Inter + JetBrains Mono
+  (fontsource), and accent-driven card/link-card hover wired to
+  `--sl-color-accent` so each product keeps its own colour.
+- `@kbrdn/ds-shared/expressive-code`: shared "Claude Code" syntax theme (dark +
+  light Expressive Code themes + sharp-corner `styleOverrides`), consumed by the
+  gwm site.
 
 ### Changed
 
@@ -68,3 +76,10 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   commencer ?" navigation grid (`LinkCard`) linking the main entry points, and
   completed the Phase 1 cross-page consistency pass — no dead internal links, no
   orphan pages.
+- gwm site: replaced the green product accent with a two-tone **sky-blue
+  (`#7ab8ff`) + yellow (`#ffdf61`)** variant to differentiate the product —
+  yellow hero CTA, yellow text selection, and a recolored logo (blue mark +
+  yellow terminal cursor); wired the shared Expressive Code "Claude Code" theme.
+- `@kbrdn/ds-shared`: light-mode link colour now derives from `accent-high` (the
+  dark shade) instead of the base accent, so product accents stay WCAG AA on
+  light backgrounds without per-product tuning.
