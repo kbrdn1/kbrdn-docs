@@ -1,6 +1,6 @@
 /* @kbrdn/ds-shared — base « Claude Dark » partagée par tous les sites produits.
    Portage du design system de kbrdn.dev (neutres quasi-noirs, coins nets, typo
-   Inter/JetBrains Mono, déco maison) mappé sur les tokens Starlight `--sl-color-*`.
+   Inter/Fenix/Monaspace, déco maison) mappé sur les tokens Starlight `--sl-color-*`.
 
    Chargé en premier via customCss : pose la fondation (neutres, radius, polices,
    décorations pilotées par l'accent). Chaque produit ne surcharge ensuite QUE son
@@ -10,9 +10,45 @@
    Réf. tokens Starlight : https://starlight.astro.build/guides/css-and-tailwind/
    Réf. design source     : kbrdn.dev-v2/DESIGN.md (Claude Dark Pure). */
 
-/* Polices self-hosted (variable, tree-shaken par fontsource). */
+/* Inter — sans-serif, self-hosted variable (tree-shaken par fontsource). */
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/jetbrains-mono';
+
+/* Polices maison self-hosted (fichiers dans sites/gwm/public/fonts/) :
+   - Fenix      : serif (statique .ttf, un seul poids).
+   - Monaspace Krypton : mono UI (variable woff2) — eyebrows, badges, term, tui.
+   - Monaspace Neon    : police de code (variable woff2) — fallback shippé
+                         d'OperatorMonoLig (commercial, absent du repo). */
+
+/* Fenix — serif (statique, .ttf) */
+@font-face {
+  font-family: 'Fenix';
+  src: url('/fonts/fenix/Fenix-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Monaspace Krypton — mono UI (variable woff2) */
+@font-face {
+  font-family: 'Monaspace Krypton';
+  src:
+    url('/fonts/monaspace/MonaspaceKrypton.woff2') format('woff2') tech('variations'),
+    url('/fonts/monaspace/MonaspaceKrypton.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Monaspace Neon — police de code (fallback shippé d'OperatorMonoLig, variable woff2) */
+@font-face {
+  font-family: 'Monaspace Neon';
+  src:
+    url('/fonts/monaspace/MonaspaceNeon.woff2') format('woff2') tech('variations'),
+    url('/fonts/monaspace/MonaspaceNeon.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ═══════════════════════════════════════════════════
    Dark mode — Claude Dark (Pure)
@@ -33,12 +69,55 @@
   --sl-color-accent: #5aa0e6; /* blue-600 du design */
   --sl-color-accent-high: #cfe5ff;
 
-  /* Polices (hooks Starlight). */
-  --sl-font: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  --sl-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  /* Polices (hooks Starlight + token de code maison). */
+  --sl-font: 'Inter Variable', Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --sl-font-serif: 'Fenix', 'Iowan Old Style', 'Charter', Georgia, serif;
+  --sl-font-mono: 'Monaspace Krypton', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Police de code (ligatures) : OperatorMonoLig en tête (commercial, non shippé),
+     retombe sur Monaspace Neon (shippé). Les sites activent les ligatures via
+     font-feature-settings là où ils consomment ce token. */
+  --kbrdn-font-code:
+    'OperatorMonoLig Nerd Font', 'Monaspace Neon', 'Monaspace Krypton', ui-monospace, monospace;
 
   /* Token maison réutilisable. */
   --kbrdn-radius: 0; /* coins parfaitement nets — signature Claude Dark */
+}
+
+/* ═══════════════════════════════════════════════════
+   Rampe sémantique « Claude Dark » — PARTAGÉE, neutre du thème
+   Tokens bruts (neutral + accents sémantiques) réutilisables par les
+   composants bespoke de chaque produit (statuts vert/jaune/violet, etc.).
+   Indépendants de l'accent produit : --color-primary-* vit dans le CSS du
+   produit (ex. gwm.css), PAS ici.
+   Valeurs sources : kbrdn.dev-v2/theme.css (Claude Dark Pure).
+   ═══════════════════════════════════════════════════ */
+:root {
+  /* Échelle neutre (quasi-noir → quasi-blanc). */
+  --color-neutral-950: #1a1a1a;
+  --color-neutral-900: #242424;
+  --color-neutral-800: #2a2a2a;
+  --color-neutral-700: #3a3a3a;
+  --color-neutral-600: #555;
+  --color-neutral-500: #666;
+  --color-neutral-400: #999;
+  --color-neutral-300: #b0b0b0;
+  --color-neutral-200: #d0d0d0;
+  --color-neutral-100: #e0e0e0;
+  --color-neutral-50: #f5f5f5;
+
+  /* Accents sémantiques (500 = clair/dark-mode, 600 = dense/light-mode). */
+  --color-red-500: #ff7a7a;
+  --color-red-600: #e06060;
+  --color-green-500: #86e89a;
+  --color-green-600: #6bc97f;
+  --color-yellow-500: #ffdf61;
+  --color-yellow-600: #e6c654;
+  --color-blue-500: #7ab8ff;
+  --color-blue-600: #5aa0e6;
+  --color-purple-500: #c79bff;
+  --color-purple-600: #a87ee0;
+  --color-cyan-500: #8abfb8;
+  --color-cyan-600: #6fa39c;
 }
 
 /* ═══════════════════════════════════════════════════

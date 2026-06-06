@@ -14,8 +14,7 @@
     "./components/RepoCard.astro": "./components/RepoCard.astro"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.2.5",
-    "@fontsource-variable/jetbrains-mono": "^5.2.5"
+    "@fontsource-variable/inter": "^5.2.5"
   },
   "peerDependencies": {
     "@astrojs/starlight": ">=0.39.0",
