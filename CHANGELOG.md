@@ -29,12 +29,21 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   `worktrees`, `bootstrap`, `trust-ledger` (content filled in follow-up issues).
 - `@kbrdn/ds-shared`: ported the "Claude Dark" design system from kbrdn.dev —
   the Claude neutral scale mapped onto Starlight `--sl-color-*` tokens (dark +
-  light), sharp corners (`radius: 0`), self-hosted Inter + JetBrains Mono
-  (fontsource), and accent-driven card/link-card hover wired to
-  `--sl-color-accent` so each product keeps its own colour.
+  light), sharp corners (`radius: 0`), the **real kbrdn.dev type stack**
+  self-hosted (Inter sans, Fenix serif, Monaspace Krypton mono + Monaspace Neon
+  for code, with `OperatorMonoLig Nerd Font` first in the code stack), a shared
+  semantic colour ramp (`--color-neutral/red/green/yellow/blue/purple/cyan-*`),
+  and accent-driven card/link-card hover wired to `--sl-color-accent`.
 - `@kbrdn/ds-shared/expressive-code`: shared "Claude Code" syntax theme (dark +
   light Expressive Code themes + sharp-corner `styleOverrides`), consumed by the
   gwm site.
+- gwm site: bespoke splash landing (`Landing.astro`) faithful to the kbrdn.dev
+  design language — badge + pulse, mono/serif hero, static terminal mock, why
+  cards with ASCII sketches, numbered feature grid, ratatui TUI mock, native
+  `<Tabs>` install, CLI examples, `.gwm.toml` config mock, gwq/git-worktree
+  comparison table, serif quote — in the **sky-blue + yellow** accent variant,
+  with content cross-checked against gwm-cli (positional CLI, real `.gwm.toml`
+  schema, v0.9.0-rc.1, `~/cc-worktree/` paths).
 
 ### Changed
 
