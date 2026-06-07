@@ -68,3 +68,11 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   commencer ?" navigation grid (`LinkCard`) linking the main entry points, and
   completed the Phase 1 cross-page consistency pass — no dead internal links, no
   orphan pages.
+
+### Fixed
+
+- gwm site: Markdown tables (and other GFM constructs) now render. On this Astro
+  6.4 / Starlight 0.39 setup GFM was not active by default — `remark-gfm` was
+  absent from the markdown pipeline, so every table on every page rendered as
+  raw `| … |` pipes in both dev and the production build. Added `remark-gfm` and
+  wired it into `markdown.remarkPlugins` in `sites/gwm/astro.config.mjs`.
