@@ -22,6 +22,9 @@ La distinction avertissement / échec suit la même convention de sigles que le
 
 ## Exemple de sortie
 
+![Rapport gwm doctor — capture à venir](../../../assets/doctor-report.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
+
 ```text
 $ gwm doctor
 ✓ .gwm.toml parses
@@ -65,8 +68,9 @@ Vérifie que chaque nom dans `[[bootstrap.copy]].guards` pointe vers un
 Parse chaque `[[bootstrap.command]].when` et signale les mots-clés inconnus.
 
 - `✓` — chaque atome utilise un mot-clé reconnu.
-- `!` — mot-clé non reconnu (avertissement : la commande s'exécute quand même, en
-  se rabattant sur `true`).
+- `✗` — au moins un atome inconnu (la commande s'exécute quand même en se
+  rabattant sur `true`, mais la condition de déclenchement est silencieusement
+  ignorée — gwm le considère comme une erreur de configuration).
 
 Mots-clés : `file_exists:`, `cmd_exists:`, `env_set:`, `env_eq:`, `glob_exists:`,
 avec composition `!`, `&&`, `||`. Voir [Bootstrap par repo](/concepts/bootstrap/).
@@ -79,8 +83,9 @@ Sonde `$PATH` pour chaque binaire que gwm ou `.gwm.toml` prévoit de lancer :
 `[[bootstrap.command]].run`.
 
 - `✓` — tous résolus.
-- `!` — binaire `[review]` manquant (la review est opt-in).
-- `✗` — binaire `[git_tui]` ou d'une commande de bootstrap manquant.
+- `!` — au moins un binaire manquant (tout binaire absent est un avertissement,
+  qu'il s'agisse de `[git_tui]`, `[review]` ou d'une commande de bootstrap) — le
+  code de sortie reste `1`, jamais `2`, pour ce check.
 
 ### 5. Pas de worktrees à élaguer
 
@@ -106,8 +111,12 @@ branche source après merge ». La liste des trunks est `[doctor].trunks` (défa
 Vérifie que `[worktree].base` (ou son parent, s'il n'existe pas encore) est
 accessible en écriture — gwm crée la base paresseusement au premier `gwm create`.
 
-- `✓` — la base (ou son parent) est accessible en écriture.
-- `✗` — ni l'une ni l'autre (gwm ne peut pas créer de worktrees ici).
+- `✓` — la base existe et est accessible en écriture, ou la base n'existe pas
+  encore mais son parent est accessible (gwm la créera au premier `gwm create`).
+- `!` — ni la base ni son parent n'existent encore (créer le répertoire parent
+  manuellement, ou ajuster `[worktree].base`).
+- `✗` — la base ou son parent existe mais n'est pas accessible en écriture
+  (gwm ne peut pas créer de worktrees).
 
 ### 8. Le keymap `[tui.keys]` résout
 

@@ -247,12 +247,33 @@ top             = ["g g"]
 bottom          = ["G", "End"]
 quit            = ["q"]
 command_palette = [":"]
+focus_worktrees = ["1"]
+focus_status    = ["2"]
+command_logs    = ["3"]
+config_panel    = ["4"]
+sync            = ["S"]
+open_docs       = ["."]
 ```
 
 Au sein d'un chord, les espaces séparent les frappes (`"g g"` = appuyer `g` deux
 fois) et `+` sépare les modificateurs (`"Ctrl+x Ctrl+s"`). Modificateurs :
 `Ctrl`, `Alt`, `Shift`. La liste des actions rebindables et la grammaire des
 chords vivent dans [La TUI → Raccourcis](/guides/tui/).
+
+Actions rebindables ajoutées en v0.9.0 (défauts entre crochets) :
+
+| Action            | Défaut | Effet                                           |
+| :---------------- | :----- | :---------------------------------------------- |
+| `focus_worktrees` | `1`    | met le focus sur le panneau worktrees           |
+| `focus_status`    | `2`    | met le focus sur le panneau status              |
+| `command_logs`    | `3`    | ouvre le journal des commandes git exécutées    |
+| `config_panel`    | `4`    | ouvre le panneau de config résolue (voir infra) |
+| `sync`            | `S`    | rebase le worktree sélectionné sur son upstream |
+| `open_docs`       | `.`    | ouvre ce site de documentation                  |
+
+Ce sont des surcharges comme les autres : `command_logs = []` débinde la touche,
+`config_panel = ["c"]` la remappe. La liste exhaustive (mouvement, sidebar,
+cycle de vie) reste dans [La TUI → Raccourcis](/guides/tui/).
 
 <Aside type="caution" title="Validation au chargement">
   `[tui.keys]` lève une erreur au chargement sur : action inconnue, chord non parsable, conflit de
@@ -262,6 +283,15 @@ chords vivent dans [La TUI → Raccourcis](/guides/tui/).
 </Aside>
 
 `gwm tui keys` affiche le keymap résolu avec la source par ligne.
+
+Le panneau Configuration de la TUI (touche `4`, action `config_panel`) affiche
+la **config résolue** — les valeurs effectives après fusion du défaut, du
+`~/.config/gwm/config.toml` global et du `.gwm.toml` de dépôt — chaque ligne
+annotée de sa couche d'origine. C'est la contrepartie runtime du schéma
+documenté ici : vous y vérifiez ce que gwm a réellement chargé, champ par champ.
+
+![Panneau Configuration TUI · touche 4 — capture à venir](../../../assets/gwm-toml-config-panel.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
 
 ## `[tui.open]`
 

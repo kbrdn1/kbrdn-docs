@@ -56,7 +56,10 @@ Arbre de décision à chaque invocation :
 
 Le **court-circuit de surface vide** est délibéré : un `.gwm.toml` ne contenant
 que `[worktree]` ne porte aucun risque de RCE, donc demander confirmation ne
-ferait qu'entraîner l'utilisateur à marteler `y`.
+ferait qu'entraîner l'utilisateur à marteler `y`. La surface est considérée non
+vide si `[[bootstrap.copy]]`, `[[bootstrap.guard]]`, `[[bootstrap.no_symlink]]`,
+`[[bootstrap.command]]` **ou** `[hooks]` sont déclarés — les hooks exécutent eux
+aussi des commandes shell arbitraires.
 
 ## Surface CLI
 
@@ -94,9 +97,14 @@ gwm: this repo's .gwm.toml has not been trusted yet.
 Trust this .gwm.toml? [y/N/show]:
 ```
 
-`y` enregistre et continue, `N` (ou EOF / réponse non reconnue) annule, `show`
-réaffiche le `.gwm.toml` brut. Les exécutions suivantes passent silencieusement
-jusqu'à ce que le fichier change.
+![Prompt de confiance TOFU — capture à venir](../../../assets/trust-prompt.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
+
+`y` (ou `yes`) enregistre et continue. `N`, `no` ou une ligne vide annule. EOF
+(Ctrl-D) annule également. `show` (ou `s`) réaffiche le `.gwm.toml` brut et
+**reboucle** sur la question. Une réponse non reconnue affiche un avertissement
+et **re-pose la question** — elle n'annule pas. Les exécutions suivantes passent
+silencieusement jusqu'à ce que le fichier change.
 
 ## Comportement de la TUI
 

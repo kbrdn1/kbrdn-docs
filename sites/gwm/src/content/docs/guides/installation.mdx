@@ -111,6 +111,39 @@ code significatif (`0` tout vert, `1` avertissement, `2` échec). Si le code est
 non nul, voyez [Diagnostic (doctor)](/guides/doctor/) pour la remédiation par
 vérification.
 
+Sur un dépôt sain sans `.gwm.toml`, la sortie ressemble à :
+
+```text
+✓ .gwm.toml parses
+    no .gwm.toml present — defaults assumed
+✓ guard references resolve
+✓ `when` predicates supported
+✓ external binaries on PATH
+    2/2 binaries found
+✓ no prunable worktrees
+    1 worktree(s) tracked, none prunable
+✓ no orphan gwm branches
+✓ base directory writable
+✓ [tui.keys] keymap resolves
+    8 action(s) bound
+```
+
+Le sigil `!` signale un avertissement (code de sortie `1`) — par exemple des
+binaires optionnels absents du `$PATH` ou un worktree prunable oublié. Le sigil
+`✗` (code `2`) désigne un échec bloquant qui empêche gwm de fonctionner
+correctement.
+
+![gwm doctor après installation — capture à venir](../../../assets/install-doctor.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
+
+<Aside type="tip" title="PATH après cargo-binstall">
+  `cargo binstall` dépose le binaire dans `~/.cargo/bin/`. Si `gwm: command not found` apparaît
+  immédiatement après l'installation, vérifiez que ce répertoire est dans votre `$PATH` (ajoutez
+  `export PATH="$HOME/.cargo/bin:$PATH"` à votre profil shell). Homebrew et les binaires précompilés
+  installés manuellement nécessitent le même réflexe si le dossier cible n'est pas déjà dans
+  `$PATH`.
+</Aside>
+
 ## Suite
 
 - [Prise en main](/guides/prise-en-main/) — créer votre premier worktree.
