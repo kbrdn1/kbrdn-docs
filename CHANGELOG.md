@@ -84,6 +84,11 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 
 ### Fixed
 
+- gwm site: Markdown tables (and other GFM constructs) now render. On this Astro
+  6.4 / Starlight 0.39 setup GFM was not active by default — `remark-gfm` was
+  absent from the markdown pipeline, so every table on every page rendered as
+  raw `| … |` pipes in both dev and the production build. Added `remark-gfm` and
+  wired it into `markdown.remarkPlugins` in `sites/gwm/astro.config.mjs`.
 - gwm docs: corrected the `concepts/bootstrap` pipeline — `no_symlink` runs
   **before** `copy` (issue #93, strip destination symlinks before opening them
   for writing), guards run on the source inside the copy loop, and a `✗` on a
