@@ -53,6 +53,9 @@ toujours `feat-42-user-authentication`.
 
 ## Disposition sur disque
 
+![Disposition des worktrees sur disque — capture à venir](../../../assets/worktrees-layout.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
+
 - Le worktree vit dans `<base>/<path_pattern>` — **en dehors** du checkout
   principal par défaut, de sorte qu'il survit à un `git clean -fdx` et aux
   réindexations de l'IDE sur le tree principal.
@@ -61,6 +64,33 @@ toujours `feat-42-user-authentication`.
 - La base se situe par défaut sous `~/cc-worktree/<repo>/`, mais peut être
   relative au dépôt (`{repo_parent}/worktrees/{repo}`) — voir
   [`.gwm.toml` → `[worktree]`](/reference/gwm-toml/).
+
+Sur disque, avec la base par défaut (`{home}/cc-worktree/{repo}`), le checkout
+principal et ses worktrees restent dans des répertoires entièrement séparés :
+
+```text
+~/
+├── Projects/
+│   └── gwm-cli/                          # checkout principal (tronc)
+└── cc-worktree/
+    └── gwm-cli/                          # base par défaut
+        ├── feat-42-user-authentication   # gwm create feat 42 user-authentication
+        └── fix-58-null-pointer           # gwm create fix 58 null-pointer
+```
+
+Le chemin complet d'un worktree suit donc : `~/cc-worktree/<repo>/<type>-<issue>-<desc>`.
+Un `git clean -fdx` dans le checkout principal ne touche pas à `~/cc-worktree/`.
+
+Si vous préférez localiser les worktrees près du dépôt (utile en environnement
+sans accès à `$HOME`), configurez une base relative dans `.gwm.toml` :
+
+```toml
+[worktree]
+base = "{repo_parent}/worktrees/{repo}"
+```
+
+Cela produirait par exemple `../worktrees/gwm-cli/feat-42-user-authentication`
+à côté du dépôt principal.
 
 ## L'ancre `gwm-base`
 

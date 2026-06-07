@@ -260,6 +260,52 @@ Presets : `catppuccin`, `gruvbox`, `tokyo-night`, `claude-dark` (alias `claude`)
 Affiche le keymap TUI résolu (défauts + overrides `[tui.keys]`) avec la source
 par ligne. Voir [La TUI](/guides/tui/).
 
+![Sortie de gwm tui keys — capture à venir](../../../assets/cli-tui-keys.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
+
+La sortie est un tableau à trois colonnes aligné dynamiquement. Hors d'un dépôt
+git (ou dans un dépôt nu), la commande se replie sur les défauts intégrés — elle
+reste utile avant tout `gwm init`. La colonne `source` affiche exactement
+`default` ou `.gwm.toml` ; `gwm doctor` consomme la même API interne, les
+colonnes restent donc en phase.
+
+```text
+action                   keys     source
+down                     j, Down  default
+up                       k, Up    default
+top                      g g      default
+bottom                   G, End   default
+toggle_sidebar           v        default
+toggle_sidebar_mode      s        default
+cycle_sidebar_layout     V        default
+toggle_sidebar_position  H        default
+focus_swap               Tab      default
+focus_worktrees          1        default
+focus_status             2        default
+command_logs             3        default
+config_panel             4        default
+filter                   /        default
+refresh                  f, r     default
+sync                     S        default
+create                   n        default
+delete                   d        default
+bootstrap                b        default
+delete_branch            p        default
+git_tui                  l        default
+review                   R        default
+yank                     y        default
+open                     o        default
+open_menu                O        default
+link                     L        default
+fetch_github             F        default
+help                     ?        default
+quit                     q        default
+command_palette          :        default
+```
+
+Les slugs de la colonne `action` sont les clés acceptées dans `[tui.keys]` de
+`.gwm.toml` pour rebinder une action. Exemple : `[tui.keys] quit = ["Ctrl+c"]`.
+
 ## Multiplexeur & shell
 
 ### `gwm tmux <pattern> [-p|--split]`

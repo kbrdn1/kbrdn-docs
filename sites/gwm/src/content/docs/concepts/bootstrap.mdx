@@ -26,37 +26,61 @@ trust gate (TOFU)            prompt / refus sur (origin, hash) non approuvé
        ↓
 pre_bootstrap hooks          [[hooks.pre_bootstrap]] optionnels
        ↓
-(1) [[bootstrap.copy]]       duplique des fichiers main → worktree
+(1) [[bootstrap.no_symlink]] supprime les symlinks déclarés (et vendor/node_modules auto)
        ↓
-(2) [[bootstrap.guard]]      deny-list regex chaque fichier copié
-       ↓
-(3) [bootstrap.fallback.*]   matérialise un contenu inline si une source requise manque
-       ↓
-(4) [[bootstrap.no_symlink]] refuse d'hériter des symlinks listés
+(2) [[bootstrap.copy]]       duplique des fichiers main → worktree
+      ↳ guard (deny-list regex sur la source avant copie)
+      ↳ fallback (contenu inline si source absente)
        ↓
 post_bootstrap hooks         [[hooks.post_bootstrap]] optionnels
        ↓
-✓ worktree prêt — rapport ✓ / ! / ✗ par étape
+✓ worktree prêt — rapport ✓ / ! / ✗ / · par étape
 ```
 
-L'ordre n'est pas arbitraire : copies d'abord (pour donner à inspecter aux
-guards), guards immédiatement après (échouer vite sur un `.env` de prod **avant**
-que des hooks ne tirent de vraies données), fallbacks, puis no-symlink en dernier
-parmi les étapes fichier, et enfin les commandes shell (seule étape à effets de
-bord externes). Les entrées legacy `[[bootstrap.command]]` sont traitées comme des
-hooks `post_create`.
+L'ordre n'est pas arbitraire : `no_symlink` passe en premier (issue #93) pour
+supprimer tout lien symbolique existant à la **destination** avant que `copy`
+n'ouvre ces chemins en écriture. Inversé, un symlink planté à la destination
+d'une copie deviendrait un vecteur d'écriture hors du worktree (primitive
+write-anywhere via `O_CREAT | O_TRUNC`). Les guards s'exécutent **sur la source**,
+à l'intérieur de la boucle de copies, avant tout transfert — échouer vite sur un
+`.env` de prod avant qu'il ne soit copié. Les fallbacks s'exécutent dans la même
+boucle, uniquement si la source est absente. Les entrées legacy `[[bootstrap.command]]`
+sont traitées comme des hooks `post_create`.
 
 ## Rapports d'étape
 
-| Sigle | Sévérité | Effet sur le worktree                                         |
-| :---- | :------- | :------------------------------------------------------------ |
-| `✓`   | succès   | rien                                                          |
-| `!`   | warning  | l'étape est ignorée/partielle ; le pipeline continue          |
-| `✗`   | échec    | le pipeline s'interrompt ; le worktree est **rollback**       |
-| `·`   | skip     | l'étape ne s'est pas exécutée (informatif, ex. prédicat faux) |
+| Sigle | Sévérité | Effet sur le pipeline                                                              |
+| :---- | :------- | :--------------------------------------------------------------------------------- |
+| `✓`   | succès   | rien — étape réussie                                                               |
+| `!`   | warning  | l'étape est partiellement réussie ou substituée ; le pipeline continue             |
+| `✗`   | échec    | l'étape est enregistrée comme échouée ; le pipeline **continue** (étapes core)     |
+| `·`   | skip     | l'étape ne s'est pas exécutée (prédicat `when:` faux, source optionnelle absente…) |
 
-Même convention que [`gwm doctor`](/guides/doctor/). Un `✗` annule et supprime le
-worktree fraîchement créé — la ré-exécution est sûre.
+![Rapport de bootstrap — capture à venir](../../../assets/bootstrap-report.svg)
+{/* TODO(visuel): remplacer ce placeholder par une vraie capture (asciinema / screenshot) — suivi dans une issue dédiée. */}
+
+Même convention de sigles que [`gwm doctor`](/guides/doctor/). **Comportement `✗` selon le type d'étape :**
+
+- **Étapes core** (`no_symlink`, `copy`) : `bootstrap::run_core` retourne toujours `Ok(report)` — un `✗`
+  est enregistré mais le pipeline continue vers les étapes suivantes. Le worktree n'est pas supprimé
+  automatiquement ; relancez `gwm bootstrap` après avoir corrigé la cause.
+- **Hooks** (`pre_bootstrap`, `post_bootstrap`, etc.) : un hook avec `on_fail = "abort"` (défaut)
+  propage une `Err` et interrompt le pipeline. Le worktree reste sur disque.
+
+Exemple de rapport réel illustrant l'ordre d'exécution sur un projet PHP (`.env.testing` absent,
+symlink `vendor/` détecté, guard AWS inactif) :
+
+```text
+  ✓ [pre_bootstrap] direnv allow
+  ! no-symlink vendor (auto)              removed symlink /path/to/wt/vendor
+  · copy .env.testing -> .env.testing     optional source missing
+  ✓ copy .env.example -> .env.example     copied from /main/.env.example
+  ✓ [post_bootstrap] composer install
+  ✓ [post_bootstrap] php artisan key:generate
+```
+
+Le `·` (skip) sur `.env.testing` est informatif : la source est absente et `required = false`.
+Le `!` (warning) sur `vendor` signale la suppression du lien symbolique — comportement attendu.
 
 ## Copies de fichiers
 
@@ -80,8 +104,9 @@ on_match      = "seed-from-example"     # abort | seed-from-example
 example_file  = ".env.example"
 ```
 
-- `on_match = "abort"` (défaut) — une correspondance interrompt le bootstrap (`✗`)
-  et rollback le worktree, en affichant le pattern et la ligne fautifs.
+- `on_match = "abort"` (défaut) — une correspondance enregistre un `✗` pour cette
+  étape et affiche le pattern et la source fautifs. Le pipeline core continue ;
+  relancez `gwm bootstrap` après avoir corrigé le fichier source.
 - `on_match = "seed-from-example"` — substitue le fichier par `example_file`
   (rapporté `!`), pour repartir d'une base connue comme sûre (sqlite local…).
 
@@ -92,10 +117,12 @@ Le guard ne s'exécute que référencé par `[[bootstrap.copy]].guards = [...]` 
 
 ## Vérifications no-symlink
 
-`[[bootstrap.no_symlink]]` refuse d'hériter d'un symlink au chemin listé
-(typiquement `vendor/`, `node_modules/`) — un lien errant polluerait silencieusement
-la sortie de build du dépôt principal. S'exécute après les copies pour attraper
-les liens qu'un `cp -R` aurait suivis.
+`[[bootstrap.no_symlink]]` supprime un symlink existant au chemin déclaré
+(typiquement `vendor/`, `node_modules/`). S'exécute **avant les copies** (issue #93) :
+supprimer d'abord tout lien à la destination empêche qu'un symlink planté redirige
+une copie entrante hors du worktree. `vendor` et `node_modules` sont également vérifiés
+automatiquement même s'ils ne figurent pas dans la config — si le chemin est un symlink,
+il est supprimé (`!`) ; si c'est un répertoire réel, l'étape passe sans effet (`✓`).
 
 ## Hooks de cycle de vie & prédicats `when:`
 
