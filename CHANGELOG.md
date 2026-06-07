@@ -27,6 +27,11 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 - gwm docs navigation skeleton: four-group sidebar (Démarrer / Guides /
   Référence / Concepts) and stub pages for `tui`, `doctor`, `cli`, `gwm-toml`,
   `worktrees`, `bootstrap`, `trust-ledger` (content filled in follow-up issues).
+- gwm docs: provisional TUI visual placeholders — uniform SVG frames
+  ("capture à venir") on every doc page (list view, create modal, command logs,
+  config panel, doctor report, bootstrap report, trust prompt, on-disk layout,
+  `gwm tui keys` output), each flagged with a `TODO` to swap for a real
+  capture/asciinema in a follow-up.
 
 ### Changed
 
@@ -68,3 +73,24 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   commencer ?" navigation grid (`LinkCard`) linking the main entry points, and
   completed the Phase 1 cross-page consistency pass — no dead internal links, no
   orphan pages.
+- gwm docs: enriched all nine pages to the gwm v0.9.0 TUI surface — documented
+  the pane-focus keys (`1`/`2`), Command Logs overlay (`3`), Configuration panel
+  (`4`), `sync` action (`S`), open-docs (`.`), the command palette (`:`), the
+  in-title fuzzy filter and off-thread `f`/`r` refresh; added the resolved
+  `gwm tui keys` action/key table, the `[tui.keys]` v0.9.0 bindings, on-disk
+  worktree layout and real `gwm doctor` / bootstrap report examples, all
+  cross-checked against `gwm-cli` (`src/tui/keymap.rs`, `palette.rs`, `cli.rs`,
+  `doctor.rs`, `bootstrap.rs`, `config.rs`).
+
+### Fixed
+
+- gwm docs: corrected the `concepts/bootstrap` pipeline — `no_symlink` runs
+  **before** `copy` (issue #93, strip destination symlinks before opening them
+  for writing), guards run on the source inside the copy loop, and a `✗` on a
+  core step is **recorded but non-fatal** (the worktree is not rolled back;
+  re-run `gwm bootstrap`) — the prior text inverted the order and claimed an
+  automatic rollback (`src/bootstrap.rs`, `src/cli.rs`).
+- gwm docs: corrected three `guides/doctor` check severities — unknown `when:`
+  keyword is `✗` not `!` (`Check::failed`), every missing PATH binary is `!` not
+  a `[git_tui]`-specific `✗`, and the base-directory check has a `!` case when
+  neither base nor parent exists yet (`src/doctor.rs`).
