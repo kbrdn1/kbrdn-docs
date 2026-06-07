@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import remarkGfm from 'remark-gfm';
 
 // Docs du produit gwm. Hérite du design system partagé (@kbrdn/ds-shared)
 // pour la consistance (footer, tokens), puis surcharge l'accent + la landing.
@@ -8,6 +9,13 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
   // TODO(deploy): URL de production Cloudflare Pages (branche `main` = latest).
   site: 'https://gwm-docs.pages.dev',
+
+  // GFM (tables, strikethrough, task lists…) n'est pas actif par défaut sur
+  // cette combinaison Astro 6 / Starlight 0.39 — sans ça, les tables Markdown
+  // se rendent en pipes bruts. remark-gfm rebranche le parsing GFM.
+  markdown: {
+    remarkPlugins: [remarkGfm],
+  },
 
   integrations: [
     starlight({
