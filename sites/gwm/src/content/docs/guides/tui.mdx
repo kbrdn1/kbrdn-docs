@@ -125,10 +125,13 @@ La stratégie par défaut est le rebase (la convention du dépôt) ; voir
 
 ## Ouvrir la doc (`.`)
 
-`.` (action `open_docs`, `:open-docs` dans la palette) ouvre l'arborescence
-`docs/` du dépôt dans le navigateur. L'URL est dérivée du dépôt
-(`<repo>/tree/main/docs`) et donc fork-aware : sur un fork, elle pointe vers le
-dépôt du fork, pas vers l'amont. Action en lecture seule.
+`.` (action `open_docs`, `:open-docs` dans la palette) ouvre la **documentation
+en ligne de gwm** dans le navigateur. L'URL est **figée à la compilation** à
+partir des métadonnées du paquet (`CARGO_PKG_REPOSITORY` + `/tree/main/docs`) :
+elle est identique quel que soit le dépôt dans lequel vous lancez gwm — ce n'est
+pas la doc du dépôt courant. (Un binaire compilé depuis un fork pointe vers la
+doc de ce fork, puisque l'URL est gravée au build, pas résolue au runtime.)
+Action en lecture seule.
 
 ## Command Logs (`3`)
 
