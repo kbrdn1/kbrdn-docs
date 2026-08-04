@@ -81,6 +81,18 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   worktree layout and real `gwm doctor` / bootstrap report examples, all
   cross-checked against `gwm-cli` (`src/tui/keymap.rs`, `palette.rs`, `cli.rs`,
   `doctor.rs`, `bootstrap.rs`, `config.rs`).
+- Dependencies: Astro 6.4 → 7.1, Starlight 0.39 → 0.41, `sharp` 0.34 → 0.35,
+  `actions/checkout` 6 → 7, `actions/upload-artifact` 4 → 7,
+  `cloudflare/wrangler-action` 3 → 4. Astro 7 deprecates
+  `markdown.remarkPlugins` (still used for `remark-gfm` in
+  `sites/gwm/astro.config.mjs`) in favour of `unified({...})` from
+  `@astrojs/markdown-remark` — to migrate before Astro 8.
+- Dependabot: the npm ecosystem now watches `/` only. The root entry already
+  resolves the bun workspaces, so also listing `/packages/ds-shared` and
+  `/sites/gwm` opened every package bump twice. Added an `ignore` entry for
+  `typescript` majors — TypeScript 7 (native port) breaks `astro check`
+  (`@astrojs/language-server` fails in `getTsconfig`), so the bump stays out
+  until the language server supports the TS 7 API.
 
 ### Fixed
 
