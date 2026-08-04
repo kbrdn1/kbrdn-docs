@@ -90,10 +90,13 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   `doctor.rs`, `bootstrap.rs`, `config.rs`).
 - Dependencies: Astro 6.4 → 7.1, Starlight 0.39 → 0.41, `sharp` 0.34 → 0.35,
   `actions/checkout` 6 → 7, `actions/upload-artifact` 4 → 7,
-  `cloudflare/wrangler-action` 3 → 4. Astro 7 deprecates
-  `markdown.remarkPlugins` (still used for `remark-gfm` in
-  `sites/gwm/astro.config.mjs`) in favour of `unified({...})` from
-  `@astrojs/markdown-remark` — to migrate before Astro 8.
+  `cloudflare/wrangler-action` 3 → 4.
+- gwm site: dropped `remark-gfm` and the whole `markdown` config block. Astro 7
+  parses GFM natively, so the plugin was re-enabling something already on —
+  measured on the built output, identical with and without it: 158 `<table>`
+  across 50 pages, same autolinks, same HTML structure and text on a
+  table-heavy page. This also settles the `markdown.remarkPlugins` deprecation
+  Astro 7 introduced, by removing the call rather than migrating it.
 - Dependabot: the npm ecosystem now watches `/` only. The root entry already
   resolves the bun workspaces, so also listing `/packages/ds-shared` and
   `/sites/gwm` opened every package bump twice. Added an `ignore` entry for
@@ -107,7 +110,8 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   6.4 / Starlight 0.39 setup GFM was not active by default — `remark-gfm` was
   absent from the markdown pipeline, so every table on every page rendered as
   raw `| … |` pipes in both dev and the production build. Added `remark-gfm` and
-  wired it into `markdown.remarkPlugins` in `sites/gwm/astro.config.mjs`.
+  wired it into `markdown.remarkPlugins` in `sites/gwm/astro.config.mjs` — since
+  removed, Astro 7 doing it natively (see above).
 - gwm docs: corrected the `concepts/bootstrap` pipeline — `no_symlink` runs
   **before** `copy` (issue #93, strip destination symlinks before opening them
   for writing), guards run on the source inside the copy loop, and a `✗` on a
