@@ -1,0 +1,36 @@
+---
+title: Development
+description: Building gwm from source, the test suite layout, and the contributing conventions (branches, commits, PRs).
+sidebar:
+  order: 0
+---
+
+gwm is a small Rust crate (single binary). Build, test, and ship workflows are documented here.
+
+- **[Testing](/development/testing)** - the integration test files (~1900+ tests across 75 test files, run on the ubuntu / macos / windows matrix), the mandatory red → green → refactor TDD loop, how to run a subset, and the `// regression:` sentinel-test convention.
+- **[Contributing](/development/contributing)** - the Gitmoji + Conventional-Commit format, branch naming, the PR checklist, and the rules around the `CHANGELOG.md` / `changelogs/<version>.md` split.
+- **[Stability](/development/stability)** - the 1.0 SemVer compatibility contract: which surfaces are covered (CLI, exit codes, JSON schemas, daemon RPC, `.gwm.toml`), which are free to change (TUI, human strings, internal Rust API), the MSRV policy, and the deprecation process.
+
+## Quick reference
+
+```bash
+cargo build              # debug build
+cargo test               # ~1900+ tests across the integration files + unit tests
+cargo fmt && cargo clippy -- -D warnings
+cargo run                # opens TUI in the current repo
+cargo install --path .   # install locally
+```
+
+A Nix dev shell is pinned in [`flake.nix`](https://github.com/kbrdn1/gwm-cli/blob/main/flake.nix) - toolchain, `rust-analyzer`, `clippy`, `rustfmt`, `cargo-watch`, `cargo-edit`, and the `libgit2` build deps - without touching the host system:
+
+```bash
+nix develop
+```
+
+## Vs. bash script
+
+The full background - what changed from the original `tools/worktree-manager.sh` and why - lives in the contributing page under "[history](/development/contributing#history)".
+
+## Changelog
+
+Released versions live under [`changelogs/<version>.md`](https://github.com/kbrdn1/gwm-cli/tree/main/changelogs); the root [`CHANGELOG.md`](https://github.com/kbrdn1/gwm-cli/blob/main/CHANGELOG.md) only holds the current `[Unreleased]` section plus an index of past releases.

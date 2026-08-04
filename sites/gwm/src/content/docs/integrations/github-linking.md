@@ -1,0 +1,174 @@
+---
+title: GitHub issue / PR linking
+description: Auto-link branches to issues, auto-detect their PR, fetch live state via `gh`, surface in the TUI sidebar.
+sidebar:
+  order: 1
+---
+
+Added by [#67](https://github.com/kbrdn1/gwm-cli/issues/67) / [#68](https://github.com/kbrdn1/gwm-cli/pull/68); refined in v0.6 by [#75](https://github.com/kbrdn1/gwm-cli/issues/75).
+
+Every worktree can be linked to a GitHub issue and / or pull request. The link drives the live `Issue / PR` block in the [TUI sidebar](/tui/sidebar#issue--pr-block) and surfaces in `gwm status` for scripting.
+
+::: tip
+Since [#419](https://github.com/kbrdn1/gwm-cli/issues/419) this page describes the **GitHub** backend. The storage model, auto-detection and TUI surfaces below are forge-agnostic and apply unchanged to GitLab - see [GitLab (multi-forge)](/integrations/gitlab) for what differs.
+:::
+
+![The Issue·PR pane with an auto-linked issue and a gh-detected open PR](../../../assets/captures/github-linking.png)
+
+## Storage model
+
+Links live in **git config**, scoped to the branch, never in a file gwm owns:
+
+- `git config branch.<name>.gwm-issue` - the linked issue number
+- `git config branch.<name>.gwm-pr` - the linked PR number
+
+Alongside the explicit links, gwm caches the **auto-detected PR** and the fetched titles / states so the no-fetch read paths (`gwm list`, the TUI table at startup) can colour the issue / PR pastilles without a per-row `gh` call:
+
+- `git config branch.<name>.gwm-pr-detected` - the auto-detected PR number ([#283](https://github.com/kbrdn1/gwm-cli/issues/283))
+- `git config branch.<name>.gwm-pr-detected-title` / `.gwm-pr-detected-state` - the cached title / state of the detected PR
+- `git config branch.<name>.gwm-issue-title` / `.gwm-issue-state` - the cached title / state of the linked issue
+- `git config branch.<name>.gwm-pr-title` / `.gwm-pr-state` - the cached title / state of the explicitly-linked PR
+
+This means:
+
+- The link **survives worktree moves** (`gwm` rewriting `.git/worktrees/<name>/HEAD` doesn't touch branch config).
+- The link is **per-branch, local** - not committed, not pushed, not shared with the repo's other clones.
+- `git config --unset branch.<name>.gwm-issue` is a 100% valid alternative to `gwm unlink issue`.
+
+## Auto-detection
+
+Branches following the gwm naming convention `<type>/#<N>-<slug>` derive the issue number from the branch name - zero config needed.
+
+```
+feat/#42-user-auth          → issue #42 auto-linked
+fix/#117-leak               → issue #117 auto-linked
+chore/#5-rename             → issue #5 auto-linked
+release-1.x                 → no auto-link (no #N pattern)
+```
+
+PR numbers have no branch-name convention, so they are detected a different way: [#181](https://github.com/kbrdn1/gwm-cli/issues/181) added **PR auto-detection**. When a branch has no explicit PR link, gwm asks GitHub which PR was opened from it (`gh pr list --head <branch> --state all`) and surfaces it marked `detected`:
+
+```
+$ gwm status --json | jq '.pr.source'
+"detected"          # vs "explicit" for a `gwm link pr`, "branch-name" for issues
+```
+
+The `source` field carries the link's provenance: `"branch-name"` (derived from the `<type>/#<N>-<slug>` convention, issues only), `"explicit"` (a recorded `gwm link`), `"detected"` (`LinkSource::Detected`, auto-detected from `gh` - resolved live on a fetch, or read from the persisted cache), or `"none"`.
+
+Detection is **persisted** ([#283](https://github.com/kbrdn1/gwm-cli/issues/283)): once a probe succeeds, the detected number (plus its title / state) is cached in git config under `branch.<name>.gwm-pr-detected`. The cache is what lets the no-fetch read paths (`gwm list`, the TUI table at startup) colour the PR pastille on every row without a per-row `gh` call. The persisted cache never overrides an explicit link - `read_link` resolves the PR in this order:
+
+1. an explicit `gwm link pr` (`gwm-pr`) - always wins,
+2. then the persisted auto-detection (`gwm-pr-detected`),
+3. then nothing.
+
+The cache stays honest because the **live-detection paths reconcile it on refresh**: a successful re-probe rewrites the stored number, and an empty result clears it, so a stale number is never resurrected after the PR was closed or replaced. A `gh` failure (not installed, no network) leaves the cache untouched, so the last-known detection survives the failed probe. `gwm unlink pr` drops the persisted detection too, so unlinking doesn't leave a `gwm-pr-detected` number that would resurface as a `detected` PR.
+
+Because each fresh lookup is a `gh` call, live detection runs only where it is cheap or asked for:
+
+- **`gwm status`** - always (one worktree); reconciles the cache.
+- **TUI sidebar** - on the `F` refresh (one selected worktree, deduped). A detected PR is tagged ` (detected)` so it reads apart from an explicit link.
+- **`gwm list --detect-pr`** - opt-in flag; adds a `PR` column at the cost of one `gh` call per worktree, and reconciles the cache for each. Plain `gwm list` stays network-free, reading the persisted cache to colour the pastilles.
+
+To pin a durable, explicit link instead (e.g. a PR not opened from this branch's head):
+
+```bash
+gwm link pr 61
+```
+
+## Explicit linking
+
+```bash
+# Link the current (CWD) worktree
+gwm link issue 42
+gwm link pr 61
+
+# Link a fuzzy-matched worktree from anywhere
+gwm link issue 42 --worktree feat-auth
+
+# Remove an explicit override (auto-detect resurfaces for issues)
+gwm unlink issue
+gwm unlink pr
+
+# Open the link in the browser via the OS opener
+gwm open issue
+gwm open pr --print-url        # print the URL on stdout instead
+
+# Inspect the current state
+gwm status                     # human-readable
+gwm status --json              # stable schema for scripts
+```
+
+See [CLI → Subcommand reference](/cli/reference#gwm-link-issuepr-n---worktree-pattern) for the flag tables.
+
+## Live status via `gh`
+
+`gwm status` (and the TUI's `F` key) shells out to `gh issue view` and `gh pr view` to fetch state, title, labels, and CI rollup:
+
+```
+$ gwm status
+Issue #42 [open] TUI: fuzzy search
+PR #61 [draft] · checks 2/3
+```
+
+| Bracketed value | Source                               |
+| :-------------- | :----------------------------------- |
+| `[open]`        | `gh`'s `state`                       |
+| `[closed]`      | `gh`'s `state`                       |
+| `[merged]`      | `gh`'s `state` (PR only)             |
+| `[draft]`       | `gh`'s `isDraft` (PR only)           |
+| `checks N/M`    | `gh`'s `statusCheckRollup` (PR only) |
+
+Without `gh` (or outside a repo with a GitHub remote), gwm degrades gracefully - only the local link is shown, no error:
+
+```
+$ gwm status
+Issue #42 (gh not available — local link only)
+```
+
+## TUI surface
+
+In the worktree list view, the right details panel renders a **live `Issue / PR` block** for the selected worktree (hidden when nothing is linked). Three keybindings drive it:
+
+| Key | Action                                                                     |
+| :-- | :------------------------------------------------------------------------- |
+| `O` | open menu (`i` open issue in browser, `p` open PR in browser)              |
+| `L` | link prompt (`i` issue or `p` pr → type the number → Enter to commit)      |
+| `F` | refresh the GitHub status (synchronous `gh` fetch, updates the status bar) |
+
+> The `F` keybinding was `R` pre-v0.6 - rebound by [#75](https://github.com/kbrdn1/gwm-cli/issues/75) when `R` was claimed by the [review launcher](/tui/launchers). See [Keybindings → v0.6 rebind summary](/tui/keybindings#v06-rebind-summary).
+
+The `Issue / PR` block is **rebuilt on every selection change**, so navigating with `j` / `k` never surfaces stale data from the previously selected worktree.
+
+## Sidebar header status dot
+
+The header `● <worktree-name>` line carries a coloured `●` that tracks the linked PR / issue state:
+
+- **green** - open
+- **gray** - draft
+- **magenta** - merged
+- **red** - closed
+- **darkgray** - nothing linked / unknown state
+
+The dot is rebuilt from cached `gh` fetch state on every frame, so it follows live status without invalidating the rest of the sidebar's git-preview cache. Hit `F` to force a refresh.
+
+## URL derivation
+
+gwm derives the issue / PR URL from the repo's GitHub remote:
+
+```
+https://github.com/<owner>/<repo>/issues/<N>
+https://github.com/<owner>/<repo>/pull/<N>
+```
+
+The owner/repo extraction handles a few quirks:
+
+- Trailing `/` on the remote URL (`https://github.com/owner/repo.git/`) - fixed in #68 by Copilot's review; the `.git` suffix is now stripped after normalising trailing slashes.
+- SSH form (`git@github.com:owner/repo.git`) - parsed identically.
+
+If the remote is not GitHub, `gwm open` exits with an error rather than guessing a URL.
+
+## Related
+
+- [TUI → Sidebar](/tui/sidebar#issue--pr-block) - where the live block renders
+- [TUI → Keybindings](/tui/keybindings#issue--pr-link-prompt-l) - `O` / `L` / `F` overlays
+- [CLI → Subcommand reference](/cli/reference#gwm-link-issuepr-n---worktree-pattern) - every command and flag

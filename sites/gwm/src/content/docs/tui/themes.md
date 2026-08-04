@@ -1,0 +1,93 @@
+---
+title: Themes
+description: Role-based [theme] colours - built-in presets, per-role overrides, and the named / indexed / hex value formats.
+sidebar:
+  order: 7
+---
+
+Added by [#33](https://github.com/kbrdn1/gwm-cli/issues/33) / [#168](https://github.com/kbrdn1/gwm-cli/pull/168), with the `claude-dark` preset added in [#185](https://github.com/kbrdn1/gwm-cli/issues/185).
+
+![catppuccin preset](../../../assets/captures/theme-catppuccin.png)
+![gruvbox preset](../../../assets/captures/theme-gruvbox.png)
+![tokyo-night preset](../../../assets/captures/theme-tokyo-night.png)
+![claude-dark preset](../../../assets/captures/theme-claude-dark.png)
+
+The TUI's colours are driven by a `[theme]` block in `.gwm.toml`. Instead of hard-coded values, every paint site reads a **semantic role**, so a single preset or a handful of overrides recolours the whole interface consistently.
+
+## Roles
+
+A theme is a set of role → colour bindings:
+
+| Role           | What it colours                                                       | Default    |
+| :------------- | :-------------------------------------------------------------------- | :--------- |
+| `focus`        | focused border / cursor / active overlay highlight                    | `Cyan`     |
+| `accent`       | header title, key hints in the help overlay, accent chips             | `Cyan`     |
+| `branch`       | branch name in lists and the sidebar identity card (healthy state)    | `Green`    |
+| `clean`        | "working tree is clean" status indicator                              | `Green`    |
+| `dirty`        | "working tree is dirty" status indicator                              | `Yellow`   |
+| `main`         | main / trunk worktree badge                                           | `Yellow`   |
+| `locked`       | locked worktree badge (`🔒`)                                          | `Magenta`  |
+| `prunable`     | prunable worktree badge (`⚠`)                                         | `Red`      |
+| `muted`        | secondary / dimmed text                                               | `DarkGray` |
+| `selection_bg` | selection-row background                                              | `DarkGray` |
+| `name`         | worktree name (table + sidebar header) and `Issue #N` / `PR #N` heads | `White`    |
+| `path`         | worktree path column in the table                                     | `Gray`     |
+| `staged`       | staged (index-side) git-status changes in the working-tree panel      | `Cyan`     |
+| `modified`     | worktree-side git-status modifications                                | `Yellow`   |
+| `untracked`    | untracked / created git-status entries (`??`)                         | `Green`    |
+
+The default theme reproduces gwm's pre-#33 hard-coded look exactly, so default-theme users see no change. The `name` / `path` roles ([#210](https://github.com/kbrdn1/gwm-cli/issues/210)) promoted the last structural `Color::White` / `Color::Gray` chrome left after the #170 audit; the sidebar identity-card path stays on `muted` so its default appearance is unchanged. The `staged` / `modified` / `untracked` roles ([#211](https://github.com/kbrdn1/gwm-cli/issues/211)) decouple the working-tree status families, which previously borrowed `accent` / `dirty` / `clean` - their defaults equal those borrowed colours, so the panel is unchanged until you override them.
+
+## Presets
+
+Set `preset = "<name>"` to replace **every** role at once:
+
+```toml
+[theme]
+preset = "catppuccin"
+```
+
+Built-in presets:
+
+| Preset        | Aliases            |
+| :------------ | :----------------- |
+| `catppuccin`  | `catppuccin-mocha` |
+| `gruvbox`     | `gruvbox-dark`     |
+| `tokyo-night` | `tokyonight`       |
+| `claude-dark` | `claude`           |
+
+A preset replaces every role - partial presets are not supported. List them with `gwm theme list`; dump any preset as a copy-pasteable, round-trippable `[theme]` block with `gwm theme show <name>` (see [CLI → `gwm theme`](/cli/reference)).
+
+## Per-role overrides
+
+Override individual roles on top of (or in the absence of) a preset. **Per-role overrides win over the preset**:
+
+```toml
+[theme]
+preset = "catppuccin"
+focus  = "#89b4fa"   # mocha blue override on top of the preset
+```
+
+## Value formats
+
+A role value accepts three forms:
+
+- **named** - `"cyan"`, `"Cyan"`, `"dark_gray"`, `"bright_blue"` (case-insensitive).
+- **256-palette index** - `"220"` (`0`..=`255`).
+- **hex** - `"#89b4fa"` (the `#0ff` short form is **not** supported - the parser refuses to guess).
+
+Validation runs at config load: an unknown preset, an unknown role, or a bad colour value all reject with the offending TOML coordinate. See [Configuration → `[theme]` schema](/configuration/gwm-toml#theme).
+
+## How the TUI uses it
+
+The resolved theme is threaded through `App.theme` and read at each draw site. The focused-panel border (worktree list ↔ sidebar) now paints with the `focus` role - the default is still `Cyan`, so default-theme users see no difference, but the `claude-dark` preset paints it orange.
+
+> A full colour audit of every draw site - so that no paint site still
+> reaches for a hard-coded `Color::` instead of a theme role - is
+> tracked as a follow-up in [#170](https://github.com/kbrdn1/gwm-cli/issues/170).
+
+## Related
+
+- [CLI → `gwm theme list` / `gwm theme show`](/cli/reference) - discover and dump presets
+- [Configuration → `[theme]` schema](/configuration/gwm-toml#theme) - full role / value reference
+- [Keymap & command palette](/tui/keymap-and-palette) - the other half of the TUI personalisation surface

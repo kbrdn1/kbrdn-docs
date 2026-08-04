@@ -1,0 +1,53 @@
+---
+title: Confirm-overlay countdown
+description: The safety countdown that gates branch deletion when `D` is armed.
+sidebar:
+  order: 4
+---
+
+Added by [#30](https://github.com/kbrdn1/gwm-cli/issues/30).
+
+![Confirm-delete overlay with the armed safety countdown](../../../assets/captures/countdown.gif)
+
+The `d` confirm overlay has two modes, picked automatically based on whether `D` (toggle "delete branch on remove") was pressed earlier in the session.
+
+## Classic mode - `delete branch on remove` OFF
+
+Single keystroke:
+
+- `y` / `Enter` → fires the delete immediately.
+- `n` / `Esc` → cancels.
+
+Same as the pre-#30 behaviour. Removing a worktree without dropping its branch is cheap (just an entry in `.git/worktrees/`) and the branch survives, so there's nothing to safeguard against.
+
+## Countdown mode - `delete branch on remove` ON
+
+When `D` is armed, the overlay shows the branch about to disappear plus a two-stage `arm` step:
+
+1. `y` (or `Enter` on the focused `[ Confirm ]` button) → **arms** a safety countdown (default 3s, visualised by a progress bar with an animated spinner beside it as a live loader).
+2. The actual delete fires once the bar fills.
+3. `y` again **during** the countdown disarms it without firing.
+4. `Esc` / `n` cancels at any time, armed or not.
+
+The reasoning: dropping a branch is **destructive** (the branch is gone from `git branch`, only `git reflog` can resurrect it). The countdown forces a sub-second pause where you can change your mind, especially useful when muscle memory says `dyy` and you didn't notice `D` was still armed from earlier in the session.
+
+## Configuration
+
+The countdown duration is configurable via `[tui].confirm_countdown_secs` in `.gwm.toml`. Accepted range: `0..=5`.
+
+```toml
+[tui]
+# 3s default. Set to 0 to disable the countdown (classic modal even when D is armed).
+confirm_countdown_secs = 3
+```
+
+- `0` → keeps the classic single-keystroke modal even when `delete branch on remove` is armed.
+- `1..=5` → the visualised countdown length, in seconds.
+- Values above `5` are silently clamped to `5` on read.
+
+See [Configuration → `.gwm.toml` schema](/configuration/gwm-toml#tui) for the full `[tui]` block.
+
+## Related
+
+- [Keybindings → confirm-delete overlay](/tui/keybindings#confirm-delete-overlay) - the keys this page describes
+- [CLI → `gwm remove`](/cli/reference#gwm-remove-pattern---delete-branch---dry-run) - same destructive action, but from the CLI (no countdown; the flag is `--delete-branch` explicit)

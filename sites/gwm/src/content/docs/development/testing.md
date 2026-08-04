@@ -1,0 +1,192 @@
+---
+title: Testing
+description: The cargo test matrix (~1900 tests across ubuntu / macos / windows), the integration test files, the sentinel-test convention, and the mandatory TDD loop.
+sidebar:
+  order: 1
+---
+
+`cargo test` runs the full suite - **~1900 tests** (1902 `#[test]` markers as of v1.0.0) across 75 integration files under `tests/` plus the unit tests embedded in `src/`. Average run on a recent laptop: ~1 second.
+
+The suite runs on every push as a matrix across **`ubuntu-latest`, `macos-latest`, and `windows-latest`** (wired in `ci.yml`); each merge into `dev` is gated on all three turning green, and pre-release artifacts are built from the same commit by `pre-release.yml`. Windows was added to the matrix in v0.8.0-rc.1 ([#112](https://github.com/kbrdn1/gwm-cli/issues/112)).
+
+## TDD is mandatory
+
+No production code lands without a failing test that pinned the behaviour down first - this is a hard merge requirement, not a guideline (see [`CLAUDE.md`](https://github.com/kbrdn1/gwm-cli/blob/main/CLAUDE.md)). The loop is **red → green → refactor**:
+
+1. **Red** - write a failing test that captures the new behaviour or the bug. Run it; it MUST fail for the right reason (an assertion mismatch, not an unrelated compile error).
+2. **Green** - write the minimum production code to make it pass. No speculative branches or abstractions.
+3. **Refactor** - clean up while the tests are green, re-running the full suite after each step.
+
+Anything observable from outside the function under test counts as behaviour: a new CLI subcommand / flag / output format → end-to-end test in `tests/cli_binary.rs` (and a companion file per surface - e.g. `tests/exec_tests.rs`, `tests/clean_tests.rs`, `tests/review_tests.rs`, `tests/statusline_tests.rs`, `tests/daemon_tests.rs`); a new public function → unit test in `tests/<module>_tests.rs`; a new bootstrap step → integration test in `tests/bootstrap_tests.rs`; a libgit2 worktree operation → `tests/worktree_integration.rs`; a TUI state transition → `tests/tui_app_tests.rs` (or a focused `tests/tui_state_*_tests.rs` slice). "I tested it manually" is not an exception - codify the manual test.
+
+## Quick reference
+
+```bash
+cargo test                            # full suite (~1900 tests)
+cargo test --test tui_app_tests       # one integration file
+cargo test refresh_github             # name-substring filter across the whole suite
+cargo test -- --nocapture             # let println! / dbg! through
+cargo test --release                  # opt-level=3, same suite
+```
+
+The `--test <name>` filter is by **integration file**, not by module - `cargo test --test tui_app_tests` runs everything inside `tests/tui_app_tests.rs`.
+
+### Deterministic config in tests
+
+Since v0.8.0-rc.5 a user-level global config at `~/.config/gwm/config.toml` is merged underneath each repo's `.gwm.toml`. To keep `cargo test` hermetic the test suite injects `None` for the global layer (the `*_layered` seams), so a run never reads the contributor's real global config. Set `GWM_NO_GLOBAL_CONFIG=1` to force strictly repo-only loading at runtime too ([#194](https://github.com/kbrdn1/gwm-cli/issues/194) / [#196](https://github.com/kbrdn1/gwm-cli/issues/196)).
+
+## Integration test layout
+
+All integration tests live under `tests/`:
+
+```
+tests/
+├── common/                       # shared helpers (init_repo, paths_equal)
+│
+│   # CLI surface
+├── cli_binary.rs                # end-to-end assert_cmd coverage of the CLI surface
+├── cli_format_tests.rs          # remove / prune / sync plan formatters (alignment, detached HEAD)
+├── cli_repo_context_tests.rs    # repo-context resolution in/out of a git repo (strict vs lenient)
+├── exec_tests.rs                # gwm exec rollup arithmetic + ✓/✗ aggregation (#313)
+├── clean_tests.rs               # gwm clean artefact discovery + human-size formatting (#313)
+├── review_tests.rs              # gwm review branch/dir naming contract (#308)
+├── review_integration.rs        # gwm review fetch refs/pull/<N>/head + worktree attach (#308)
+├── statusline_tests.rs          # gwm statusline one-line render (blank / count / dirty / issue·PR) (#309)
+│
+│   # daemon + JSON API (#38)
+├── daemon_tests.rs              # pure RPC core: handle_line / dispatch (cross-platform)
+├── daemon_integration.rs        # socket round-trip (unix + daemon feature only)
+├── json_api_tests.rs            # --format=json status/projection for list / doctor / path
+│
+│   # config + bootstrap + hooks
+├── config_tests.rs              # .gwm.toml parsing + write_default + defaults
+├── config_cli_tests.rs          # gwm config get/set/unset/list/validate/path/edit
+├── config_global_tests.rs       # user-level global config merge (overlay semantics)
+├── config_set_at_tests.rs       # set_value_at typed write-back per layer + round-trip
+├── presets_tests.rs             # gwm init --preset lookup + alias resolution (#37)
+├── bootstrap_tests.rs           # copy / guard / no-symlink / [hooks.*] lifecycle phases
+├── bootstrap_when_tests.rs      # `when:` predicate grammar (file/cmd/env/glob + boolean ops)
+├── lifecycle_tests.rs           # lifecycle hook execution + command-log recording
+├── trust_tests.rs               # TOFU trust ledger hashing + (origin, sha256) entries (#95)
+│
+│   # GitHub workflow
+├── github_tests.rs              # issue/PR linking + trim_git_suffix + URL derivation
+├── gitmoji_tests.rs             # gwm commit-prefix (shortcode / unicode / --branch / override)
+├── labels_tests.rs              # [[labels]] deterministic colour + diff arithmetic
+├── milestones_tests.rs          # [[milestones]] due-date normalisation + diff arithmetic
+├── pr_templates_tests.rs        # [pr_template] body rendering + placeholders
+├── templating_tests.rs          # placeholder substitution + issue-form markdown rendering
+│
+│   # worktree ops + history
+├── worktree_integration.rs      # git2 add / list / remove / prune
+├── sync_tests.rs                # gwm sync fetch + rebase/merge + dirty-tree / no-upstream refusal
+├── history_tests.rs             # operation journal IO + gwm history + gwm undo contract
+├── command_log_tests.rs         # command-log append ordering + snapshot clone
+├── naming_tests.rs              # kebab normalisation + branch validation + parse roundtrip
+├── aliases_tests.rs             # [aliases] resolution + shadowing + shell-pipeline refusal
+├── doctor_tests.rs              # gwm doctor checks + severity arithmetic
+├── hooks_tests.rs               # gwm hooks install commit-msg (force, linked worktree, hooksPath)
+├── multiplexer_tests.rs         # gwm tmux / gwm zellij argv construction + $TMUX guard
+├── launcher_tests.rs            # [git_tui] / [review] placeholder expansion + base resolution
+├── error_tests.rs               # GwmError variants + Display + From impls
+├── error_variants_tests.rs      # newer GwmError variants (unborn HEAD, gh JSON parse, …)
+│
+│   # workspace mode (#36)
+├── workspace_tests.rs           # discover child repos + merge_worktrees
+├── cli_workspace_tests.rs       # gwm --workspace list / create --repo CLI plumbing
+├── tui_workspace_tests.rs       # REPO column + swap-on-navigation in the workspace TUI
+│
+│   # TUI state + render
+├── tui_app_tests.rs             # App state transitions (ratatui-free)
+├── tui_chord_tests.rs           # multi-key chord dispatch in list view
+├── keymap_tests.rs              # [tui.keys] parsing + chord conflicts + prefix collisions
+├── modal_keymap_tests.rs        # [tui.keys.modal.<context>] single-key bindings (#219)
+├── palette_tests.rs             # command palette action registry + fuzzy filter
+├── theme_tests.rs               # [theme] preset resolution + role overrides + colour parsing
+├── tui_footer_tests.rs          # single-line statusline chips + flush-right log
+├── tui_header_tests.rs          # single-row header hierarchy + width-driven truncation
+├── tui_wt_tree_tests.rs         # Working Tree file-tree model (collapse / cap / glyphs) (#300)
+├── tui_ui_helpers_tests.rs      # ellipsize / layout helpers
+├── tui_modal_render_tests.rs    # modal overlay rendering against a TestBackend
+├── tui_sidebar_render_tests.rs  # sidebar panes rendering (commits / status)
+├── tui_theme_audit_tests.rs     # theme role coverage audit across draw sites
+├── tui_theme_integration_tests.rs  # resolved theme threaded through draw_* sites
+├── tui_state_*_tests.rs         # per-slice state (create_form, filter, confirm, sidebar,
+│                                 #   spinner, link_prompt, palette, command_logs,
+│                                 #   config_panel, async_task, github_fetch,
+│                                 #   pty_overlay (#35), …)
+│
+│   # packaging / release
+├── binstall_metadata_tests.rs   # [package.metadata.binstall] artefact naming
+├── homebrew_formula_tests.rs    # Homebrew formula template substitution
+├── flake_tests.rs               # Nix flake structure (build, devShell, app, overlay)
+├── release_workflow_tests.rs    # release.yml / pre-release.yml tag + publish-token contract
+├── precommit_hook_tests.rs      # pre-commit hook scaffolding
+└── commit_graph_perf_tests.rs   # commit-graph pipe allocation invariants
+```
+
+(Not exhaustive - `ls tests/*.rs` is the live list (75 files as of v1.0.0); the matrix runs all of them.)
+
+## Sentinel tests
+
+Tests pinned to catch a specific regression are prefixed with a `// regression: <one-line>` comment inside the test body, so the original incident is discoverable without `git blame`:
+
+```rust
+#[test]
+fn trim_git_suffix_handles_trailing_slash() {
+  // regression: PR #68 Copilot review — owner/repo.git/ left ".git" in the slug
+  assert_eq!(trim_git_suffix("https://github.com/owner/repo.git/"), "owner/repo");
+}
+```
+
+Find them all:
+
+```bash
+grep -rn "regression:" tests/
+```
+
+Suite hygiene (sentinel coverage vs incident catalogue) was last audited in [`claudedocs/test-audit-0.4.0.md`](https://github.com/kbrdn1/gwm-cli/blob/main/claudedocs/test-audit-0.4.0.md). Re-run the audit after each minor - drift accumulates fast around the launcher and GitHub-linking surfaces.
+
+## Unit tests
+
+In addition to the integration files, `src/` carries unit tests inside `#[cfg(test)] mod tests { … }` blocks colocated with the code under test. They cover:
+
+- Pure functions (kebab normalisation, slug parsing, sigil arithmetic)
+- Serde round-trips on every `Config` sub-struct
+- Internal predicates not exposed on the public surface
+
+`cargo test` runs them alongside the integration suite - they don't need a separate invocation.
+
+## What to run before pushing
+
+The minimum bar enforced by the pre-commit hook (and by CI):
+
+```bash
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+```
+
+All three must be green. The pre-commit hook lives in [`tools/git-hooks/pre-commit`](https://github.com/kbrdn1/gwm-cli/blob/main/tools/git-hooks/pre-commit); enable it with:
+
+```bash
+git config core.hooksPath tools/git-hooks
+```
+
+(or via the bundled bootstrap if your repo's `.gwm.toml` wires it in).
+
+## Dev shell
+
+The Nix flake exports a pinned dev shell - Rust toolchain (pinned to the same `rust-toolchain.toml` version used in CI), `rust-analyzer`, `clippy`, `rustfmt`, `cargo-watch`, `cargo-edit`, and the `libgit2` build deps - without touching the host system:
+
+```bash
+nix develop                # drops you in the shell
+cargo test                 # everything works out of the box
+```
+
+See [Integrations → Homebrew and Nix](/integrations/homebrew-nix#nix-flake) for the full flake surface.
+
+## Related
+
+- [Contributing](/development/contributing) - conventions for adding tests and the regression-comment format
+- [Roadmap](/roadmap) - upcoming areas that will need new test coverage

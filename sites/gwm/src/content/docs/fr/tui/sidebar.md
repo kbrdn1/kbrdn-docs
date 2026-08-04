@@ -1,0 +1,201 @@
+---
+title: Barre latérale de détails
+description: La disposition en quatre sous-sections encadrées du panneau de droite - Worktree / Issue · PR / Working Tree / Recent Commits.
+sidebar:
+  order: 2
+---
+
+Quand la barre latérale est activée (ON par défaut, basculée avec `V`), le panneau affiche un panneau de détails à la lazygit pour le worktree actuellement sélectionné.
+
+![La barre latérale de détails - Status, Issue·PR, Working Tree, Recent Commits](../../../../assets/captures/sidebar.png)
+
+## Disposition - orientation & position responsives
+
+Par défaut, la barre latérale est **empilée** (`SidebarOrientation::Stacked` est la valeur par défaut à l'exécution - issue [#217](https://github.com/kbrdn1/gwm-cli/issues/217)) : la table est en haut et le panneau de statut en dessous, séparés par un séparateur horizontal, quelle que soit la largeur du terminal. Le comportement piloté par la largeur ci-dessous ne s'active que lorsque vous faites passer l'orientation en **auto** avec `Space`.
+
+Dans l'orientation **auto**, la barre latérale s'adapte à la largeur du terminal (issue [#188](https://github.com/kbrdn1/gwm-cli/issues/188)) :
+
+- **large** (≥ **120 colonnes**) → **side-by-side** : la table conserve **55 %** de la largeur, la barre latérale prend les **45 %** restants.
+- **étroite** (< 120 colonnes) → **stacked** : la table prend **42 %** de la hauteur et le panneau de statut les **58 %** restants en dessous, séparés par un séparateur horizontal. Elle n'est plus cachée sur les terminaux étroits - seul `V` (fermer) récupère toute la largeur pour la table.
+
+Deux touches outrepassent le comportement automatique (remappables dans [`[tui.keys]`](/fr/configuration/gwm-toml#tuikeys) ; la refonte du keymap [#290](https://github.com/kbrdn1/gwm-cli/issues/290) a réassigné ces valeurs par défaut) :
+
+- `Space` (`cycle_sidebar_layout`) fait défiler l'orientation `auto → side-by-side → stacked → auto` (le cycle démarre depuis la valeur par défaut **stacked** à l'exécution). `auto` est le mode piloté par la largeur ci-dessus ; `side-by-side` et `stacked` figent l'orientation quelle que soit la largeur.
+- `v` (`toggle_sidebar_position`) bascule la **position** de la barre latérale gauche ↔ droite. Cela n'affecte que la disposition side-by-side ; dans la disposition stacked, la barre latérale est toujours en bas. Le côté par défaut est défini par `[tui] sidebar_position = "left" | "right"` (par défaut `right`) dans `.gwm.toml`, et `v` le retourne en direct pour la session.
+
+Le panneau est composé de **quatre sous-sections indépendantes à bordure arrondie** - les titres de section vivent sur les bordures elles-mêmes, il n'y a donc plus de lignes en ligne `Basic Settings:` / `Recent commits:`. Appuyez sur `Tab` pour donner le focus à la barre latérale ; `j` / `k` (ou les flèches) la font alors défiler au lieu de déplacer la sélection de worktree. La bordure du panneau focalisé est peinte avec le rôle de thème `focus` (par défaut `Cyan`).
+
+Les sections à hauteur variable - Agents, `Working Tree` et `Recent Commits` - se partagent la colonne de façon responsive : quand tout tient, chacune garde sa hauteur naturelle et `Recent Commits` absorbe le surplus ; quand le terminal est court, chaque section défilable visible garde un plancher garanti - **7 lignes** pour `Working Tree` (bordure + 5 lignes de contenu), **5 lignes** pour `Recent Commits` (bordure + 3 lignes de contenu) - et la hauteur restante est répartie proportionnellement à la taille du contenu - le pane Agents, qui ne défile pas, garde toujours sa hauteur complète (bornée). Le contenu qui déborde reste atteignable via les défilements de section (`j` / `k` pour `Recent Commits`, `J` / `K` pour `Working Tree`), et un `Working Tree` qui déborde peint une scrollbar sur son bord intérieur droit pour matérialiser la position du viewport. Une section vide se replie toujours entièrement (arbre propre, aucune session d'agent).
+
+![Disposition côte à côte (terminal large)](../../../../assets/captures/side-by-side.png)
+![Disposition empilée (terminal étroit)](../../../../assets/captures/narrow.png)
+
+## En-tête
+
+```
+● <worktree-name>
+```
+
+- La couleur de `●` suit l'état de la PR / issue liée :
+  - **vert** - ouverte
+  - **gris** - brouillon
+  - **magenta** - fusionnée
+  - **rouge** - fermée
+  - **gris foncé** - rien de lié / inconnu
+- Le nom du worktree lui-même est coloré par `BranchStatus` (le pire état l'emporte) :
+  - **rouge** - sale (changements non committés)
+  - **jaune** - en avance / en retard sur l'upstream
+  - **magenta** - non publié (pas d'upstream)
+  - **vert** - synchronisé
+  - **gris foncé** - inconnu
+
+La même couleur est appliquée à la colonne `BRANCH` dans la table des worktrees, de sorte que le header et la table restent visuellement synchronisés.
+
+## Bloc `Worktree`
+
+Le premier bloc contient les faits au niveau du worktree :
+
+- `branch` - coloré par statut (même schéma que le header)
+- `path` - le chemin absolu sur disque (compressé avec un tilde)
+- `head` - OID court du commit courant
+- **`Created`** - l'âge de la branche sous forme relative compacte (`2d`, `3w`, `1M`), codé par couleur selon la fraîcheur : **vert** < 7d, **jaune** < 30d, **gris foncé** sinon. Ajouté par [#73](https://github.com/kbrdn1/gwm-cli/issues/73) / [#74](https://github.com/kbrdn1/gwm-cli/pull/74).
+- **`Diff`** - `+<ins> -<del>` de la branche par rapport à son tronc de base, avec la sémantique trois-points `git diff --shortstat <base>...HEAD` (la même base que `gwm pr`). Les insertions sont en **vert**, les suppressions en **rouge**. Caché quand aucune base ne se résout, quand HEAD est le tronc lui-même, ou quand la branche n'a pas encore de diff committé. Ajouté par [#287](https://github.com/kbrdn1/gwm-cli/issues/287).
+- flags - `main`, `locked`, `prunable`, etc.
+- `branch status` - la forme longue textuelle de la colonne affichée dans la table (`clean`, `dirty (N files)`, `↑N ↓M`, `unpublished`, …)
+
+## Bloc `Issue / PR`
+
+Caché quand rien n'est lié au worktree sélectionné. Sinon, affiche une ou deux lignes en direct récupérées via `gh` :
+
+```
+Issue #42 [open] TUI: fuzzy search
+PR #61 [draft]   CI running 8/9
+```
+
+- L'état entre crochets est la vue de `gh` (`open` / `closed` / `merged` / `draft`).
+- L'**indicateur CI** en suffixe (issue [#299](https://github.com/kbrdn1/gwm-cli/issues/299)) n'apparaît que pour les PR et affiche un état CI global de la PR liée, dérivé du `statusCheckRollup` déjà récupéré (aucune requête GitHub supplémentaire) :
+  - ` CI passing 9/9` - **vert**, tous les checks ont réussi
+  - ` CI failing 7/9` - **rouge**, au moins un check a échoué
+  - ` CI running 8/9` - **jaune**, des checks sont encore en cours
+  - L'état suit **failing > running > passing**, de sorte qu'un check rouge n'est jamais masqué par un check en cours. Une PR **sans check** n'affiche rien.
+- Rafraîchissez à la demande avec la touche `F` - le fetch met à jour la barre de statut avec le détail succès / erreur par fetch.
+
+Le bloc est reconstruit automatiquement à chaque changement de sélection, donc il n'affiche jamais de données obsolètes d'un worktree précédemment sélectionné. Voir [liaison issue / PR GitHub](/fr/integrations/github-linking) pour le modèle de liaison.
+
+## Bloc `Agents`
+
+Une ligne par session d'agent IA **épinglée** sur le worktree sélectionné
+(`claude` / `codex` / `opencode` / `vibe`), colorée par fraîcheur
+(**active** / **idle**), avec la dernière activité lisible et le nom de la
+session tel que le backend le rapporte (premier prompt, titre enregistré,
+ou le registre propre de l'outil - l'id complet sinon). Le
+pane est la vue délibérée : les sessions détectées mais non épinglées
+restent dans la
+[surcouche des sessions d'agents](/fr/tui/keybindings#surcouche-des-sessions-dagents-a)
+(`a`), où `a`/`i` les épinglent - plusieurs épingles peuvent coexister sur
+un même worktree. Plafonné à trois lignes avec un `+N more` au-delà. Le
+bloc disparaît entièrement quand rien n'est épinglé. Ajouté par
+[#408](https://github.com/kbrdn1/gwm-cli/issues/408).
+
+## Bloc `Working Tree`
+
+Le `git status` du worktree sélectionné, rendu sous forme d'**arbre de fichiers
+nerd-font** imbriqué (issue [#300](https://github.com/kbrdn1/gwm-cli/issues/300))
+plutôt qu'une liste plate `XY PATH` :
+
+```
+ src/
+├─  tui/
+│  ├─  app.rs        M
+│  └─  theme.rs      A
+└─  worktree.rs      M
+ docs/               ?
+```
+
+- **Les dossiers sont triés avant les fichiers**, par ordre alphabétique au sein
+  de chaque niveau.
+- **Les chaînes de dossiers à enfant unique sont fusionnées** (`src/tui/` affiché
+  sur une seule ligne, puis le fichier en dessous).
+- Chaque ligne de fichier porte une **icône de type de fichier pilotée par
+  l'extension** plus son badge de statut `M` / `A` / `D` / `?`.
+- Les **lignes de connexion de l'arbre** (`├─` / `└─` / `│`) dessinent la
+  hiérarchie comme `tree(1)`, peintes dans le rôle muted. Un espace
+  supplémentaire complète chaque glyphe nerd-font (la plupart sont rendus en
+  double largeur) pour que le nom qui suit ne soit pas tronqué.
+
+Tout est peint dans la **couleur de catégorie de changement** du fichier (issue
+[#287](https://github.com/kbrdn1/gwm-cli/issues/287)), de sorte qu'une ligne
+correspond au compteur du footer auquel elle appartient :
+
+- modifié → **jaune**
+- créé / non suivi → **vert**
+- supprimé → **rouge**
+
+**Les lignes de dossier sont colorées rétroactivement par git** : un dossier
+prend la catégorie de changement agrégée de son sous-arbre - uniquement modifié →
+jaune, uniquement nouveau → vert, uniquement supprimé → rouge, mixte → un accent
+neutre. L'ancienne séparation cyan indexé-vs-worktree est retirée.
+
+Un checkout vide s'affiche comme `✓ clean`.
+
+### Footer des compteurs
+
+Le footer en bas à droite ventile le total en **compteurs codés par couleur** - créés (vert), modifiés (jaune), supprimés (rouge) - chaque segment n'étant
+affiché que lorsqu'il est non nul ; un arbre propre n'affiche rien. Un renommage
+compte une seule fois.
+
+### Bornes sur les arbres pathologiques
+
+Un énorme dossier non suivi ne peut ni bloquer le scan ni inonder la section non
+défilable :
+
+- Le scan sous-jacent `git status --porcelain -z --untracked-files=all` est
+  **streamé et stoppé après 5000 enregistrements** (git est tué au plafond, sous
+  `--no-optional-locks` pour qu'il ne puisse pas laisser un `.git/index.lock`
+  périmé).
+- L'arbre rend alors au plus **500 feuilles de fichiers** ; le reste se réduit à
+  une seule ligne `… N more` (`… N+ more` quand le scan lui-même a été tronqué,
+  le vrai total étant alors inconnu).
+- `-uall` étend un dossier non suivi en ses fichiers individuels (les chemins
+  git-ignorés restent exclus) ; `--porcelain -z` émet les chemins verbatim et
+  délimités par NUL, de sorte que les noms de fichiers avec espaces, flèches,
+  guillemets ou octets non-ASCII se parsent sans ambiguïté. Les noms sont
+  **assainis** avant le rendu (caractères de contrôle → `?`) pour qu'un nom de
+  fichier verbatim ne puisse pas corrompre la disposition ni injecter de
+  séquences d'échappement de terminal.
+
+## Bloc `Recent Commits`
+
+Un graphe de commits à la lazygit qui remplit la hauteur disponible. Ajouté par [#71](https://github.com/kbrdn1/gwm-cli/issues/71) / [#72](https://github.com/kbrdn1/gwm-cli/pull/72) et finalisé dans [#73](https://github.com/kbrdn1/gwm-cli/issues/73) / [#74](https://github.com/kbrdn1/gwm-cli/pull/74).
+
+Format par ligne :
+
+```
+<8-char hash>  <author initials>  <node>  <subject>
+```
+
+- `<node>` est `○` pour un commit normal, `◎` pour un commit de fusion.
+- Les sujets sont **coupés net au bord droit du panneau** - pas de retour à la ligne, exactement une ligne visuelle par commit.
+- Un pied de page aligné à droite `<viewport-bottom> of <total>` se trouve en bas du bloc.
+- Le buffer par défaut est de **300 commits** (correspond au `git log -300` de lazygit).
+
+Le moteur de topologie complet dessine les branches divergentes avec `│` (tuyau vertical), `╮ ╭ ╯ ╰` (coins), `┴ ┬` (jonctions), `─` (trait horizontal). L'historique linéaire se réduit à une seule colonne empilée de `○` ; les fusions engendrent de nouvelles colonnes à droite. L'algorithme est déterministe en largeur sur la liste de commits - la même entrée produit toujours la même sortie quelle que soit la largeur du terminal.
+
+Le bloc de fiche d'aide `Commands` d'avant v0.6 a été supprimé - appuyez sur `?` pour la surcouche complète de la table des touches à la place. Le bloc de 15 lignes dupliquait la surcouche `?` et poussait le bloc `Issue / PR` hors écran sur les tailles de terminal courantes.
+
+## Mode stashes
+
+Appuyez sur `S` (remappable comme `toggle_sidebar_mode` dans [`[tui.keys]`](/fr/configuration/gwm-toml#tuikeys)) pour basculer le panneau Détails entre deux modes. Ajouté par [#34](https://github.com/kbrdn1/gwm-cli/issues/34) / [#166](https://github.com/kbrdn1/gwm-cli/pull/166).
+
+- **`commits`** (par défaut) - le comportement existant : `git log --oneline` plus `git status --short`.
+- **`stashes`** - `git stash list` pour le worktree sélectionné.
+
+Le titre du panneau affiche le mode actif. En mode `stashes`, l'indication du bas devient `Enter: copy stash@{N} to status`. Le contenu du panneau est mis en cache avec la clé `(worktree-path, mode)`, de sorte que le basculement relance la bonne commande git sans laisser fuiter de contenu obsolète entre les modes.
+
+## Focus et défilement
+
+- Appuyez sur `Tab` pour donner le focus à la barre latérale. La bordure du panneau actuellement focalisé est peinte avec le rôle de thème `focus` (par défaut `Cyan`).
+- Avec la barre latérale focalisée, `j` / `k` (ou les flèches) font défiler son contenu - utile pour les longues listes `Recent Commits`.
+- Toujours focalisée, `J` / `K` (`wt_scroll_down` / `wt_scroll_up`) font défiler l'arbre de fichiers `Working Tree` indépendamment - sur un gros change set l'arbre est tronqué par le layout, et l'offset rend le débordement atteignable. L'offset se réinitialise quand la sélection passe à un autre worktree.
+- Appuyez à nouveau sur `Tab` pour rendre le focus à la liste des worktrees.
+- `V` bascule toute la barre latérale on/off (utile quand le terminal est étroit mais ≥ 120 colonnes, ou quand vous avez besoin de la largeur maximale pour la table).

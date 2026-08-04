@@ -1,0 +1,90 @@
+---
+title: Open dispatch (o and O)
+description: '`o` opens a terminal in an embedded PTY overlay; `O` dispatches on `[tui.open]` - shell, editor, or finder.'
+sidebar:
+  order: 6
+---
+
+Added by [#73](https://github.com/kbrdn1/gwm-cli/issues/73) / [#74](https://github.com/kbrdn1/gwm-cli/pull/74); split into a PTY overlay (`o`) and a fullscreen variant (`O`) in [#35](https://github.com/kbrdn1/gwm-cli/issues/35) / [#290](https://github.com/kbrdn1/gwm-cli/issues/290).
+
+Two bindings open something at the selected worktree:
+
+| Key | Action slug           | What it does                                                                      |
+| :-- | :-------------------- | :-------------------------------------------------------------------------------- |
+| `o` | `terminal_pty`        | a native `$SHELL` session in an **embedded PTY overlay** (~90 % of the screen)    |
+| `O` | `terminal_fullscreen` | the **fullscreen** open dispatch driven by `[tui.open]` (shell / editor / finder) |
+
+Both slugs are rebindable under [`[tui.keys]`](/configuration/gwm-toml#tuikeys).
+
+## `o` - terminal in an embedded PTY overlay
+
+`o` drops a native `$SHELL` session into a [`portable-pty`](https://docs.rs/portable-pty) + [`tui-term`](https://docs.rs/tui-term) overlay sized to roughly 90 % × 90 % of the terminal, with `cwd` set to the worktree - the same overlay machinery as the `l` git-TUI overlay. The TUI never leaves the alt-screen; the worktree list stays visible behind the modal. Keystrokes are forwarded to the shell; `Esc` closes the overlay (or `exit` the shell - the overlay auto-closes when the child exits).
+
+## `O` - fullscreen open dispatch
+
+`O` dispatches on the `[tui.open]` section in `.gwm.toml`. Three modes are supported.
+
+## Configuration
+
+```toml
+[tui.open]
+mode = "shell"          # "shell" (default) | "editor" | "finder"
+shell_cmd = ""           # override $SHELL; empty = use $SHELL
+editor_cmd = "hx"        # override $EDITOR; empty = use $EDITOR
+```
+
+Unknown `mode` values are a **hard config error at load time**, surfaced before the TUI opens - no silent fallback. The error names the file, the line, and the supported values, so the fix is one keystroke.
+
+## Modes
+
+### `shell` (default - changed in v0.6)
+
+Suspend the TUI and spawn `$SHELL` (or `shell_cmd` if set) with `cwd` set to the worktree - same lifecycle as the `L` fullscreen git-TUI launcher. When you exit the shell, the gwm TUI restores exactly where you left it.
+
+```
+O   →   $SHELL    inside /Users/you/cc-worktree/myrepo/feat-42-user-auth
+exit→   gwm TUI restored
+```
+
+> For an embedded shell that keeps the worktree list visible, press `o` (the PTY overlay) instead - it never suspends the TUI.
+
+This is the lazygit-style flow - drop into a shell, run whatever, come back to the TUI without losing selection or filter state.
+
+### `editor`
+
+Suspend the TUI and run `$EDITOR <worktree-path>` (or `editor_cmd <worktree-path>` if set). Useful for terminal editors that own the alt-screen (helix, nvim, micro):
+
+```toml
+[tui.open]
+mode = "editor"
+editor_cmd = "hx"        # override $EDITOR for this repo
+```
+
+For GUI editors that fork off the terminal, prefer `mode = "shell"` with a custom `shell_cmd` that launches the editor - that way the TUI doesn't suspend uselessly while the GUI runs.
+
+### `finder` - pre-v0.6 behaviour
+
+Hand off to the OS file manager **without** suspending the TUI:
+
+- macOS: `open <path>`
+- Linux: `xdg-open <path>`
+- Windows: `explorer <path>`
+
+This is the pre-v0.6 default; opt back in with `mode = "finder"`. Useful when the worktree carries binary assets you actually want to inspect in the OS file picker.
+
+## Why the default changed
+
+The pre-v0.6 open key opened the OS file manager unconditionally, but the most common follow-up was "now I want a shell here" - so most users ended up either ignoring it entirely or wiring it through a `yank-path-and-cd` workaround. v0.6 made `shell` the default `[tui.open]` mode.
+
+Opt back into the old finder flow with two lines in `.gwm.toml`:
+
+```toml
+[tui.open]
+mode = "finder"
+```
+
+## Related
+
+- [Configurable launchers](/tui/launchers) - the `l` / `L` git-TUI and `r` / `R` review overlays, same PTY machinery as `o`
+- [Keybindings](/tui/keybindings) - where `o` / `O` live in the key map
+- [Configuration → `.gwm.toml` schema](/configuration/gwm-toml#tuiopen) - full `[tui.open]` field list

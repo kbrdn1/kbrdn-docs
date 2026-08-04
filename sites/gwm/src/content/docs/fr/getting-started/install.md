@@ -1,0 +1,162 @@
+---
+title: Installation
+description: Installez gwm depuis crates.io, les sources, Homebrew, des binaires précompilés ou un flake Nix.
+sidebar:
+  order: 1
+---
+
+gwm est livré sous forme d'un unique binaire autonome. Choisissez le canal qui correspond à votre workflow - ils produisent tous le même exécutable `gwm`.
+
+## Depuis les sources
+
+```bash
+git clone https://github.com/kbrdn1/gwm-cli.git
+cd gwm-cli
+cargo install --path .
+```
+
+Le binaire arrive dans `~/.cargo/bin/gwm`. Nécessite une toolchain Rust stable récente - le MSRV est **1.95**.
+
+## Depuis crates.io
+
+```bash
+cargo install gwm-cli
+```
+
+Le crate est publié sous le nom [`gwm-cli`](https://crates.io/crates/gwm-cli) - le nom nu `gwm` sur crates.io est un projet tiers sans rapport - et installe malgré tout la commande `gwm`. Ceci compile depuis les sources publiées (mêmes exigences de toolchain / MSRV que _depuis les sources_ ci-dessus) ; utilisez _via cargo-binstall_ ci-dessous pour éviter entièrement la compilation de `git2` / vendored-libgit2.
+
+## Via cargo-binstall
+
+```bash
+cargo binstall gwm-cli
+```
+
+[`cargo-binstall`](https://github.com/cargo-bins/cargo-binstall) lit le bloc `[package.metadata.binstall]` du `Cargo.toml` de `gwm`, télécharge l'archive précompilée correspondant au triple de votre hôte depuis la GitHub Release, l'extrait et dépose le binaire dans `~/.cargo/bin/`. Aucune toolchain Rust ni compilation C de `git2`/libgit2 n'est nécessaire au moment de l'installation - bien plus rapide que `cargo install` au premier lancement.
+
+Les métadonnées pointent vers les mêmes artefacts que ceux publiés par le workflow de release (`gwm-v{version}-{target}.tar.gz`, ou `.zip` sous Windows), de sorte que toute release taguée est binstall-able. `tests/binstall_metadata_tests.rs` verrouille le bloc contre toute dérive.
+
+## Via Homebrew (macOS)
+
+```bash
+brew tap kbrdn1/tap
+brew install gwm
+```
+
+La formule se trouve dans [`kbrdn1/homebrew-tap`](https://github.com/kbrdn1/homebrew-tap) (`Formula/gwm.rb`) et est rafraîchie automatiquement à chaque release **stable** de `gwm-cli` par le job `homebrew-tap-update` de [`release.yml`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/workflows/release.yml). Le template canonique de la formule se trouve dans [`packaging/homebrew/gwm.rb.template`](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/homebrew/gwm.rb.template). Les tags de pré-release (`-rc.N`, `-alpha.N`, `-beta.N`) sont filtrés, donc `brew install gwm` pointe toujours vers un build stable.
+
+Voir [Intégrations → Homebrew & Nix](/fr/integrations/homebrew-nix) pour le détail du pipeline de mise à jour du tap et des sorties du flake.
+
+## Via Scoop (Windows)
+
+```powershell
+scoop bucket add gwm https://github.com/kbrdn1/scoop-gwm
+scoop install gwm
+```
+
+Le manifest se trouve dans [`kbrdn1/scoop-gwm`](https://github.com/kbrdn1/scoop-gwm) (`bucket/gwm.json`) et est rafraîchi automatiquement à chaque release **stable** par le job `scoop-bucket-update` de [`release.yml`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/workflows/release.yml) - l'équivalent Windows du tap Homebrew. Le template canonique se trouve dans [`packaging/scoop/gwm.json.template`](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/scoop/gwm.json.template). Les tags de pré-release sont filtrés, donc `scoop install gwm` pointe toujours vers un build stable. `scoop update gwm` récupère chaque nouvelle version une fois que le job de release a poussé le `bucket/gwm.json` rafraîchi - le bloc `autoupdate` du manifest est une métadonnée côté mainteneur (consommée par l'outillage `checkver`/excavator de Scoop pour régénérer le manifest), pas ce qui déclenche les mises à jour côté client.
+
+## Binaires précompilés
+
+Les releases sur <https://github.com/kbrdn1/gwm-cli/releases> fournissent des binaires signés accompagnés de sidecars `.sha256` pour :
+
+- Linux (`x86_64`, `aarch64`)
+- macOS (Intel, Apple Silicon)
+- Windows (`x86_64`)
+
+Déposez le binaire sur votre `$PATH`, rendez-le exécutable, et c'est terminé.
+
+## Debian / Ubuntu (`.deb`)
+
+Chaque release stable fournit des paquets `.deb` pour `x86_64` (`amd64`) et `aarch64` (`arm64`), construits par [`cargo-deb`](https://github.com/kornelski/cargo-deb) et attachés à la [release](https://github.com/kbrdn1/gwm-cli/releases). Téléchargez celui de votre architecture et installez-le :
+
+```bash
+# x86_64 — récupérez gwm-cli_<version>-1_amd64.deb depuis la page des releases, puis :
+sudo apt install ./gwm-cli_<version>-1_amd64.deb
+# aarch64 → gwm-cli_<version>-1_arm64.deb
+```
+
+Utilisez `apt install ./…` (notez le `./` initial) plutôt que `dpkg -i` : le paquet dépend de `git` (`Depends`), et `apt` le tire automatiquement, alors que `dpkg -i` ne résout pas les dépendances et échoue sur un système qui n'a pas déjà git.
+
+Le paquet s'appelle **`gwm-cli`** et déclare `Conflicts: gwm` - Debian fournit un gestionnaire de fenêtres X11 `gwm` sans rapport qui possède aussi `/usr/bin/gwm`, donc les deux ne peuvent pas être installés ensemble (retirez le gestionnaire de fenêtres d'abord si vous l'avez). La commande installée reste `gwm`. Le binaire ne lie dynamiquement que glibc (libgit2 et zlib sont liés statiquement), et gwm appelle le binaire `git` à l'exécution - d'où `Depends: libc6 (>= 2.34), git`. Les paquets sont construits sur `ubuntu-latest`, ils déclarent donc un plancher glibc et ne s'installent proprement que sur les distributions au niveau ou au-dessus (RHEL 8 et Ubuntu 20.04 sont trop anciennes ; utilisez `cargo install` sur celles-ci). Chaque `.deb` a un sidecar `.sha256` pour vérification.
+
+## Fedora / RHEL / openSUSE (`.rpm`)
+
+De même, des paquets `.rpm` pour `x86_64` et `aarch64` sont construits par [`cargo-generate-rpm`](https://github.com/cat-in-136/cargo-generate-rpm) et attachés à chaque release stable :
+
+```bash
+# Fedora / RHEL (x86_64)
+sudo dnf install ./gwm-cli-<version>-1.x86_64.rpm
+# aarch64 → gwm-cli-<version>-1.aarch64.rpm
+# openSUSE :
+sudo zypper install ./gwm-cli-<version>-1.x86_64.rpm
+```
+
+Installez via `dnf`/`zypper` (pas `rpm -i`) : le paquet requiert `git` (`Requires`), et ces gestionnaires le résolvent automatiquement, alors que `rpm -i` ne tire pas les dépendances et échoue si git n'est pas déjà installé.
+
+## Arch Linux (AUR)
+
+Arch et ses dérivées (Manjaro, EndeavourOS, …) s'installent depuis l'AUR via n'importe quel helper :
+
+```bash
+yay -S gwm-cli-bin
+# ou : paru -S gwm-cli-bin
+```
+
+> [!WARNING]
+> **`gwm-cli-bin` est maintenu par un contributeur de la communauté, pas par ce projet.** Il a été soumis à l'AUR de façon indépendante, donc la pipeline de release de gwm n'a aucun droit de push dessus et ne peut pas le rafraîchir. Sa version peut donc être en retard sur une release : à l'heure où ces lignes sont écrites il est en **1.5.0** alors que la release courante est la **1.6.0**.
+>
+> Rien n'indique de mauvaise foi - le paquet est correct dans sa forme, pointe vers ce dépôt et déclare les bonnes dépendances. Mais c'est une build produite par un tiers, ce qu'il vaut mieux savoir avant d'installer. Pour la version courante sur Arch, utilisez `cargo binstall gwm-cli` ou une tarball pré-compilée. Suivi dans [#430](https://github.com/kbrdn1/gwm-cli/issues/430).
+
+`gwm-cli-bin` est un paquet **binaire pré-compilé** : il télécharge la tarball linux-gnu `x86_64` ou `aarch64` depuis la Release GitHub correspondante, vérifie son `sha256`, puis installe le binaire `gwm`, la licence MIT et les complétions shell bash/zsh/fish - aucune compilation, aucune toolchain Rust. Il déclare `provides`/`conflicts` sur `gwm-cli` **et** `gwm` (il possède `/usr/bin/gwm`), donc il ne cohabite pas avec une build source du même outil.
+
+Ce dépôt a embarqué un temps un job `aur-publish` censé pousser une build stable à chaque release. Il a été retiré : pour la raison d'appartenance ci-dessus il ne pouvait pas pousser, donc il se contentait d'échouer en silence à chaque tag. Le [template `PKGBUILD`](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/aur/PKGBUILD.template) et son script de rendu restent maintenus et testés, et l'AUR est désormais alimenté à la main, comme Nixpkgs et aqua.
+
+## Via un flake Nix
+
+Un `flake.nix` se trouve à la racine du dépôt. Avec les flakes activés :
+
+```bash
+# exécution one-shot, sans clone
+nix run github:kbrdn1/gwm-cli -- list
+
+# installer dans votre profil
+nix profile install github:kbrdn1/gwm-cli
+
+# dans une config NixOS / nix-darwin, via l'overlay
+nixpkgs.overlays = [ inputs.gwm.overlays.default ];
+environment.systemPackages = [ pkgs.gwm ];
+```
+
+Le paquet est construit via `rustPlatform.buildRustPackage` et épingle `Cargo.lock` ; la feature `vendored-libgit2` de `git2` garde la closure exempte de libgit2 système.
+
+## Via aqua
+
+[aqua](https://aquaproj.github.io/) est un gestionnaire de versions de CLI déclaratif et épinglé. gwm figure dans le **registre standard**, aucun registre custom à câbler :
+
+```bash
+# ajouter le paquet à aqua.yaml et l'installer en une étape
+aqua g -i kbrdn1/gwm-cli
+
+# ou le déclarer soi-même, puis installer
+#   packages:
+#     - name: kbrdn1/gwm-cli@v1.6.0
+aqua i
+```
+
+aqua télécharge le binaire précompilé correspondant à votre plateforme depuis la Release GitHub associée et vérifie son `sha256` face au fichier `.sha256` publié à côté. Aucune compilation, aucune toolchain Rust. Linux, macOS et Windows sont couverts (Intel et ARM) ; Windows sur ARM exécute la build x64 en émulation.
+
+Le paquet exige le registre standard **`v4.539.0` ou plus récent** : c'est la release qui l'a introduit. Si `aqua g -i kbrdn1/gwm-cli` signale un paquet inconnu, votre `aqua.yaml` est épinglé sur un `ref` de registre plus ancien : montez-le.
+
+## Vérifier l'installation
+
+```bash
+gwm --version
+gwm doctor                     # exécute une batterie de vérifications de cohérence
+```
+
+Si `gwm doctor` renvoie un code non nul, rendez-vous sur [`gwm doctor`](/fr/integrations/doctor) pour les conseils de remédiation par vérification.
+
+## Suite
+
+- [Créer votre premier worktree](/fr/getting-started/first-worktree)
+- [Configurer `gcd` pour un `cd` en une ligne vers un worktree](/fr/getting-started/shell-init)
