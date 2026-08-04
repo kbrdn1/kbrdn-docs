@@ -1,0 +1,120 @@
+name: sync-gwm
+
+# Rejoue la conversion de la doc de `kbrdn1/gwm-cli` vers `sites/gwm`, puis
+# déclenche le déploiement.
+#
+# Le déclencheur vient d'en face : `docs-sync.yml` chez gwm-cli sonne ici à
+# chaque livraison sur `main` (`repository_dispatch`, type `gwm-docs`). C'est
+# `main` et pas `dev` parce que main n'est atteinte que par une PR
+# `dev` → `main` : ce qui y arrive est ce qui est livré, et c'est exactement ce
+# que le site doit servir.
+#
+# Les pages générées restent versionnées ici. Elles pourraient être construites
+# à la volée, mais `ci.yml` construit le site à chaque push et PR : sans elles
+# dans l'arbre, la CI casserait. Le bot les commite donc, et le dépôt reste
+# l'image fidèle de ce qui est en ligne.
+
+on:
+  repository_dispatch:
+    types: [gwm-docs]
+  workflow_dispatch:
+
+# Deux livraisons rapprochées poussent sur la même branche : sérialiser évite
+# le rejet en non-fast-forward. Surtout pas `cancel-in-progress` — un run
+# annulé après son commit et avant son déploiement laisserait le site en
+# retard d'une version sans que rien ne soit rouge.
+concurrency:
+  group: sync-gwm
+  cancel-in-progress: false
+
+permissions:
+  contents: write # le bot commite la dérive
+  actions: write # et réveille deploy.yml
+
+jobs:
+  sync:
+    name: gwm-cli → sites/gwm
+    runs-on: ubuntu-latest
+    steps:
+      # Ce checkout-ci pousse : il garde le token que `actions/checkout`
+      # injecte. Il vient en premier, sinon son nettoyage d'espace de travail
+      # effacerait la copie de gwm-cli.
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: checkout kbrdn1/gwm-cli
+        uses: actions/checkout@v6
+        with:
+          repository: kbrdn1/gwm-cli
+          ref: main
+          path: .gwm-cli
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      # Le script de conversion n'importe que des modules node : il tournerait
+      # sans dépendances. C'est prettier qui les impose, et il faut le prettier
+      # du lockfile, pas celui que `bunx` irait chercher : un écart de version
+      # entre le formateur qui écrit et le vérificateur qui relit est
+      # exactement ce qui produit une CI rouge irreproductible en local.
+      - run: bun install --frozen-lockfile
+
+      - name: sync
+        env:
+          GWM_REPO: ${{ github.workspace }}/.gwm-cli
+        run: bun run sync:gwm
+
+      # `ci.yml` fait tourner `prettier --check .` sur chaque push : sans ce
+      # passage, la conversion produit 80 fichiers non formatés et le commit du
+      # bot repeint la CI en rouge à chaque livraison. Portée aux pages
+      # générées, pour que le bot ne reformate jamais du travail écrit à la
+      # main au passage.
+      - name: formater la sortie
+        run: bunx prettier --write sites/gwm/src/content/docs
+
+      - name: commit la dérive
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Chemin exact des écritures du script (pages + captures), et pas
+          # `git add -A` : la copie de gwm-cli vit dans l'espace de travail et
+          # serait embarquée dans le commit.
+          git add sites/gwm/src
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::doc déjà à jour, rien à committer"
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          sha="$(git -C .gwm-cli rev-parse --short HEAD)"
+          git commit -m "📝 docs(gwm): resynchronise depuis gwm-cli@${sha}"
+
+          # Cible explicite : correcte que le checkout ait laissé une branche
+          # locale ou une HEAD détachée, et un push concurrent la fait échouer
+          # bruyamment au lieu de passer à côté. Le groupe `concurrency`
+          # sérialise ce workflow, pas une poussée à la main dans la minute.
+          git push origin HEAD:main
+
+      # Un push signé du GITHUB_TOKEN ne déclenche aucun workflow — c'est une
+      # garde anti-récursion de GitHub, pas un réglage. Sans cet appel,
+      # deploy.yml resterait muet malgré son filtre sur `sites/gwm/**`.
+      - name: déployer
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main
+
+      # deploy.yml est derrière `vars.DEPLOY_ENABLED == 'true'` : tant que la
+      # variable manque, son job est *sauté*, donc vert. Le dire ici, sinon la
+      # chaîne se lit comme un succès alors que rien n'est publié.
+      - name: rappeler que le déploiement est encore inerte
+        if: steps.commit.outputs.changed == 'true' && vars.DEPLOY_ENABLED != 'true'
+        run: |
+          echo "::warning::DEPLOY_ENABLED n'est pas à 'true' : la doc est synchronisée et commitée, mais deploy.yml se saute sans rien publier. Voir l'en-tête de deploy.yml pour les prérequis."
