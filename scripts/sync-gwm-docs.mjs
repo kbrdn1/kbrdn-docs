@@ -117,6 +117,7 @@ const LOWERCASE_IDENTS = new Set([
   'elvish',
   'tmux',
   'zellij',
+  'herdr',
   'lazygit',
   'libgit2',
   'ratatui',

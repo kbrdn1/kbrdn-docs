@@ -3,6 +3,16 @@ title: gwm
 description: Git Worktree Manager - un CLI Rust et une TUI ratatui pour gérer les worktrees Git de tous vos projets, avec un bootstrap par dépôt.
 template: splash
 tableOfContents: false
+# Cf. la landing anglaise : sans surcharge, Starlight sort `gwm | gwm` sur la
+# home, dont le titre vaut le nom du site. Le `title` frontmatter reste « gwm »
+# (le Hero l'affiche), seul le head change.
+head:
+  - tag: title
+    content: gwm - gestionnaire de worktrees Git (CLI + TUI)
+  - tag: meta
+    attrs:
+      property: og:title
+      content: gwm - gestionnaire de worktrees Git (CLI + TUI)
 hero:
   tagline: Gérez vos worktrees Git partout, en CLI comme en TUI.
   actions:
@@ -208,6 +218,38 @@ sont embarqués dans le binaire.
 
 Choisissez-en un dans `.gwm.toml`, surchargez n'importe quel rôle par-dessus -
 voir [Thèmes](/fr/tui/themes/).
+
+</Section>
+
+<Section pad="column" label="Dans herdr" id="herdr">
+
+[herdr](https://herdr.dev) est un multiplexeur de terminal, et
+`herdr-plugin-gwm` y pilote gwm : créer, changer de worktree, supprimer,
+matérialiser une PR avec `gwm review`, `exec` et `clean` sur tous les worktrees,
+plus la TUI de gwm dans un pane.
+
+gwm reste l'unique source de vérité. Le plugin ne crée jamais de worktree côté
+herdr - il adopte ce que gwm a produit et ferme le reflet quand gwm le
+supprime, donc les deux ne peuvent pas diverger.
+
+```bash
+herdr plugin install kbrdn1/herdr-plugin-gwm
+```
+
+<p class="gwm-meta">
+  herdr ≥ 0.7.4 · <code>gwm</code> dans le PATH · jq · fzf · macOS · Linux · MIT ·{' '}
+  <a href="/fr/integrations/herdr/">chaque action en détail →</a>
+</p>
+
+<RepoCard
+  owner="kbrdn1"
+  repo="herdr-plugin-gwm"
+  description="Plugin herdr qui pilote gwm pour la gestion des worktrees - gwm reste la source de vérité, herdr adopte."
+  language="Shell"
+  languageColor="#89e051"
+  license="MIT"
+  cta="Voir sur GitHub"
+/>
 
 </Section>
 

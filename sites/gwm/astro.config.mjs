@@ -12,7 +12,7 @@ export default defineConfig({
   // c'est cette valeur qui part dans le sitemap et les URLs canoniques, donc
   // elle doit être celle qu'on veut voir indexée. La pages.dev continue d'être
   // servie en parallèle, elle ne se retire pas.
-  site: 'https://gwm-docs.kbrdn.dev',
+  site: 'https://gwm.kbrdn.dev',
 
   // GFM (tables, strikethrough, task lists…) n'est pas actif par défaut sur
   // cette combinaison Astro 6 / Starlight 0.39 — sans ça, les tables Markdown
@@ -59,6 +59,7 @@ export default defineConfig({
       // Composants partagés (overrides) servis depuis le package du monorepo,
       // + Hero custom local répliquant l'identité du portfolio kbrdn.dev.
       components: {
+        Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
         Footer: '@kbrdn/ds-shared/components/Footer.astro',
         TableOfContents: '@kbrdn/ds-shared/components/TableOfContents.astro',
