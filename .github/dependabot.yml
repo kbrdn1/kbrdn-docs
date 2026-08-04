@@ -18,12 +18,16 @@ updates:
       prefix: '⬆️ chore(deps)'
       include: 'scope'
     ignore:
-      # TypeScript 7 (port natif) casse `astro check` : @astrojs/language-server
-      # plante sur `AstroCheck.getTsconfig` → `Cannot read properties of
-      # undefined (reading 'fileExists')`. À retirer quand le language-server
-      # supportera l'API TS 7 (cf. #39).
+      # TypeScript 7 (compilateur natif) n'expose pas l'API programmatique dont
+      # `astro check` dépend — @astrojs/language-server ≥ 2.16.13 le détecte et
+      # refuse de démarrer : « TypeScript's native compiler (7.0 and later) does
+      # not ship this API yet ». Suivi : withastro/roadmap#1321.
+      #
+      # Borné à `>=7`, et pas à toutes les majeures : 6.x fournit encore l'API
+      # (le message d'erreur le dit lui-même), donc l'ignorer en bloc nous
+      # aurait coupés de la majeure qu'on peut prendre — et de la prochaine.
       - dependency-name: 'typescript'
-        update-types: ['version-update:semver-major']
+        versions: ['>=7']
     groups:
       astro-stack:
         patterns:
