@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   lint:
-    name: oxlint + prettier
+    name: oxlint + prettier + tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -25,6 +25,12 @@ jobs:
         run: bun run lint
       - name: prettier --check
         run: bun run format:check
+      # Le noyau de conversion (`scripts/lib/convert.mjs`) est lancé sans relecture
+      # humaine : `sync-gwm.yml` le déclenche sur un `repository_dispatch`, commite
+      # ce qu'il produit et déploie. Une régression de mapping se publierait donc
+      # seule, d'où ce gate.
+      - name: bun test
+        run: bun test
 
   build:
     name: astro check + build
