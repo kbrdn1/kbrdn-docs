@@ -1,19 +1,911 @@
 /* @kbrdn/ds-shared — tokens de design partagés par tous les sites produits.
-   Chargé en premier via customCss ; chaque produit surcharge ensuite ses
-   accents dans son propre fichier CSS.
-   Réf. variables : https://starlight.astro.build/guides/css-and-tailwind/ */
-:root {
-  /* Accent par défaut (bleu neutre) — surchargé par produit. */
-  --sl-color-accent-low: #d9e5ff;
-  --sl-color-accent: #2b6cff;
-  --sl-color-accent-high: #16306b;
+   Identité « Claude Dark » du portfolio kbrdn.dev : orange Claude, gris purs,
+   coins nets, polices Inter / Monaspace Krypton / Fenix (display).
+   Chargé en premier via customCss ; un produit peut surcharger ensuite.
 
-  /* Token maison réutilisable par les composants partagés. */
-  --kbrdn-radius: 0.5rem;
+   Ce fichier porte le design du portfolio sur Starlight. Chaque section cite
+   sa source dans kbrdn.dev-v2 pour qu'un écart se tranche sur le code d'origine
+   plutôt qu'à l'œil :
+     - tokens        → app/assets/css/theme.css
+     - motifs        → app/assets/css/components.css
+     - contenu       → app/assets/css/prose.css   (.prose-blog)
+     - chrome        → app/components/layout/BlogHeader.vue
+   Réf. variables Starlight : https://starlight.astro.build/guides/css-and-tailwind/ */
+
+/* ───────────────────────── Polices ─────────────────────────
+   Fichiers vendored par site (sites/<prod>/public/fonts). Inter est fourni
+   séparément via @fontsource-variable/inter (déclaré en customCss). */
+@font-face {
+  font-family: 'Monaspace Krypton';
+  src: url('/fonts/MonaspaceKrypton.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
 }
 
+@font-face {
+  font-family: 'Fenix';
+  src: url('/fonts/Fenix-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ───────────────────────── Dark mode (défaut) ───────────────────────── */
+:root {
+  /* Accent — orange Claude */
+  --sl-color-accent-low: #3d1f10;
+  --sl-color-accent: #c15f3c;
+  --sl-color-accent-high: #f4c895;
+
+  /* Gris purs — palette portfolio collapsée sur l'échelle Starlight (white → black) */
+  --sl-color-white: #f5f5f5;
+  --sl-color-gray-1: #e0e0e0;
+  --sl-color-gray-2: #b0b0b0;
+  --sl-color-gray-3: #999999;
+  --sl-color-gray-4: #555555;
+  --sl-color-gray-5: #3a3a3a;
+  --sl-color-gray-6: #242424;
+  --sl-color-black: #1a1a1a;
+
+  /* Typographie — Inter corps, Monaspace Krypton mono. Fenix = display only,
+     appliqué ponctuellement (hero, labels), jamais ici en global. */
+  --sl-font: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --sl-font-mono: 'Monaspace Krypton', 'JetBrains Mono', monospace;
+
+  /* Coins nets — signature du portfolio (--ui-radius: 0). */
+  --kbrdn-radius: 0;
+
+  /* Tokens décoratifs (bandes diagonales, triangles de coin) réutilisés par
+     les composants de marque (Hero…). */
+  --kbrdn-stripe-color: #333333;
+  --kbrdn-corner-color: #2a2a2a;
+  --kbrdn-border-color: #2a2a2a;
+  /* La grille de fond a sa propre valeur : la couleur des bordures est trop
+     contrastée en light (#e5e5e5 sur #f5f5f5 passe, #d4d4d4 assombrit la page). */
+  --kbrdn-grid-color: #2a2a2a;
+
+  /* Largeur du conteneur bordé du portfolio (BlogHeader.vue : max-width 80rem). */
+  --kbrdn-shell-width: 80rem;
+
+  /* Couleurs sémantiques — pilotent les asides (note/tip/caution/danger) et les
+     badges. Sans ce remap, Starlight sort ses hsl() bleu/violet par défaut, hors
+     charte. Valeurs = palette sémantique du portfolio (theme.css :39-50). */
+  --sl-color-blue: #7ab8ff;
+  --sl-color-blue-low: #1e2a38;
+  --sl-color-blue-high: #b8d9ff;
+  --sl-color-purple: #c79bff;
+  --sl-color-purple-low: #2b2338;
+  --sl-color-purple-high: #ddc4ff;
+  --sl-color-green: #86e89a;
+  --sl-color-green-low: #1c2f21;
+  --sl-color-green-high: #b5f2c2;
+  --sl-color-orange: #d4825d;
+  --sl-color-orange-low: #3d1f10;
+  --sl-color-orange-high: #f4c895;
+  --sl-color-red: #ff7a7a;
+  --sl-color-red-low: #3a1d1d;
+  --sl-color-red-high: #ffb3b3;
+}
+
+/* ───────────────────────── Light mode ───────────────────────── */
 :root[data-theme='light'] {
-  --sl-color-accent-low: #b3ccff;
-  --sl-color-accent: #1f5fe0;
-  --sl-color-accent-high: #16306b;
+  --sl-color-accent-low: #f8ddb8;
+  --sl-color-accent: #c15f3c;
+  --sl-color-accent-high: #8b3d24;
+
+  --sl-color-white: #1a1a1a;
+  --sl-color-gray-1: #242424;
+  --sl-color-gray-2: #3a3a3a;
+  --sl-color-gray-3: #555555;
+  --sl-color-gray-4: #999999;
+  --sl-color-gray-5: #d0d0d0;
+  --sl-color-gray-6: #e0e0e0;
+  --sl-color-gray-7: #f0eeeb;
+  --sl-color-black: #f5f5f5;
+
+  --kbrdn-stripe-color: #dddddd;
+  --kbrdn-corner-color: #d4d4d4;
+  --kbrdn-border-color: #e5e5e5;
+  --kbrdn-grid-color: #e8e8e8;
+
+  /* Sémantiques light — variantes assombries (cf. `:root .claude-code`). */
+  --sl-color-blue: #2563eb;
+  --sl-color-blue-low: #dbe7ff;
+  --sl-color-blue-high: #1a3f8f;
+  --sl-color-purple: #7c3aed;
+  --sl-color-purple-low: #e9defd;
+  --sl-color-purple-high: #4c1d95;
+  --sl-color-green: #16a34a;
+  --sl-color-green-low: #d7f5e1;
+  --sl-color-green-high: #14532d;
+  --sl-color-orange: #c15f3c;
+  --sl-color-orange-low: #f8ddb8;
+  --sl-color-orange-high: #8b3d24;
+  --sl-color-red: #e06060;
+  --sl-color-red-low: #fadcdc;
+  --sl-color-red-high: #7f1d1d;
+}
+
+/* ───────────────────────── Coins nets ─────────────────────────
+   Starlight n'expose PAS de variable de rayon globale : `--sl-border-radius`
+   n'existe pas dans props.css, ses composants codent leur rayon en dur (la
+   barre de recherche est à 8px). Il faut donc cibler les surfaces une à une. */
+/* Bouton « copier » d'Expressive Code sur appareil tactile. EC le réduit à 2rem
+   dès qu'une souris est détectée (`@media (hover: hover)` dans plugin-frames) et
+   le laisse à 2.5rem ailleurs, pour rester atteignable au doigt. Sur un écran de
+   téléphone ce carré pèse plus lourd que le bloc qu'il surmonte : on le pose
+   entre les deux valeurs — plus discret, encore assez grand pour être visé.
+   Ciblé sur `hover: none` pour ne pas court-circuiter la règle souris d'EC, qui
+   vaudrait sinon 2rem et perdrait contre celle-ci (elle vit dans une couche). */
+@media (hover: none) {
+  .expressive-code .copy button {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+.card,
+.sl-link-card,
+.starlight-aside,
+.sl-badge,
+.sl-markdown-content :is(pre, code),
+.expressive-code :is(.frame, pre, .copy button),
+site-search button,
+dialog,
+starlight-theme-select select,
+.right-sidebar select,
+a.action,
+.sl-link-button,
+.sl-markdown-content :is(img, video) {
+  border-radius: 0 !important;
+}
+
+/* ═══════════════════════ Coquille de page ═══════════════════════
+   Le portfolio pose une grille carrée 24px en fond de page et centre un
+   conteneur de 80rem bordé à gauche et à droite (BlogHeader.vue : `mx-auto
+   max-width: 80rem` + `border-x`). La grille ne reste visible que dans les
+   marges : le conteneur est opaque par-dessus. */
+/* ═══════════════════ Coquille centrée de 80rem ═══════════════════
+   Le portfolio enferme tout — barre du haut, corps, pied de page — dans un
+   conteneur de 80rem centré et bordé à gauche comme à droite, la grille
+   occupant les marges. Starlight, lui, étale sa mise en page sur toute la
+   fenêtre et positionne trois éléments en `fixed` (barre du haut, volet de
+   navigation, sommaire) : contraindre un ancêtre ne les déplacerait pas, ils se
+   réfèrent au viewport. On les décale donc chacun de la gouttière. */
+:root {
+  --kbrdn-gutter: max(0px, calc((100vw - var(--kbrdn-shell-width)) / 2));
+  /* Largeur du sommaire. Starlight réserve la bande de droite sur un élément
+     (`.right-sidebar-container`, dans le flux) et dessine le sommaire sur un
+     autre (`.right-sidebar`, en `fixed`) : les deux doivent lire le même jeton,
+     sinon on obtient soit un trou, soit un recouvrement — c'était le cas, la
+     réserve valait 289px pour un sommaire de 300px. */
+  --kbrdn-toc-width: 16rem;
+  /* Rembourrage de la colonne de lecture. Voir `.content-panel .sl-container`. */
+  --kbrdn-content-pad: 1.5rem;
+}
+
+.page {
+  background-image:
+    linear-gradient(var(--kbrdn-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--kbrdn-grid-color) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+  /* Le pied de page sort de la colonne de lecture en 100vw : sur une plateforme
+     à barre de défilement classique, 100vw dépasse la largeur utile d'une
+     quinzaine de pixels. `clip` et pas `hidden` : `hidden` ferait de `.page` un
+     conteneur de défilement et casserait les trois éléments `fixed` de
+     Starlight. */
+  overflow-x: clip;
+}
+
+@media (min-width: 50rem) {
+  /* Chaque bande est repositionnée explicitement plutôt qu'en ajoutant des
+     marges aux calculs de Starlight : ses trois éléments fixes sont ancrés sur
+     des largeurs de fenêtre, et un décalage relatif se cumule mal. `width:auto`
+     est nécessaire pour que les deux `inset-inline` gouvernent la largeur. */
+  /* `header.header` et pas `.header` : Expressive Code nomme aussi `header` la
+     légende de ses cadres de code (`figcaption.header`), et un sélecteur de
+     classe nu la décalait de la gouttière — le bandeau du bloc partait à droite
+     et débordait de son cadre. Un `figcaption` n'est pas un élément `header`. */
+  header.header {
+    inset-inline-start: var(--kbrdn-gutter);
+    inset-inline-end: var(--kbrdn-gutter);
+    width: auto;
+    border-inline: 1px solid var(--kbrdn-border-color);
+  }
+  .sidebar-pane {
+    inset-inline-start: var(--kbrdn-gutter);
+  }
+  .right-sidebar {
+    inset-inline-start: auto;
+    inset-inline-end: var(--kbrdn-gutter);
+    width: var(--kbrdn-toc-width);
+  }
+  /* La réserve dans le flux, à garder d'accord avec le sommaire lui-même.
+     `flex: none` neutralise le rétrécissement que le conteneur flex applique
+     sinon à la bande. */
+  .right-sidebar-container {
+    width: var(--kbrdn-toc-width);
+    flex: none;
+  }
+  /* Le conteneur flex du corps réserve déjà la place du sommaire à droite ; il
+     lui manque juste la gouttière. Le volet principal, lui, porte déjà le
+     décalage du volet de navigation : on n'ajoute que la gouttière de gauche. */
+  .main-frame > div {
+    margin-inline-end: var(--kbrdn-gutter);
+  }
+  .main-pane {
+    margin-inline-start: var(--kbrdn-gutter);
+    /* Un enfant flex refuse par défaut de descendre sous la largeur de son
+       contenu : sans ça, un tableau ou un bloc de code large pousse le volet
+       par-dessus le sommaire au lieu de défiler dans son propre cadre. */
+    min-width: 0;
+  }
+}
+
+/* ═══════════ Volets dans les gouttières (au-delà de 110rem) ═══════════
+   Au régime précédent, le volet de navigation et le sommaire mangeaient la
+   coquille : la colonne de lecture n'en occupait qu'un peu plus de la moitié
+   alors que la barre du haut, elle, faisait bien 80rem. Dès qu'il y a la place
+   dehors, on les sort — le contenu récupère toute la coquille et se cale donc
+   exactement sur la barre du haut.
+   Le seuil : il faut une gouttière au moins aussi large que le volet le plus
+   étroit encore lisible (15rem), soit 80 + 2×15 = 110rem. En dessous, on garde
+   le régime précédent, volets dans la coquille — il n'y a pas de dehors.
+   Effet de bord voulu : les volets ne croisent plus jamais le pied de page,
+   qui reste dans sa colonne. */
+@media (min-width: 110rem) {
+  :root {
+    /* Bornée, sinon un écran très large donnerait un volet de 640px. Les volets
+       sont collés au contenu, pas au bord de la fenêtre : c'est leur bord
+       intérieur qui touche le filet de la coquille. */
+    --kbrdn-pane-width: min(var(--kbrdn-gutter), 20rem);
+  }
+  .sidebar-pane {
+    inset-inline-start: calc(var(--kbrdn-gutter) - var(--kbrdn-pane-width));
+    width: var(--kbrdn-pane-width);
+  }
+  .right-sidebar {
+    inset-inline-end: calc(var(--kbrdn-gutter) - var(--kbrdn-pane-width));
+    width: var(--kbrdn-pane-width);
+  }
+  /* Plus rien à réserver dans la coquille, ni à gauche (padding que Starlight
+     pose sur `.main-frame`) ni à droite (bande du sommaire). */
+  .main-frame {
+    padding-inline-start: 0;
+  }
+  .right-sidebar-container {
+    width: 0;
+  }
+  .main-pane {
+    width: auto;
+  }
+}
+
+/* ══════════ Bascule mobile anticipée (50rem → 110rem) ══════════
+   Starlight passe en mobile à 50rem pour le volet de navigation et à 72rem pour
+   le sommaire. Entre ces seuils et 110rem, les deux volets tiennent dans la
+   coquille et rognent la colonne de lecture — exactement ce qu'on vient de
+   supprimer au-dessus de 110rem. On remonte donc la bascule : dès qu'il n'y a
+   plus la place de les mettre DEHORS, ils repassent en panneau et en menu
+   déroulant, et le contenu garde toute la largeur de la barre du haut.
+   Les règles de Starlight vivent dans `@layer starlight.core` ; les nôtres ne
+   sont pas dans une couche, donc elles gagnent quelle que soit la spécificité. */
+@media (min-width: 50rem) and (max-width: 109.9375rem) {
+  /* Starlight met cette hauteur à zéro au-dessus de 72rem, alors que la barre
+     repliée reprend du service ici. Conditionnée à `[data-has-toc]`, comme
+     Starlight le fait : une page sans sommaire ne doit rien réserver. */
+  :root[data-has-toc] {
+    --sl-mobile-toc-height: 3rem;
+  }
+
+  /* Plus de réserve pour le volet : le contenu part du bord de la coquille. */
+  .main-frame {
+    --sl-content-inline-start: 0px;
+    padding-inline-start: 0;
+  }
+
+  /* Volet de navigation en panneau plein écran, caché tant que le menu n'est
+     pas ouvert. */
+  .sidebar-pane {
+    --sl-sidebar-visibility: hidden;
+    inset-inline-start: 0;
+    width: 100%;
+    background-color: var(--sl-color-black);
+    border-inline-end: none;
+  }
+  /* Il FAUT rejouer aussi la règle d'ouverture. Celle de Starlight est plus
+     spécifique mais vit dans `@layer starlight.core`, et une règle hors couche
+     l'emporte quelle que soit la spécificité : la ligne ci-dessus gagnait donc
+     même menu ouvert, et le hamburger ne révélait rien. */
+  [aria-expanded='true'] ~ .sidebar-pane {
+    --sl-sidebar-visibility: visible;
+  }
+
+  /* Bouton hamburger : Starlight le masque au-dessus de 50rem, on le rend. */
+  starlight-menu-button button {
+    display: flex;
+  }
+
+  /* Sommaire : le cadre de bureau disparaît, la barre repliable reprend.
+     Trois gestes distincts, et pas un `display: none` sur le conteneur — la
+     barre mobile vit DANS ce même conteneur, la masquer en bloc la supprimait
+     aussi (elle gardait sa hauteur réservée en haut du contenu, mais rendait
+     une boîte vide). On annule donc la réserve de largeur, on remet le volet
+     dans le flux pour qu'il ne se dessine plus en panneau flottant, et on ne
+     masque que le cadre de bureau. */
+  .right-sidebar-container {
+    width: 0;
+  }
+  .right-sidebar {
+    position: static;
+    width: auto;
+    height: auto;
+    padding-top: 0;
+    border-inline-start: none;
+    overflow: visible;
+  }
+  .right-sidebar-panel {
+    display: none;
+  }
+  .lg\:sl-hidden:has(mobile-starlight-toc) {
+    display: block;
+  }
+  /* Starlight fige la largeur du volet principal au-dessus de 72rem, sur une
+     formule qui déduit la place du sommaire (`--sl-content-width` + moitié du
+     reste). Les volets étant repliés, il n'y a plus rien à déduire : il prend
+     toute la rangée, sinon la colonne s'arrêtait à 979px dans une coquille de
+     1280. */
+  .main-pane {
+    width: auto;
+    flex: 1;
+  }
+}
+/* Le volet principal est plein : la grille reste dehors, jamais derrière le
+   texte. Ses deux filets verticaux le délimitent contre les volets latéraux. */
+.main-pane {
+  background-color: var(--sl-color-bg);
+  border-inline: 1px solid var(--kbrdn-border-color);
+}
+main {
+  background-color: transparent;
+}
+/* Le sommaire replié est passé EN BAS de la fenêtre (voir le composant
+   MobileTableOfContents) : Starlight réservait sa hauteur sous la barre du
+   haut, ce qui laissait une bande vide entre la navigation et le contenu. On ne
+   garde que la hauteur de la barre du haut, et la réserve passe en bas — où
+   elle sert vraiment, sinon le bandeau fixe recouvre la fin du pied de page.
+   `--sl-mobile-toc-height` vaut zéro quand il n'y a pas de sommaire, donc la
+   réserve disparaît d'elle-même. Ça remplace aussi le `3vh` que Starlight
+   ajoutait sous `main` et qui traînait au bas du pied de page. */
+.main-frame {
+  padding-top: var(--sl-nav-height);
+}
+.main-pane > main {
+  padding-bottom: var(--sl-mobile-toc-height, 0px);
+}
+/* La colonne de lecture est opaque de bout en bout : c'est la seule façon que
+   la grille reste DEHORS. Starlight met son padding vertical sur .content-panel
+   (donc hors du conteneur opaque) — on le déplace sur .sl-container, sinon la
+   grille repasse dans les bandes au-dessus et en dessous du texte. */
+.content-panel {
+  padding-block: 0;
+  /* Starlight rembourre `.content-panel` ET `.sl-container` : 48px de chaque
+     côté, sur une colonne déjà étroite. Le portfolio n'en met qu'un (`p-6`), on
+     garde donc celui du conteneur intérieur. */
+  padding-inline: 0;
+}
+/* Le contenu occupe toute la largeur du volet : pas de colonne étroite centrée.
+   `--sl-content-width` reste à sa valeur, plusieurs calc() de Starlight (dont
+   la grille du header) s'en servent — c'est le conteneur qu'on libère. */
+.content-panel .sl-container {
+  max-width: 100%;
+  /* Jeton et pas littéral : le pied de page sort de cette colonne et doit
+     retrancher exactement ce rembourrage pour retomber sur le bord de la
+     fenêtre. La landing le met à zéro (ses sections gèrent le leur), et une
+     valeur écrite deux fois finirait par diverger. */
+  padding: var(--kbrdn-content-pad);
+}
+/* Panneaux consécutifs (titre puis corps) : un seul filet de séparation. */
+.content-panel + .content-panel {
+  border-top: 1px solid var(--kbrdn-border-color);
+}
+/* Le padding ci-dessus rogne la largeur utile : on la rend au contenu, sinon
+   les onglets de code passent à la ligne. */
+:root {
+  --sl-content-width: 48rem;
+}
+/* Les volets sont transparents : la grille doit se voir derrière eux. Seul le
+   header reste plein, comme la barre fixe du portfolio. */
+.sidebar-pane,
+.right-sidebar,
+.right-sidebar-panel {
+  background-color: transparent;
+}
+header.header {
+  background-color: var(--sl-color-bg);
+}
+
+/* Tous les filets de Starlight passent par les variables hairline : les
+   repointer suffit, plutôt que de cibler chaque bordure. */
+:root {
+  --sl-color-hairline: var(--kbrdn-border-color);
+  --sl-color-hairline-shade: var(--kbrdn-border-color);
+  --sl-color-hairline-light: var(--kbrdn-border-color);
+}
+
+/* Marque en mono bold serré, comme `blog@kbrdn1` du portfolio
+   (BlogHeader.vue :68). Le header reprend aussi sa hauteur de 3.5rem. */
+.site-title {
+  font-family: var(--sl-font-mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  /* `mr-2` au portfolio. Starlight écarte le logo du nom de 1.5rem, ce qui
+     coupait la marque en deux morceaux au lieu d'un logotype. */
+  gap: 0.5rem;
+}
+/* La barre remplit son bandeau : les cellules doivent aller d'un bord à
+   l'autre, sans bande vide au-dessus et en dessous. */
+header.header {
+  padding-block: 0;
+  align-items: stretch;
+}
+:root {
+  --sl-nav-height: 3.5rem;
+  /* Les cellules de la barre butent contre les filets de la coquille, comme au
+     portfolio. Le rembourrage par défaut de Starlight laissait 25px de vide de
+     chaque côté, entre le filet et la marque. */
+  --sl-nav-pad-x: 0rem;
+}
+
+/* Filets verticaux entre les groupes du header — le portfolio sépare chaque
+   zone (marque, nav, contrôles) par une bordure plutôt que par du blanc. */
+header.header .right-group {
+  border-inline-start: 1px solid var(--kbrdn-border-color);
+  padding-inline-start: 1rem;
+}
+/* Bouton hamburger : Starlight en fait une pastille ronde blanche à ombre
+   portée, posée au bord de la fenêtre — hors charte partout où il apparaît,
+   pas seulement dans la bande où on le rend visible. Il devient une cellule
+   carrée et plate de la barre, calée dans la coquille. Les règles de Starlight
+   (y compris son inversion en thème clair) vivent dans `@layer starlight.core`,
+   donc celles-ci passent devant sans avoir à surenchérir en spécificité. */
+starlight-menu-button button {
+  inset-inline-end: calc(var(--kbrdn-gutter) + 0.75rem);
+  border-radius: 0;
+  box-shadow: none;
+  background-color: transparent;
+  color: var(--sl-color-white);
+}
+starlight-menu-button button:hover {
+  background-color: color-mix(in srgb, var(--sl-color-gray-5) 30%, transparent);
+}
+/* Et la place qu'il occupe est réservée dans la barre, sinon il se pose sur la
+   dernière cellule (sélecteur de langue en tablette, recherche en mobile). */
+@media (max-width: 109.9375rem) {
+  .kbrdn-nav {
+    padding-inline-end: calc(var(--sl-menu-button-size) + 1.5rem);
+  }
+}
+
+/* Les libellés français (« Sombre », « Français ») débordent des largeurs
+   calées sur « Dark » / « English » et se font tronquer. */
+starlight-theme-select select,
+starlight-lang-select select {
+  min-width: 7.5rem;
+}
+/* ... mais sur petit écran ce plancher fait sortir les deux sélecteurs de la
+   barre : ils reprennent leur largeur naturelle et le libellé s'efface, seule
+   l'icône reste. */
+@media (max-width: 49.9375rem) {
+  starlight-theme-select select,
+  starlight-lang-select select {
+    min-width: 0;
+    width: 2rem;
+    padding-inline: 0;
+    color: transparent;
+  }
+  starlight-theme-select label > svg:last-of-type,
+  starlight-lang-select label > svg:last-of-type {
+    display: none;
+  }
+}
+
+/* ═══════════════════════ Contenu (prose) ═══════════════════════
+   Port de app/assets/css/prose.css (.prose-blog) sur .sl-markdown-content.
+   Les valeurs sont celles du portfolio, pas des approximations. */
+.sl-markdown-content {
+  line-height: 1.75;
+}
+
+/* Titres en Fenix (prose.css :51-56). Tailles : h1 2rem/700, h2 1.5rem/600,
+   h3 1.25rem/600. */
+.sl-markdown-content :is(h1, h2, h3, h4),
+.content-panel h1 {
+  font-family: 'Fenix', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+.content-panel h1,
+.sl-markdown-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+.sl-markdown-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.sl-markdown-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* ════════════════ Page d'accueil : sections de landing ════════════════
+   Le libellé de section (`HomeSectionLabel` du portfolio : 11px mono uppercase,
+   interlettrage 0.2em, gris) est un `h2` : la règle générique ci-dessus le
+   rattrape et le rend en Fenix 24px. Le style scopé d'Astro ne suffit pas, il a
+   la même spécificité — d'où le `h2` collé à la classe, qui passe devant. */
+.sl-markdown-content h2.kbrdn-section__label {
+  margin: 0 0 1rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+  border: none;
+}
+
+/* Les sections vont d'un filet vertical à l'autre et se touchent : chacune
+   porte déjà son propre trait et son propre rembourrage. Les panneaux de
+   Starlight en ajoutaient un par-dessus, ce qui décalait les sections de 24px
+   et laissait une bande morte entre deux traits. */
+.page:has(.kbrdn-section) {
+  --kbrdn-content-pad: 0px;
+}
+.page:has(.kbrdn-section) .content-panel {
+  padding: 0;
+}
+.page:has(.kbrdn-section) .content-panel + .content-panel {
+  border-top: none;
+}
+/* Les bandes de la landing se touchent : chacune porte déjà son propre filet.
+   Le rythme de prose de Starlight (`> * + *`) glissait 24px sous le hero et
+   16px entre chaque bande — soit, à chaque jointure, une bande morte bordée
+   d'un hairline de part et d'autre au lieu d'un trait unique. */
+.page:has(.kbrdn-section) .sl-markdown-content,
+.page:has(.kbrdn-section) .sl-markdown-content > * {
+  margin-top: 0;
+}
+/* La home du portfolio raye ses gouttières en diagonale là où les pages de
+   contenu portent la grille carrée (components.css :88-105). Le volet principal
+   est opaque : le motif ne se voit que dehors. */
+.page:has(.kbrdn-section) {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    var(--kbrdn-grid-color) 10px,
+    var(--kbrdn-grid-color) 10.5px
+  );
+  /* Le `background-size: 24px` de la grille carrée découperait les rayures. */
+  background-size: auto;
+}
+/* Au portfolio, les traits horizontaux des sections traversent toute la
+   fenêtre et coupent les deux filets verticaux de la coquille. Ici les sections
+   sont bornées par le volet principal : on prolonge le trait de la largeur
+   d'une gouttière de chaque côté. */
+.kbrdn-section::before,
+.kbrdn-section::after,
+.kbrdn-hero::after {
+  content: '';
+  position: absolute;
+  inset-inline: calc(-1 * var(--kbrdn-gutter));
+  height: 1px;
+  background-color: var(--kbrdn-border-color);
+  pointer-events: none;
+}
+.kbrdn-section::before {
+  top: -1px;
+}
+.kbrdn-section::after,
+.kbrdn-hero::after {
+  bottom: -1px;
+}
+
+/* Liens : orange souligné, offset 2px (prose.css :64-73). */
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--sl-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  color: var(--sl-color-accent-high);
+}
+
+/* Code inline : bordé, fond enfoncé, texte orange (prose.css :87-101). */
+.sl-markdown-content code:not(:where(.not-content *)) {
+  font-family: var(--sl-font-mono);
+  font-size: 0.875em;
+  padding: 0.125rem 0.375rem;
+  background-color: var(--sl-color-gray-6);
+  border: 1px solid var(--kbrdn-border-color);
+  color: var(--sl-color-accent-high);
+  /* `anywhere` coupe dès que ça arrange la ligne : `--no-bootstrap` se casse en
+     `--no-` / `bootstrap` au milieu d'une cellule. `break-word` ne coupe que
+     lorsqu'un mot ne tient pas seul sur sa ligne. */
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+/* Colonne de gauche des tableaux de flags : un nom d'option tient sur une
+   ligne, sinon la table devient illisible. */
+.sl-markdown-content td:first-child code:not(:where(.not-content *)) {
+  white-space: nowrap;
+}
+:root[data-theme='light'] .sl-markdown-content code:not(:where(.not-content *)) {
+  color: var(--sl-color-accent);
+}
+
+/* Citations : filet orange 2px, italique (prose.css :103-110). */
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+  border-inline-start: 2px solid var(--sl-color-accent);
+  padding-inline-start: 1rem;
+  font-style: italic;
+  color: var(--sl-color-gray-3);
+}
+
+/* Puces et numéros en orange (prose.css :130-137). */
+.sl-markdown-content :is(ul, ol) > li::marker {
+  color: var(--sl-color-accent);
+}
+.sl-markdown-content ol > li::marker {
+  font-weight: 600;
+}
+
+/* Tableaux : en-tête souligné 2px, lignes 1px (prose.css :161-189). */
+.sl-markdown-content th:not(:where(.not-content *)) {
+  text-align: start;
+  font-weight: 600;
+  border-bottom: 2px solid var(--kbrdn-border-color);
+  color: var(--sl-color-white);
+}
+.sl-markdown-content td:not(:where(.not-content *)) {
+  border-bottom: 1px solid var(--kbrdn-border-color);
+}
+
+/* Emphase en Fenix italique — un détail signature du portfolio (prose.css :201). */
+.sl-markdown-content em:not(:where(.not-content *)) {
+  font-family: 'Fenix', Georgia, serif;
+  font-style: italic;
+}
+
+/* Images bordées pleine largeur (prose.css :139-148). */
+.sl-markdown-content img:not(:where(.not-content *)) {
+  width: 100%;
+  border: 1px solid var(--kbrdn-border-color);
+}
+
+/* Lien d'ancre au survol d'un titre. Starlight le dimensionne en `em` sur le
+   titre, ce qui donne une icône énorme à côté d'un h1 en 2rem : on repasse les
+   deux mesures en `rem` pour une taille constante quel que soit le niveau.
+   Passer par SES variables et pas par une taille sur le lien : la réserve de
+   fin de ligne (`padding-inline-end` sur le titre), le retrait négatif du lien
+   qui vient se loger dedans, et le centrage vertical du SVG en dépendent tous.
+   Les court-circuiter laissait la réserve à 26px et l'icône 28px plus loin que
+   le texte — d'où une icône à la fois trop petite et détachée du titre. */
+.sl-markdown-content .sl-heading-wrapper {
+  --sl-anchor-icon-size: 0.875rem;
+  --sl-anchor-icon-gap: 0.3rem;
+}
+
+/* ═══════════════════════ Encarts ═══════════════════════
+   Le portfolio ne remplit pas ses encarts : filet gauche 4px de la couleur
+   + fond à 10% d'opacité (components/content/Callout.vue :22-27). Starlight
+   peint un fond plein `-low` ; on repasse sur le modèle du portfolio. */
+/* Starlight pose le fond sur les classes de variante (.starlight-aside--note…),
+   pas sur .starlight-aside : viser la base ne suffit pas à le neutraliser. */
+.starlight-aside,
+.starlight-aside--note,
+.starlight-aside--tip,
+.starlight-aside--caution,
+.starlight-aside--danger {
+  border-inline-start-width: 4px;
+  background-color: color-mix(in srgb, var(--sl-color-asides-border) 10%, transparent);
+}
+.starlight-aside__title {
+  font-family: var(--sl-font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════ Chrome ═══════════════════════
+   Labels en mono uppercase espacé : la marque de fabrique du portfolio
+   (BlogHeader.vue :113 — `text-[10px] font-mono uppercase tracking-wider`). */
+/* Sélecteur descendant obligatoire : Starlight interpose un
+   <sl-sidebar-state-persist> entre .sidebar-content et le <ul>, donc un
+   enchaînement d'enfants directs ne matche jamais. */
+.sidebar-content .group-label > .large,
+.right-sidebar h2 {
+  font-family: var(--sl-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+/* Entrée active : filet orange + fond accent à 5%, comme l'onglet actif du
+   header portfolio (`text-primary-500 bg-primary-500/5 nav-tab-active`). */
+.sidebar-content a[aria-current='page'] {
+  background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+  color: var(--sl-color-accent);
+  font-weight: 600;
+  border-left: 2px solid var(--sl-color-accent);
+  padding-left: calc(0.5rem - 2px);
+  /* Starlight arrondit la pastille de l'entrée courante ; le portfolio n'a
+     aucun coin rond. Le sélecteur d'attribut est plus spécifique que la règle
+     générique de coins nets plus haut, donc il faut le redire ici. */
+  border-radius: 0;
+}
+
+/* Sommaire encadré, façon bloc « SOMMAIRE » de l'article de blog. La sidebar
+   de navigation reprend exactement le même bloc : mêmes bordures, même mono,
+   mêmes couleurs — les deux volets doivent se lire comme une paire. */
+.right-sidebar-panel,
+.sidebar-content {
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+}
+/* Blocs flottants : cadre + fond plein, pour rester lisibles par-dessus la
+   grille (le bloc « SOMMAIRE » de l'article de blog fonctionne comme ça). */
+.right-sidebar-panel > .sl-container,
+.sidebar-content {
+  border: 1px solid var(--kbrdn-border-color);
+  background-color: var(--sl-color-bg);
+  padding: 0.75rem;
+}
+/* Starlight dimensionne ce conteneur sur `--sl-sidebar-width` (300px) et pas sur
+   son volet : depuis que le sommaire est passé à 16rem, il débordait de 29px
+   au-delà du filet droit de la coquille et le pourcentage de progression, calé
+   à droite, tombait hors du cadre — d'où le « 10 » tronqué.
+   Pas de marge ici : `.right-sidebar-panel` a déjà son rembourrage, en ajouter
+   une doublait l'écart entre le cadre et le bord du volet. */
+.right-sidebar-panel > .sl-container {
+  width: auto;
+  max-width: none;
+  margin: 0;
+}
+/* Sans marge, le cadre de la sidebar est collé aux bords du volet et ne se
+   lit pas comme le bloc encadré du sommaire.
+   Le défilement appartient au cadre, pas au volet : Starlight le pose sur
+   `.sidebar-pane`, si bien que la barre de défilement apparaissait DEHORS, le
+   long du bord du volet, et le cadre coulissait derrière. On rend le volet
+   fixe et non défilant, et c'est le cadre qui défile — `min-height: 0` est
+   indispensable, `min-height: max-content` (valeur de Starlight) interdit à un
+   enfant flex de rétrécir, donc rien ne défilerait. */
+.sidebar-pane {
+  display: flex;
+  overflow: hidden;
+}
+.sidebar-content {
+  margin: 1rem;
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Les groupes de premier niveau prennent la couleur d'accent : c'est le repère
+   qui manquait pour se situer dans une navigation longue. Les sous-groupes
+   restent gris — d'où le retour en arrière sur les listes imbriquées, plus
+   robuste qu'une chaîne d'enfants directs (Starlight intercale un
+   `<sl-sidebar-state-persist>` entre le cadre et la première liste). */
+.sidebar-content .group-label {
+  color: var(--sl-color-accent);
+}
+.sidebar-content ul ul .group-label {
+  color: var(--sl-color-gray-3);
+}
+.right-sidebar-panel a,
+.sidebar-content a {
+  color: var(--sl-color-gray-3);
+  font-size: 0.75rem;
+}
+.right-sidebar-panel a[aria-current='true'],
+.sidebar-content a:hover {
+  color: var(--sl-color-accent);
+}
+/* Chevron des groupes repliables : même gris que les libellés. */
+.sidebar-content summary {
+  color: var(--sl-color-gray-3);
+}
+
+/* Cartes : bordure franche, titre mono uppercase — pas de carré d'icône coloré. */
+.card {
+  border: 1px solid var(--kbrdn-border-color);
+  background-color: transparent;
+}
+.card .title {
+  font-family: var(--sl-font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.card .icon {
+  background-color: transparent;
+  border: none;
+  color: var(--sl-color-accent);
+}
+
+/* Boutons d'action : orange plein sur texte clair, comme le CTA du portfolio.
+   Starlight peint le variant `primary` avec --sl-color-text-accent, soit
+   accent-high — un beige clair en dark, hors charte. */
+.sl-link-button.primary {
+  background-color: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
+  color: #f5f5f5;
+}
+/* `accent-high` s'inverse d'un mode à l'autre : beige clair en dark (#f4c895),
+   brun foncé en light (#8b3d24). Le texte du survol doit suivre, sinon le light
+   affiche du quasi-noir sur brun, illisible. */
+.sl-link-button.primary:hover {
+  background-color: var(--sl-color-accent-high);
+  border-color: var(--sl-color-accent-high);
+  color: #1a1a1a;
+}
+:root[data-theme='light'] .sl-link-button.primary:hover {
+  color: #f5f5f5;
+}
+
+/* ═══════════════════════ Pagination ═══════════════════════
+   Starlight rend deux cartes arrondies avec une ombre portée et une grosse
+   flèche de 1.5rem : trois choses que le portfolio n'a nulle part. On garde la
+   structure et on repasse dessus — cadre net, libellé mono uppercase gris,
+   titre de page en Fenix, flèche discrète qui s'anime au survol. */
+.pagination-links a {
+  border: 1px solid var(--kbrdn-border-color);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.875rem 1rem;
+  gap: 0.75rem;
+  transition:
+    border-color 200ms,
+    background-color 200ms;
+}
+.pagination-links a:hover {
+  border-color: var(--sl-color-accent);
+  background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+}
+/* Le premier <span> porte le libellé « Précédent » / « Suivant ». */
+.pagination-links a > span {
+  font-family: var(--sl-font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+  line-height: 1.6;
+}
+/* Le titre de la page cible, lui, suit la typographie de contenu. */
+.pagination-links a .link-title {
+  font-family: 'Fenix', Georgia, serif;
+  font-size: 1.05rem;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--sl-color-white);
+}
+.pagination-links a:hover .link-title {
+  color: var(--sl-color-accent);
+}
+.pagination-links a svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--sl-color-gray-4);
+  flex-shrink: 0;
+  transition: color 200ms;
+}
+.pagination-links a:hover svg {
+  color: var(--sl-color-accent);
 }

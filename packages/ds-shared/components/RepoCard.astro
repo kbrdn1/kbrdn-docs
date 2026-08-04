@@ -1,43 +1,192 @@
 ---
-// Composant MDX réutilisable, partagé par tous les sites produits.
+// Carte de dépôt partagée par tous les sites produits — chaque produit a un
+// repo, c'est la définition même d'un composant qui a sa place ici.
 // Usage dans un .mdx :
 //   import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
-//   <RepoCard owner="kbrdn1" repo="gwm-cli" description="..." />
+//   <RepoCard owner="kbrdn1" repo="gwm-cli" description="…"
+//             language="Rust" languageColor="#dea584" license="MIT" />
+//
+// La carte EST le lien : un seul `<a>`, une seule destination. Pas de rangée de
+// liens secondaires — le pied de page partagé porte déjà GitHub, crates.io,
+// « Report an issue » et la licence ; les répéter ici n'ajouterait rien.
+//
+// L'enveloppe `.not-content` est indispensable, et c'est bien une ENVELOPPE :
+// la règle de prose de Starlight s'écrit `a:not(:where(.not-content *))`, donc
+// elle exclut les DESCENDANTS de `.not-content`, pas l'élément qui porte la
+// classe. Posée sur le `<a>` lui-même elle ne servait à rien — la carte sortait
+// tout en orange souligné, titre, description et libellés compris.
 interface Props {
   owner: string;
   repo: string;
   description?: string;
+  /** Langage principal, affiché avec une pastille de couleur. */
+  language?: string;
+  /** Couleur de la pastille — celle du langage chez GitHub (Rust : #dea584). */
+  languageColor?: string;
+  license?: string;
+  /** Libellé de l'appel à l'action, à traduire selon la locale de la page. */
+  cta?: string;
 }
 
-const { owner, repo, description } = Astro.props;
+const {
+  owner,
+  repo,
+  description,
+  language,
+  languageColor = 'var(--sl-color-gray-3)',
+  license,
+  cta = 'View on GitHub',
+} = Astro.props;
 const href = `https://github.com/${owner}/${repo}`;
 ---
 
-<a class="kbrdn-repo-card" href={href} target="_blank" rel="noopener noreferrer">
-  <span class="kbrdn-repo-card__name">{owner}/{repo}</span>
-  {description && <span class="kbrdn-repo-card__desc">{description}</span>}
-</a>
+<div class="not-content">
+  <a class="kbrdn-repo" {href} target="_blank" rel="noopener noreferrer">
+    <span class="kbrdn-repo__head">
+      <svg class="kbrdn-repo__mark" viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+        ></path>
+      </svg>
+      <span class="kbrdn-repo__name">
+        <span class="kbrdn-repo__owner">{owner}/</span>{repo}
+      </span>
+      {license && <span class="kbrdn-repo__license">{license}</span>}
+    </span>
+
+    {description && <span class="kbrdn-repo__desc">{description}</span>}
+
+    <span class="kbrdn-repo__foot">
+      {
+        language && (
+          <span class="kbrdn-repo__lang">
+            <span class="kbrdn-repo__dot" style={`--dot: ${languageColor}`} aria-hidden="true" />
+            {language}
+          </span>
+        )
+      }
+      <span class="kbrdn-repo__cta">
+        {cta}
+        <svg class="kbrdn-repo__arrow" viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10"></path>
+        </svg>
+      </span>
+    </span>
+  </a>
+</div>
 
 <style>
-  .kbrdn-repo-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 1rem;
-    border: 1px solid var(--sl-color-gray-5);
-    border-radius: var(--kbrdn-radius, 0.5rem);
+  .kbrdn-repo {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    border-radius: var(--kbrdn-radius, 0);
+    background-color: var(--sl-color-black);
     text-decoration: none;
-    transition: border-color 0.2s ease;
+    transition:
+      border-color 200ms,
+      background-color 200ms;
   }
-  .kbrdn-repo-card:hover {
-    border-color: var(--sl-color-text-accent);
+  .kbrdn-repo:hover {
+    border-color: var(--sl-color-accent);
+    background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
   }
-  .kbrdn-repo-card__name {
-    font-weight: 600;
-    color: var(--sl-color-white);
+
+  .kbrdn-repo__head {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
   }
-  .kbrdn-repo-card__desc {
-    font-size: var(--sl-text-sm);
+  .kbrdn-repo__mark {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
     color: var(--sl-color-gray-3);
+  }
+  .kbrdn-repo:hover .kbrdn-repo__mark {
+    color: var(--sl-color-accent);
+  }
+  .kbrdn-repo__name {
+    font-family: var(--sl-font-mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--sl-color-white);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  /* Le propriétaire compte moins que le nom du dépôt : il passe en gris. */
+  .kbrdn-repo__owner {
+    font-weight: 400;
+    color: var(--sl-color-gray-3);
+  }
+  .kbrdn-repo__license {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+    padding: 0.15rem 0.45rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--sl-color-gray-3);
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  .kbrdn-repo__desc {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+  }
+
+  .kbrdn-repo__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.72rem;
+    color: var(--sl-color-gray-3);
+  }
+  .kbrdn-repo__lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  /* Pastille de langage, comme sur la page du dépôt chez GitHub. */
+  .kbrdn-repo__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--dot);
+  }
+
+  .kbrdn-repo__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-inline-start: auto;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+  }
+  .kbrdn-repo__arrow {
+    width: 0.8rem;
+    height: 0.8rem;
+    transition: transform 200ms;
+  }
+  .kbrdn-repo:hover .kbrdn-repo__arrow {
+    transform: translate(2px, -2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kbrdn-repo__arrow {
+      transition: none;
+    }
   }
 </style>
