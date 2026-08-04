@@ -99,10 +99,13 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   Astro 7 introduced, by removing the call rather than migrating it.
 - Dependabot: the npm ecosystem now watches `/` only. The root entry already
   resolves the bun workspaces, so also listing `/packages/ds-shared` and
-  `/sites/gwm` opened every package bump twice. Added an `ignore` entry for
-  `typescript` majors — TypeScript 7 (native port) breaks `astro check`
-  (`@astrojs/language-server` fails in `getTsconfig`), so the bump stays out
-  until the language server supports the TS 7 API.
+  `/sites/gwm` opened every package bump twice.
+- TypeScript 5.9 → 6.0. TypeScript 7 stays out: its native compiler does not
+  expose the programmatic API `astro check` is built on, and
+  `@astrojs/language-server` ≥ 2.16.13 now refuses to start on it with that
+  exact message (tracked in withastro/roadmap#1321). 6.x still ships the API,
+  so the Dependabot `ignore` is bounded to `>=7` instead of blanket-ignoring
+  majors — which would also have locked out the major we can take.
 
 ### Fixed
 
