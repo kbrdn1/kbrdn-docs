@@ -1,0 +1,107 @@
+---
+title: Homebrew and Nix
+description: Packaging surface - Homebrew tap, Nix flake, prebuilt binaries.
+sidebar:
+  order: 3
+---
+
+gwm ships through several managed channels in addition to `cargo install` - Homebrew, Nix, `cargo binstall`, and the raw prebuilt archives. Pick whichever fits your environment. End-user install instructions live in [Getting Started → Install](/getting-started/install); this page covers the **packaging surface** for contributors, maintainers, and downstream packagers.
+
+## Homebrew tap
+
+Tap and formula:
+
+- Tap: [`kbrdn1/homebrew-tap`](https://github.com/kbrdn1/homebrew-tap)
+- Formula: `Formula/gwm.rb`
+- Canonical source: [`packaging/homebrew/gwm.rb.template`](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/homebrew/gwm.rb.template) in this repo
+
+The tap is refreshed **automatically on every stable release** by the `homebrew-tap-update` job in [`release.yml`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/workflows/release.yml). The job:
+
+1. Reads the freshly-tagged version (e.g. `v0.6.0`).
+2. Filters out pre-release tags - `-rc.N`, `-alpha.N`, `-beta.N` - so `brew install gwm` always resolves to a stable build. Pre-releases are still published to the GitHub releases page; they just don't update the tap.
+3. Substitutes version, SHA, and archive URLs into the template.
+4. Opens a PR (or pushes directly, depending on the tap's branch protection) against `kbrdn1/homebrew-tap`.
+
+End-user install:
+
+```bash
+brew tap kbrdn1/tap
+brew install gwm
+```
+
+## Nix flake
+
+`flake.nix` lives at the repo root. The package is built via `rustPlatform.buildRustPackage` and pins `Cargo.lock`; `git2`'s `vendored-libgit2` feature keeps the closure free of system libgit2.
+
+End-user install:
+
+```bash
+# one-shot run, no clone
+nix run github:kbrdn1/gwm-cli -- list
+
+# install into your profile
+nix profile install github:kbrdn1/gwm-cli
+
+# in a NixOS / nix-darwin config, via the overlay
+nixpkgs.overlays = [ inputs.gwm.overlays.default ];
+environment.systemPackages = [ pkgs.gwm ];
+```
+
+The flake exports:
+
+- `packages.<system>.gwm` - the executable
+- `packages.<system>.default` - alias for `gwm`
+- `apps.<system>.default` - `nix run` entry point
+- `overlays.default` - for downstream NixOS / nix-darwin configs
+- `devShells.<system>.default` - pinned Rust toolchain + `rust-analyzer`, `clippy`, `rustfmt`, `cargo-watch`, `cargo-edit`, and the libgit2 build deps. Used by [Development → Testing](/development/testing).
+
+Test the flake locally before pushing changes:
+
+```bash
+nix flake check
+nix build .#gwm
+./result/bin/gwm --version
+```
+
+## Cargo-binstall
+
+Added by [#27](https://github.com/kbrdn1/gwm-cli/issues/27) / [#173](https://github.com/kbrdn1/gwm-cli/pull/173). A `[package.metadata.binstall]` block in `Cargo.toml` lets [`cargo-binstall`](https://github.com/cargo-bins/cargo-binstall) pull the prebuilt release archive instead of compiling from source:
+
+```bash
+cargo binstall gwm-cli
+```
+
+`cargo binstall` resolves the archive (`gwm-v{version}-{target}.tar.gz`, `.zip` on Windows) straight from the matching GitHub Release and unpacks the binary - no Rust toolchain invocation and no libgit2 compile at install time, in contrast to `cargo install gwm-cli` which builds the crate locally.
+
+The metadata pins the archive naming to the `release.yml` matrix output; `tests/binstall_metadata_tests.rs` guards against artefact-naming drift so a renamed asset can't silently break `cargo binstall`.
+
+See [Getting Started → Install](/getting-started/install) for the end-user comparison of `cargo binstall` vs `cargo install` vs the prebuilt archives.
+
+## Prebuilt binaries
+
+Releases at <https://github.com/kbrdn1/gwm-cli/releases> ship signed binaries with `.sha256` sidecars for:
+
+- Linux (`x86_64`, `aarch64`)
+- macOS (Intel, Apple Silicon)
+- Windows (`x86_64`)
+
+The build matrix is the `release` workflow in [`.github/workflows/release.yml`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/workflows/release.yml). Each tag-push triggers a parallel build across the matrix, with `.sha256` sidecars computed in the same job. Release notes are sourced from the **per-version changelog** (`changelogs/<version>.md`), not from the root `CHANGELOG.md`, which only holds the current `[Unreleased]` section + index.
+
+## The release pipeline at a glance
+
+```
+git tag v0.6.0 && git push origin v0.6.0
+         ↓
+.github/workflows/release.yml
+    ├─ build matrix (5 targets)         → release assets + .sha256
+    ├─ pre-release.yml gate              → skip on -rc / -alpha / -beta
+    └─ homebrew-tap-update job           → only on stable tags
+         ↓
+github.com/kbrdn1/gwm-cli/releases   ← binaries
+github.com/kbrdn1/homebrew-tap        ← formula bump PR
+```
+
+## Related
+
+- [Getting Started → Install](/getting-started/install) - end-user install for the four channels
+- [Development → Contributing](/development/contributing) - branch / commit / PR conventions and the CHANGELOG split rules

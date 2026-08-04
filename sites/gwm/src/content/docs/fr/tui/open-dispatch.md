@@ -1,0 +1,90 @@
+---
+title: Dispatch d'ouverture (o et O)
+description: '`o` ouvre un terminal dans un overlay PTY embarqué ; `O` dispatche sur `[tui.open]` - shell, editor ou finder.'
+sidebar:
+  order: 6
+---
+
+Ajouté par [#73](https://github.com/kbrdn1/gwm-cli/issues/73) / [#74](https://github.com/kbrdn1/gwm-cli/pull/74) ; scindé en un overlay PTY (`o`) et une variante plein écran (`O`) dans [#35](https://github.com/kbrdn1/gwm-cli/issues/35) / [#290](https://github.com/kbrdn1/gwm-cli/issues/290).
+
+Deux raccourcis ouvrent quelque chose au niveau du worktree sélectionné :
+
+| Touche | Slug d'action         | Ce qu'il fait                                                                             |
+| :----- | :-------------------- | :---------------------------------------------------------------------------------------- |
+| `o`    | `terminal_pty`        | une session `$SHELL` native dans un **overlay PTY embarqué** (~90 % de l'écran)           |
+| `O`    | `terminal_fullscreen` | le **dispatch d'ouverture plein écran** piloté par `[tui.open]` (shell / editor / finder) |
+
+Les deux slugs sont remappables sous [`[tui.keys]`](/fr/configuration/gwm-toml#tuikeys).
+
+## `o` - terminal dans un overlay PTY embarqué
+
+`o` plonge une session `$SHELL` native dans un overlay [`portable-pty`](https://docs.rs/portable-pty) + [`tui-term`](https://docs.rs/tui-term) dimensionné à environ 90 % × 90 % du terminal, avec `cwd` réglé sur le worktree - la même mécanique d'overlay que l'overlay TUI git `l`. La TUI ne quitte jamais l'alt-screen ; la liste des worktrees reste visible derrière la modale. Les frappes sont transmises au shell ; `Esc` ferme l'overlay (ou `exit` le shell - l'overlay se referme automatiquement quand l'enfant se termine).
+
+## `O` - dispatch d'ouverture plein écran
+
+`O` dispatche sur la section `[tui.open]` dans `.gwm.toml`. Trois modes sont supportés.
+
+## Configuration
+
+```toml
+[tui.open]
+mode = "shell"          # "shell" (par défaut) | "editor" | "finder"
+shell_cmd = ""           # outrepasse $SHELL ; vide = utiliser $SHELL
+editor_cmd = "hx"        # outrepasse $EDITOR ; vide = utiliser $EDITOR
+```
+
+Les valeurs de `mode` inconnues sont une **erreur de config dure au chargement**, remontée avant l'ouverture de la TUI - pas de fallback silencieux. L'erreur nomme le fichier, la ligne et les valeurs supportées, de sorte que la correction tient en une frappe.
+
+## Modes
+
+### `shell` (par défaut - changé en v0.6)
+
+Suspendre la TUI et lancer `$SHELL` (ou `shell_cmd` si défini) avec `cwd` réglé sur le worktree - même cycle de vie que le lanceur TUI git plein écran `L`. Quand vous quittez le shell, la TUI gwm se restaure exactement là où vous l'aviez laissée.
+
+```
+O   →   $SHELL    dans /Users/you/cc-worktree/myrepo/feat-42-user-auth
+exit→   TUI gwm restaurée
+```
+
+> Pour un shell embarqué qui garde la liste des worktrees visible, appuyez sur `o` (l'overlay PTY) à la place - il ne suspend jamais la TUI.
+
+C'est le flux à la lazygit - plonger dans un shell, lancer ce que vous voulez, revenir à la TUI sans perdre l'état de sélection ou de filtre.
+
+### `editor`
+
+Suspendre la TUI et exécuter `$EDITOR <worktree-path>` (ou `editor_cmd <worktree-path>` si défini). Utile pour les éditeurs en terminal qui possèdent l'alt-screen (helix, nvim, micro) :
+
+```toml
+[tui.open]
+mode = "editor"
+editor_cmd = "hx"        # outrepasse $EDITOR pour ce dépôt
+```
+
+Pour les éditeurs GUI qui forkent hors du terminal, préférez `mode = "shell"` avec un `shell_cmd` personnalisé qui lance l'éditeur - ainsi la TUI ne se suspend pas inutilement pendant que la GUI tourne.
+
+### `finder` - comportement d'avant v0.6
+
+Passer la main au gestionnaire de fichiers de l'OS **sans** suspendre la TUI :
+
+- macOS : `open <path>`
+- Linux : `xdg-open <path>`
+- Windows : `explorer <path>`
+
+C'est la valeur par défaut d'avant v0.6 ; réactivez-la avec `mode = "finder"`. Utile quand le worktree porte des assets binaires que vous voulez réellement inspecter dans le sélecteur de fichiers de l'OS.
+
+## Pourquoi la valeur par défaut a changé
+
+La touche d'ouverture d'avant v0.6 ouvrait le gestionnaire de fichiers de l'OS inconditionnellement, mais le suivi le plus courant était « maintenant je veux un shell ici » - donc la plupart des utilisateurs finissaient soit par l'ignorer entièrement, soit par la câbler via un contournement `yank-path-and-cd`. v0.6 a fait de `shell` le mode `[tui.open]` par défaut.
+
+Réactivez l'ancien flux finder avec deux lignes dans `.gwm.toml` :
+
+```toml
+[tui.open]
+mode = "finder"
+```
+
+## En lien
+
+- [Lanceurs configurables](/fr/tui/launchers) - les overlays TUI git `l` / `L` et review `r` / `R`, même mécanique PTY que `o`
+- [Raccourcis clavier](/fr/tui/keybindings) - où `o` / `O` vivent dans la table des touches
+- [Configuration → schéma `.gwm.toml`](/fr/configuration/gwm-toml#tuiopen) - liste complète des champs `[tui.open]`

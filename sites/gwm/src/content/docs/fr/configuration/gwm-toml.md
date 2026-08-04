@@ -1,0 +1,885 @@
+---
+title: Schéma .gwm.toml
+description: Chaque section - worktree, bootstrap.*, hooks.*, theme, tui, tui.keys, tui.open, git_tui, review, doctor - avec valeurs par défaut et règles de validation.
+sidebar:
+  order: 1
+---
+
+`.gwm.toml` vit à la racine du dépôt. Sans lui, gwm utilise des valeurs par défaut raisonnables (path = `~/cc-worktree/<repo>/<type>-<issue>-<desc>`, pas de bootstrap, `lazygit -p {path}` comme `l`). Avec lui, vous pouvez configurer chaque facette : nommage de branche, copies de fichiers, guards de sécurité, commandes de launcher, comportement de la TUI, et checks de doctor.
+
+La version complète annotée vit à [`examples/gwm.toml.example`](https://github.com/kbrdn1/gwm-cli/blob/main/examples/gwm.toml.example) - `gwm init` écrit ce fichier inchangé à la racine de votre dépôt.
+
+Utilisez `gwm config` pour des lectures scriptables et des éditions sûres :
+
+```bash
+gwm config get worktree.base
+gwm config set tui.confirm_countdown_secs 5
+gwm config list --prefix review
+gwm config validate
+```
+
+`gwm config set` préserve les commentaires et la mise en forme existants, puis valide le fichier face à ce schéma avant de renvoyer un succès.
+
+Le même schéma peut aussi vivre à `~/.config/gwm/config.toml` comme **configuration globale utilisateur**, fusionnée sous le `.gwm.toml` de chaque dépôt - voir [Configuration globale utilisateur](/fr/configuration/global-config).
+
+## `[worktree]`
+
+Conventions de branche et de chemin.
+
+```toml
+[worktree]
+base           = "{home}/cc-worktree/{repo}"
+path_pattern   = "{type}-{issue}-{desc}"
+branch_pattern = "{type}/#{issue}-{desc}"
+```
+
+Placeholders : `{home}`, `{repo}`, `{type}`, `{issue}`, `{desc}`, `{repo_path}`, `{repo_parent}`. Le tilde (`~/…`) est aussi étendu.
+
+| Placeholder     | Étendu en                                                                 |
+| :-------------- | :------------------------------------------------------------------------ |
+| `{home}`        | votre répertoire personnel                                                |
+| `{repo}`        | le nom du dépôt                                                           |
+| `{type}`        | le type de branche (`feat`, `fix`, …)                                     |
+| `{issue}`       | le numéro d'issue                                                         |
+| `{desc}`        | le slug de description                                                    |
+| `{repo_path}`   | le répertoire de travail absolu du dépôt principal                        |
+| `{repo_parent}` | le répertoire _contenant_ le dépôt principal (le parent de `{repo_path}`) |
+
+`{repo_path}` et `{repo_parent}` permettent à la base de se situer relativement au dépôt sur le disque - par ex. `base = "{repo_parent}/worktrees"` place les worktrees dans un répertoire `worktrees/` voisin, correspondant à la convention `../worktrees` d'un éditeur (le `git.worktree_directory` de Zed) sans config d'éditeur par projet. Ils sont additifs - les bases existantes `{home}` / `{repo}` restent inchangées.
+
+```toml
+[worktree]
+base = "{repo_parent}/worktrees/{repo}"   # a sibling `worktrees/` dir
+```
+
+### `branch_pattern` est relu par un parseur dérivé de lui-même
+
+`branch_pattern` est respecté quand gwm **écrit** un nom de branche, et depuis [#417](https://github.com/kbrdn1/gwm-cli/issues/417) le parseur qui en **relit** un est compilé à partir de ce même motif. Une seule source de vérité : un dépôt qui personnalise le motif conserve l'auto-liaison de l'issue depuis le nom de branche, la sélection du gitmoji, la sélection de template et les placeholders de `gwm pr`, les placeholders des hooks sur les chemins remove / bootstrap, le renommage dans la TUI et le contrôle de convention de branche du `doctor`.
+
+Avant #417 le lecteur était une regex figée pour le défaut `{type}/#{issue}-{desc}`, donc tout cela s'éteignait sur un motif personnalisé sans que rien ne relie la cause à l'effet. [#415](https://github.com/kbrdn1/gwm-cli/issues/415) a transformé ce silence en avertissement ; #417 en supprime la cause.
+
+Un motif peut aussi **figer** un segment au lieu de l'écrire depuis un placeholder : `feat/#{issue}-{desc}` code le type en dur, `{type}/#1-{desc}` code le numéro d'issue en dur. gwm relit le littéral figé, donc le gitmoji, l'auto-liaison et le reste continuent de marcher sur ces branches, exactement comme avant #417. Ce qu'un tel motif coûte est signalé à part : `gwm create fix 42 x` écrit une branche `feat/`, donc le type demandé n'est pas celui que qui que ce soit relit, et `gwm doctor` le dit.
+
+Deux choses qu'un parseur dérivé ne peut vraiment pas récupérer, et que `gwm doctor` / `gwm config validate` nomment toutes les deux :
+
+1. **Un motif dont le découpage peut bouger.** La question n'est jamais « y a-t-il un séparateur » mais « la frontière entre deux placeholders peut-elle tomber à plus d'un endroit ». `{issue}{desc}` écrit `42123-x` à partir de `42` et `123-x`, qui se relit `4212` et `3-x` ; `{desc}{issue}` est pire, puisque `a12` est ce que produisent à la fois `a` + `12` et `a1` + `2` : aucun parseur ne peut avoir raison. Un séparateur non vide ne garantit rien non plus : `{type}-{issue}9{desc}` écrit `feat-42919x` à partir de l'issue `42` et de la description `19x`, et le `\d+` glouton glisse à droite par-dessus le `9` pour lire l'issue `4291` et la description `x`.
+
+   Les deux moitiés de la règle sont plus étroites qu'il n'y paraît. L'adjacence est acceptable quand les deux alphabets sont disjoints : `{type}{issue}` écrit `feat42`, et comme `[a-z]+` s'arrête au premier chiffre et `\d+` à la première lettre, il n'y a qu'un seul découpage. Un séparateur pris dans le jeu de caractères du placeholder de gauche l'est aussi, tant que celui de droite ne peut pas le fournir en retour : `-` après `{desc}` peut être absorbé mais jamais réapparaître, puisqu'un numéro d'issue ne peut pas en contenir, donc `{desc}-{issue}` reste légal. Même un séparateur multi-caractères ne compte que si la gauche peut en avaler un préfixe _périodique_, d'où `{type}-{issue}9-{desc}` qui marche là où `{type}-{issue}9{desc}` échoue. Tout ce qui échoue est refusé avec un message qui nomme le correctif.
+
+2. **Un segment que le motif n'écrit ni ne fige.** `{type}/{desc}` n'a pas de `{issue}` ni de nombre littéral pour en tenir lieu : rien ne peut lire une issue dans une branche qu'il a écrite. L'avertissement indique quel placeholder ajouter.
+
+**Les deux commandes diffèrent sur le code de sortie, ce qui compte si vous les utilisez comme gate CI :**
+
+| Commande              | Sur un motif qui ne fait pas l'aller-retour                                                                                         |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| `gwm config validate` | affiche l'avertissement sur stderr, sort avec **`0`** : un motif personnalisé est une configuration valide, pas une erreur          |
+| `gwm doctor`          | remonte un check `!`, donc le run sort avec **`1`** comme tout Warning ([codes de sortie](/fr/integrations/doctor#codes-de-sortie)) |
+
+Un job CI qui lance `gwm doctor` et tolère les Warnings devrait utiliser `gwm doctor; [ $? -le 1 ]`.
+
+`config validate` lit le motif effectif, donc un motif défini uniquement dans le global `~/.config/gwm/config.toml` est attrapé aussi.
+
+`path_pattern` n'est pas concerné : il ne sert qu'à la génération, et le nom d'un worktree vient de son répertoire, pas d'une relecture du motif.
+
+#### Quels motifs fonctionnent
+
+Le champ reste libre. Le tableau ci-dessous est vérifié contre le vrai contrôle, pas supposé : un test l'épingle pour qu'il ne dérive pas.
+
+**Fait l'aller-retour complet**, donc toutes les fonctionnalités liées au nom de branche continuent de marcher :
+
+| Motif                                                        | Note                                                                                             |
+| :----------------------------------------------------------- | :----------------------------------------------------------------------------------------------- |
+| `{type}/#{issue}-{desc}`                                     | le défaut                                                                                        |
+| `{type}-{issue}-{desc}`                                      | sans slash, et non ambigu : `-` n'est ni dans `[a-z]+` ni dans `\d+`                             |
+| `{type}_{issue}_{desc}`                                      | n'importe quel séparateur convient, du moment qu'il y en a un                                    |
+| `{type}/{issue}-{desc}`                                      | le `#` est décoratif, pas structurel                                                             |
+| `{type}/#{issue}_{desc}`                                     |                                                                                                  |
+| `{repo}/{type}/#{issue}-{desc}`, `wt/{type}/#{issue}-{desc}` | des segments en tête ne posent aucun problème                                                    |
+| `{type}/#{issue}-prefix-{desc}`                              | un littéral coincé entre deux placeholders non plus                                              |
+| `{type}/#{issue}-{desc}-{repo}`                              | ni un littéral ajouté après `{desc}`                                                             |
+| `{desc}/#{issue}-{type}`                                     | l'ordre vous appartient                                                                          |
+| `{type}/#{desc}-{issue}`                                     | un `-` après `{desc}` est légal : `\d+` ne peut pas en contenir, donc il n'y a qu'un découpage   |
+| `{type}{issue}-{desc}`, `{issue}{type}-{desc}`               | adjacents, mais `[a-z]+` et `\d+` ne partagent aucun caractère : le découpage ne peut pas bouger |
+| `{type}-{issue}9-{desc}`                                     | `\d+` peut avaler le `9` mais jamais le `-` qui devrait le suivre                                |
+
+**Refusé comme illisible**, avec une erreur qui nomme le correctif :
+
+- `{issue}{desc}`, `{desc}{issue}`, `{type}{desc}` : placeholders adjacents dont les alphabets se recouvrent, donc un caractère peut traverser le découpage
+- `{type}-{issue}9{desc}`, `{type}a{desc}`, `{desc}1{issue}` : un séparateur que les deux voisins pourraient contenir, donc le découpage peut bouger
+- `{desc}-{desc}` : deux fois le même placeholder, puisque chaque occurrence donne la même valeur
+
+**Fige un segment.** Le littéral est relu, donc rien ne cesse de marcher sur les branches produites. Ce qui est perdu, c'est l'argument passé à `gwm create`, et `gwm doctor` le nomme :
+
+- `feat/#{issue}-{desc}` : toute branche est une branche `feat`, quel que soit le type passé. Sans conséquence quand `feat` est le seul type configuré, et `gwm doctor` reste alors silencieux
+- `{type}/#1-{desc}` : toute branche pointe l'issue 1
+- `{type}/#{issue}-fixed` : toute branche a pour description `fixed`
+
+Le formulaire de renommage de la TUI affiche un segment figé, et sa modifiabilité dépend de l'endroit où la nouvelle valeur pourrait aller. La question est celle du formateur, donc les trois motifs qu'il étend sont interrogés : `branch_pattern`, `worktree.path_pattern` et `[worktree].base`. Quand le motif de chemin écrit le segment, le modifier renomme le répertoire du worktree ; quand c'est `base`, le worktree change de répertoire de base, ce à quoi sert précisément un `base` en `.../{type}`. Dans les deux cas la branche est laissée tranquille, ce qui est un vrai renommage et reste donc autorisé, et la preview du modal l'annonce en affichant la branche inchangée. Le refus ne tombe que si aucun des trois n'écrit le segment, puisque la soumission reconstruirait la même branche au même chemin. Les segments que `branch_pattern` écrit restent toujours éditables.
+
+La valeur qu'il affiche vient du **répertoire** du worktree quand `path_pattern` porte le segment et pas `branch_pattern` ([#478](https://github.com/kbrdn1/gwm-cli/issues/478)). Avec `branch_pattern = "feat/#{issue}-{desc}"` et le `path_pattern` par défaut, `gwm create fix 42 x` écrit la branche `feat/#42-x` et le répertoire `fix-42-x`, et `fix` n'existe nulle part ailleurs, donc renommer la description le conserve au lieu de déplacer le répertoire vers `feat-42-…`. La branche l'emporte toujours pour un segment qu'elle écrit elle-même : un répertoire renommé à la main ne réécrit jamais l'identité du worktree.
+
+La récupération est d'abord positionnelle, ensuite une correspondance exacte, jamais une devinette. Un littéral n'est lu comme un segment que s'il se trouve **là où ce segment va** : avant `{issue}` pour un type, après pour une description. Donc `feat/#{issue}-fix` récupère les deux, bien que `feat` et `fix` soient chacun un type de branche configuré, et `wt/{type}/#{issue}` ne récupère rien, puisque `wt` est avant le type, là où aucun segment ne va, et reste donc le namespace auquel il ressemble. Chaque candidat passe ensuite son propre test : un type de branche est cherché dans la liste configurée du dépôt, donc `feature/#{issue}-{desc}` ne récupère rien (`feature` nomme un namespace, pas un type) ; un numéro d'issue doit être entièrement numérique ; une description est tout ce que `DESC_RE` accepte. Un segment est récupéré si toutes les lectures du motif le nomment avec la même valeur, et la règle s'applique segment par segment : `feat/fix-{issue}-{desc}` nomme deux types configurés différents à la même position et n'en récupère aucun, `feat/feat/#{issue}-{desc}` lit `feat` quel que soit celui de ses deux candidats qui est retenu et gèle donc le type comme n'importe quel autre littéral, et `feat/#{issue}-fix/done` se lit de deux façons qui divergent sur la description tout en disant toutes deux `feat`, donc il récupère le type et pas la description.
+
+**Ne porte pas du tout le segment**, donc `gwm doctor` avertit et indique quel placeholder ajouter :
+
+- `{issue}-{desc}` : pas de `{type}` et aucun littéral de type à figer
+- `{type}/{desc}` : pas de `{issue}`, donc l'auto-liaison depuis le nom de branche est inactive
+- `{type}/#{issue}` : pas de `{desc}`
+
+Une forme que le compilateur ne reproduit pas : un motif qui commence par `~`, parce que l'écriture termine par une expansion du tilde que la lecture ne sait pas défaire. `gwm doctor` le signale comme un motif que rien ne relit.
+
+### Types de branche supportés
+
+`feat`, `fix`, `hotfix`, `docs`, `test`, `refactor`, `chore`, `perf`, `ci`, `build`. Surchargez par dépôt si votre équipe utilise autre chose.
+
+## `[[bootstrap.copy]]`
+
+Copies de fichiers depuis le checkout principal vers le nouveau worktree.
+
+```toml
+[[bootstrap.copy]]
+from = ".env.testing"
+to   = ".env.testing"
+required = true
+fallback = "inline"        # inline | skip | abort (default: skip when required=false)
+
+[[bootstrap.copy]]
+from = ".env"
+to   = ".env"
+required = false
+guards = ["no-aws-rds"]    # reference into [[bootstrap.guard]]
+```
+
+| Champ      | Type             | Défaut  | Signification                                                                     |
+| :--------- | :--------------- | :------ | :-------------------------------------------------------------------------------- |
+| `from`     | string           | -       | chemin source, relatif au checkout principal                                      |
+| `to`       | string           | -       | chemin de destination, relatif au nouveau worktree                                |
+| `required` | bool             | `false` | quand `true`, une source manquante abort le bootstrap sauf si `fallback` le sauve |
+| `guards`   | liste de strings | `[]`    | noms de règles `[[bootstrap.guard]]` à appliquer après la copie                   |
+| `fallback` | string           | aucun   | `inline` (utilise `[bootstrap.fallback.<key>]`), `skip`, ou `abort`               |
+
+Voir [Pipeline de bootstrap](/fr/configuration/bootstrap) pour l'ordre d'exécution.
+
+## `[[bootstrap.guard]]`
+
+Deny-lists regex sur les fichiers copiés - le cas d'usage d'origine « pas d'AWS RDS dans `.env` », généralisé.
+
+```toml
+[[bootstrap.guard]]
+name = "no-aws-rds"
+deny_patterns = ["amazonaws\\.com", "\\.rds\\."]
+on_match      = "seed-from-example"     # abort | seed-from-example
+example_file  = ".env.example"
+```
+
+Voir [Guards regex](/fr/configuration/guards) pour l'API complète des patterns.
+
+## `[bootstrap.fallback.<key>]`
+
+Contenu inline utilisé quand une source `[[bootstrap.copy]]` requise est manquante et que `fallback = "inline"`.
+
+```toml
+[bootstrap.fallback.env_testing]
+target  = ".env.testing"
+content = """
+APP_ENV=testing
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+"""
+```
+
+Le `<key>` est référencé implicitement en faisant correspondre `target` au `to` d'une étape de copie. Plusieurs fallbacks peuvent coexister.
+
+## `[[bootstrap.no_symlink]]`
+
+Refuse d'hériter d'un symlink au chemin listé (typiquement `vendor/`, `node_modules/`) - empêche un symlink errant de polluer la sortie de build du dépôt principal.
+
+```toml
+[[bootstrap.no_symlink]]
+path = "vendor"
+
+[[bootstrap.no_symlink]]
+path = "node_modules"
+```
+
+## `[[bootstrap.command]]`
+
+Hooks shell legacy. Les nouvelles configs devraient préférer `[[hooks.post_create]]`. Quand une config définit à la fois des entrées legacy `[[bootstrap.command]]` et n'importe quelles entrées `[hooks.*]`, gwm affiche un avertissement de dépréciation et traite les commandes legacy comme des étapes `post_create` supplémentaires pour éviter toute ambiguïté d'ordonnancement.
+
+```toml
+[[bootstrap.command]]
+name = "composer install"
+run  = "composer install --no-interaction --prefer-dist"
+when = "file_exists:composer.json"
+env  = { COMPOSER_IGNORE_PLATFORM_REQ = "ext-imagick" }
+```
+
+| Champ  | Type                | Signification                                                             |
+| :----- | :------------------ | :------------------------------------------------------------------------ |
+| `name` | string              | affiché dans le rapport de bootstrap                                      |
+| `run`  | string              | ligne shell à exécuter (découpée via `sh -c`)                             |
+| `when` | string              | [prédicat `when:`](/fr/configuration/when-predicates) (optionnel)         |
+| `env`  | table string→string | variables d'env supplémentaires injectées pour cette commande (optionnel) |
+
+## `[[hooks.*]]`
+
+Les hooks de cycle de vie s'exécutent autour de la création du worktree, du bootstrap et de la suppression. Phases supportées :
+
+- `[[hooks.pre_create]]` - avant `git worktree add`, avec `cwd` au dépôt principal.
+- `[[hooks.post_create]]` - après que le worktree existe, avec `cwd` au worktree.
+- `[[hooks.pre_bootstrap]]` / `[[hooks.post_bootstrap]]` - autour du cœur du bootstrap.
+- `[[hooks.pre_remove]]` / `[[hooks.post_remove]]` - avant et après `gwm remove`.
+
+```toml
+[[hooks.post_create]]
+name = "install deps"
+run  = "npm ci"
+when = "file_exists:package-lock.json"
+on_fail = "warn" # abort | warn | ignore (default: abort)
+env = { CI = "1" }
+```
+
+| Champ     | Type                | Signification                                                      |
+| :-------- | :------------------ | :----------------------------------------------------------------- |
+| `name`    | string              | affiché dans les rapports de cycle de vie comme `[phase] name`     |
+| `run`     | string              | ligne shell à exécuter via `sh -c`                                 |
+| `when`    | string              | [prédicat `when:`](/fr/configuration/when-predicates) (optionnel)  |
+| `env`     | table string→string | variables d'env supplémentaires injectées pour ce hook (optionnel) |
+| `on_fail` | string              | `abort`, `warn`, ou `ignore` ; défaut `abort`                      |
+
+Les commandes de hook et les valeurs d'env peuvent utiliser des placeholders : `{branch}`, `{path}`, `{type}`, `{issue}`, `{desc}`, `{user}`, `{owner}`, `{repo}`.
+
+**Un placeholder est une valeur, pas un fragment de script.** Dans `run`, chaque valeur substituée est échappée pour le shell : un nom de branche portant `;`, `|`, `$`, un backtick ou une espace arrive à votre commande comme un seul argument au lieu de changer _quelle_ commande s'exécute - git autorise tout cela dans une ref, et une ref peut venir du push de quelqu'un d'autre. La substitution se fait en une seule passe, donc une valeur contenant elle-même un `{token}` traverse telle quelle plutôt que d'être expansée une seconde fois. Dans `env`, les valeurs ne sont **pas** échappées : elles partent directement dans l'environnement du processus et ne voient jamais de shell, donc les échapper mettrait des guillemets littéraux dans ce que votre hook relit.
+
+Une conséquence à connaître : un placeholder **vide** produit désormais un argument vide, et non plus rien du tout. Sur une branche qui ne suit pas la convention, `{type}` / `{issue}` / `{desc}` sont vides, donc `mycmd {issue}` passe un argument vide à `mycmd` là où il n'en passait aucun. À l'intérieur d'un mot plus large - `mycmd issue={issue}` - rien ne change.
+
+**Le même contexte est exporté en variables d'environnement**, pour qu'un hook puisse se passer entièrement de la syntaxe des placeholders :
+
+| Variable     | Équivaut à |
+| :----------- | :--------- |
+| `GWM_BRANCH` | `{branch}` |
+| `GWM_PATH`   | `{path}`   |
+| `GWM_TYPE`   | `{type}`   |
+| `GWM_ISSUE`  | `{issue}`  |
+| `GWM_DESC`   | `{desc}`   |
+| `GWM_USER`   | `{user}`   |
+| `GWM_OWNER`  | `{owner}`  |
+| `GWM_REPO`   | `{repo}`   |
+
+```toml
+[[hooks.post_create]]
+name = "notify"
+run  = 'printf "%s est prêt dans %s\n" "$GWM_BRANCH" "$GWM_PATH"'
+```
+
+Citez-les (`"$GWM_BRANCH"`, pas `$GWM_BRANCH`) : un shell ne réanalyse jamais les métacaractères issus d'une variable, donc rien là ne peut démarrer une seconde commande, mais une expansion non citée reste soumise au découpage en mots et au globbing - et une ref peut contenir une tabulation, un saut de ligne ou un `*`. Une entrée `env` explicite du même nom l'emporte sur celle exportée.
+
+Bypass d'urgence :
+
+```bash
+gwm create feat 42 auth --skip-hooks pre_create
+gwm bootstrap auth --skip-hooks pre_bootstrap,post_bootstrap
+gwm remove auth --force # implies --skip-hooks pre_remove,post_remove
+```
+
+## `[git_tui]` et `[review]`
+
+Les bindings de launcher de la TUI. Le schéma complet vit dans [TUI → Launchers configurables](/fr/tui/launchers).
+
+```toml
+# l keybinding — pre-v0.6 default kept implicit when omitted
+[git_tui]
+command    = "lazygit -p {path}"
+fullscreen = true
+
+# R keybinding — inert until configured
+[review]
+tool         = "lumen"                # OR command = "<your line>"
+fullscreen   = true                   # only honoured when command is set
+default_base = "main"                 # optional override for the base resolution chain
+```
+
+## `[exec]` et `[clean]`
+
+Profils nommés pour les commandes de fan-out `gwm exec` et `gwm clean` (issue #324). Les deux blocs sont opt-in : sans eux, `gwm exec -- <cmd>` et le jeu de répertoires intégré de `gwm clean` se comportent exactement comme avant.
+
+```toml
+[exec]
+jobs = 1                             # parallélisme par défaut global ; 1 = séquentiel
+
+# Commandes sauvegardées pour `gwm exec --profile <nom>`.
+[exec.profiles.test]
+command = ["cargo", "test"]          # TABLEAU d'argv — pas de shell
+
+[exec.profiles.fmt]
+command = ["cargo", "fmt", "--all"]
+jobs = 4                             # ce profil lance 4 worktrees à la fois
+
+# Jeux de répertoires sauvegardés pour `gwm clean --profile <nom>`.
+# `default` est ce que `gwm clean` utilise SANS --profile.
+[clean.profiles.default]
+dirs = ["target", "node_modules", "dist", "build", "coverage", ".turbo"]
+
+[clean.profiles.deep]
+dirs = ["target", "node_modules", "dist", "build", ".cache", ".venv"]
+```
+
+**exec - `command` est un tableau d'argv, pas une ligne shell.** Le `command` d'un profil est une liste de jetons argv (`["cargo", "test"]`) exécutée **sans shell** : pas de découpage en mots, pas de globbing, pas de placeholders `{path}` - le programme est lancé tel quel dans chaque worktree, exactement comme l'inline `gwm exec -- <cmd>`. C'est une divergence **délibérée** avec `[git_tui]` et `[review]`, dont le `command` est une unique ligne **shell** (`"lazygit -p {path}"`). Les deux sémantiques sont **gelées pour la 1.0** ; n'attendez aucune fonctionnalité shell sous `[exec.profiles]`.
+
+- `gwm exec --profile <nom>` lance la commande sauvegardée. `--profile` et un inline `-- <cmd>` sont **mutuellement exclusifs** (les fournir ensemble sort en 1) ; un nom de profil **inconnu** sort en 1.
+
+**exec - `jobs` = parallélisme borné.** `[exec] jobs` est le défaut global ; le `jobs` d'un profil le surcharge ; le flag `--jobs <n>` gagne sur les deux. Précédence : `--jobs` > `[exec.profiles.<nom>].jobs` > `[exec] jobs` > `1`. **`1` (ou absent) s'exécute séquentiellement** avec la sortie live héritée - le défaut inchangé. **`> 1` lance jusqu'à N worktrees à la fois**, en capturant la sortie de chacun et en l'imprimant en un bloc par worktree (dans l'ordre des worktrees) une fois le fan-out terminé, pour que les exécutions concurrentes ne s'entremêlent pas. Le code de sortie agrégé est inchangé : non nul si la commande d'un worktree a échoué.
+
+**clean - le `dirs` d'un profil est un jeu complet qui remplace les intégrés.** `[clean.profiles.<nom>].dirs` ne **s'ajoute pas** aux `target`/`node_modules`/`dist`/`build` intégrés - il les **remplace** intégralement. Chaque entrée doit être un **nom de répertoire unique relatif au worktree** - un seul composant de chemin. Un chemin absolu, une remontée `..`, une chaîne vide, un simple `.` (qui résout vers la racine du worktree), un chemin **imbriqué** comme `target/debug`, ou un nom avec des **métacaractères de pathspec git** (`* ? [ ]` ou un `:` en tête) est rejeté (sortie 1). La restriction sur l'imbrication est délibérée pour la 1.0 (un composant intermédiaire pourrait être un symlink que le scan ou la suppression suivraient hors du worktree) ; la restriction sur les métacaractères garde les contrôles de sûreté (git-ignored / fichier suivi) alignés sur le répertoire littéral. Un `-` en tête est accepté. Les entrées exactement dupliquées sont supprimées pour que chaque répertoire soit récupéré une seule fois. La barrière de sûreté (git-ignored + aucun fichier suivi + skip des symlinks) s'applique toujours à chaque répertoire du jeu.
+
+- `gwm clean` **sans** `--profile` utilise `[clean.profiles.default]` s'il existe, sinon les quatre intégrés. `gwm clean --profile <nom>` utilise le jeu de ce profil ; un nom **inconnu** sort en 1.
+
+## `[tui]`
+
+Boutons de réglage runtime pour la TUI de worktree.
+
+```toml
+[tui]
+# Safety countdown (in seconds) for the delete-confirm overlay when `p` is armed.
+# Accepts 0..=5; values above 5 are clamped on read. Setting it to 0 keeps the
+# classic single-keystroke modal even when delete-branch-on-remove is armed.
+confirm_countdown_secs = 3
+
+# Which side the worktree-details sidebar sits on in the side-by-side layout.
+# "right" (default, pre-#188 behaviour) or "left". Toggle it live with `v`.
+sidebar_position = "right"
+
+# How the sidebar is arranged relative to the table: "stacked" (default),
+# "side-by-side", or "auto" (width-driven). Cycle it live with `Space`.
+sidebar_orientation = "stacked"
+
+# How yanked text reaches the clipboard: "auto" (OSC52 over SSH, host tools
+# otherwise), "osc52", or "tools".
+clipboard = "auto"
+
+# Periodic worktree-list refresh interval, in seconds. Default 60 keeps the
+# Issue/PR table state reasonably fresh; set to 0 to disable the auto-refresh
+# loop entirely (you can still refresh on demand with the `refresh` key).
+auto_refresh_secs = 60
+```
+
+`sidebar_position` (issue #188) définit le côté par défaut de la sidebar de détails dans le layout **côte-à-côte** - `"right"` (défaut) ou `"left"`. `v` le bascule en direct dans la TUI. Le layout **empilé** (table en haut, sidebar en dessous) l'ignore - là, la sidebar est toujours en bas. Une valeur inconnue est une **erreur de config dure au moment du chargement**.
+
+`sidebar_orientation` (issue #365) définit l'agencement de la sidebar par rapport à la table :
+
+| Valeur           | Comportement                                                                                                                         |
+| :--------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| `"stacked"`      | Table en haut, sidebar en dessous. **Défaut** depuis l'issue #217 - le panneau Status se lit mieux sur toute la largeur du terminal. |
+| `"side-by-side"` | Toujours à côté de la table, quelle que soit la largeur du terminal.                                                                 |
+| `"auto"`         | Côte-à-côte à partir de `120` colonnes, empilé en dessous.                                                                           |
+
+`Space` la fait cycler en direct (`auto` → côte-à-côte → empilé → `auto`). Avant #365, ce choix en direct était runtime-only et repartait à zéro à chaque lancement ; renseigner la clé ici le rend persistant. Une valeur inconnue est une **erreur de config dure au moment du chargement**. Elle est aussi exposée dans le panneau Settings, sous l'onglet **TUI**.
+
+`clipboard` (issue #367) choisit comment le texte yanké - chemin, branche, nom de worktree, logs de commandes - atteint le presse-papier :
+
+| Valeur    | Comportement                                                                           |
+| :-------- | :------------------------------------------------------------------------------------- |
+| `"auto"`  | **Défaut.** OSC52 quand `$SSH_TTY` ou `$SSH_CONNECTION` est défini, outils hôte sinon. |
+| `"osc52"` | Émet toujours la séquence d'échappement OSC52.                                         |
+| `"tools"` | Utilise toujours `pbcopy` / `wl-copy` / `xclip` / `xsel` / `clip.exe`.                 |
+
+Les outils hôte écrivent dans le presse-papier de la machine où tourne gwm. En SSH c'est le mauvais, et l'échec est _silencieux_ : sur un hôte macOS distant, `pbcopy` existe, réussit, et gwm affiche `yanked branch name (pbcopy)` alors que votre presse-papier réel n'a pas bougé. OSC52 confie le texte à votre émulateur de terminal, qui possède le presse-papier dans lequel vous collez. Une valeur inconnue est une **erreur de config dure au moment du chargement**. Également exposé dans le panneau Settings, sous l'onglet **TUI**.
+
+Trois réserves, toutes dues au fait qu'**OSC52 n'est jamais acquitté** - gwm peut signaler qu'il a émis la séquence, jamais que le terminal l'a acceptée :
+
+- **tmux** exige `set -g allow-passthrough on`. gwm encapsule la séquence en DCS passthrough, mais l'option est désactivée par défaut depuis tmux 3.3 et gwm ne peut ni la détecter ni l'activer.
+- **GNU screen** (`$STY`) reçoit les outils hôte à la place : screen réclame sa propre forme découpée, et une séquence non encapsulée y est avalée en silence. Se rabattre est l'échec honnête.
+- **Le support varie selon le terminal** - kitty, WezTerm, Alacritty et iTerm2 (option activée) honorent OSC52 ; Terminal.app non. `"tools"` est la porte de sortie. C'est aussi la réponse à un `$SSH_CONNECTION` périmé dans un pane tmux, qui peut faire deviner faux à `auto`.
+
+`auto_refresh_secs` (issue #285) pilote un rafraîchissement périodique en arrière-plan de la liste des worktrees pour que l'état de la table Issue/PR reste à jour sans frappe manuelle. C'est un entier positif ou nul en secondes ; la valeur par défaut est `60` et `0` désactive la boucle. Il est aussi exposé dans le panneau Settings, sous l'onglet **TUI**.
+
+Voir [TUI → Countdown de l'overlay de confirmation](/fr/tui/confirm-countdown) et [TUI → Sidebar](/fr/tui/sidebar).
+
+## `[tui.macro1]` et `[tui.macro2]`
+
+Commandes définies par l'utilisateur, déclenchées depuis la liste des worktrees (issue #290). Chacune est une sous-table optionnelle ; quand elle est présente, les actions `macro_one` / `macro_two` (bindées sur `h` / `H` par défaut - voir `gwm tui keys`) exécutent la commande **dans le répertoire du worktree sélectionné**. Quand la sous-table est absente, la touche est un no-op.
+
+```toml
+[tui.macro1]
+command = "gh pr view --web"     # forwarded to the OS shell (`sh -c`)
+open_in = "pty"                  # "pty" (default) | "mux_pane"
+
+[tui.macro2]
+command = "lazygit"
+open_in = "mux_pane"
+```
+
+- `command` (requis) est la commande shell à exécuter, transmise au shell de l'OS (`sh -c …`).
+- `open_in` (optionnel, défaut `"pty"`) choisit où la commande s'exécute :
+  - `"pty"` - un overlay PTY embarqué, comme les launchers lazygit / terminal ; la TUI se suspend jusqu'à la fin de la commande.
+  - `"mux_pane"` - un nouveau pane du multiplexeur en cours (tmux via `$TMUX`, ou Zellij via `$ZELLIJ`), avec repli sur un overlay PTY quand aucun multiplexeur n'est détecté.
+
+La valeur est en `snake_case`, donc écrivez `"mux_pane"` (pas `"muxpane"`). Les deux clés sont validées au chargement ; un champ inconnu sous la sous-table erreure.
+
+## `[tui.keys.modal.<context>]`
+
+Au-delà du keymap de la vue liste, les keymaps de chaque modal sont rebindables aussi (issue #219). Là où `[tui.keys]` contient des **tableaux** pour les actions globales `View::List` (`quit = ["q"]`), le namespace `[tui.keys.modal]` contient des **tables**, une par contexte de modal, chacune bindant les verbes de ce contexte :
+
+```toml
+[tui.keys.modal.confirm]
+confirm = ["y"]
+cancel  = ["n", "Esc"]
+
+[tui.keys.modal.help]
+close = ["Esc", "q", "?"]
+
+# Nested contexts use a dotted stage path:
+[tui.keys.modal.link.choose_target]
+accept = ["Enter"]
+cancel = ["Esc"]
+```
+
+Chaque verbe prend un tableau de touches. Contrairement au keymap de la vue liste, **les bindings de modal sont des frappes uniques** - les chords multi-touches comme `g g` sont rejetés. Une surcharge remplace le jeu de touches par défaut du verbe ; les verbes non mentionnés gardent leurs valeurs par défaut.
+
+L'ensemble des contextes et des verbes est exactement ce que la TUI expose - exécutez `gwm tui keys` pour afficher chaque contexte de modal (`confirm`, `create`, `help`, `command_logs`, `config`, `config.edit`, `report`, `open_menu`, `palette`, `link.choose_target`, `link.input_number`, …) avec ses verbes et ses touches résolues. Binder sous un **groupe** de contexte plutôt que sous une étape feuille (par ex. `[tui.keys.modal.link]` au lieu de `[tui.keys.modal.link.choose_target]`) est une erreur au chargement qui nomme l'étape à utiliser.
+
+La validation au chargement rejette, comme un `GwmError::Config` dur : un contexte de modal inconnu, un verbe inconnu pour un contexte, une touche non parsable ou multi-frappes, et un conflit par contexte. À noter qu'une poignée de noms (`create`, `help`, `command_logs`, `link`) existent à la fois comme action globale et comme contexte de modal ; TOML interdit de définir deux fois la même clé, donc choisissez la forme tableau (globale) ou la forme table `[tui.keys.modal.<name>]` (modal) dans un fichier donné.
+
+Voir [TUI → Keymap et palette](/fr/tui/keymap-and-palette).
+
+## `[tui.keys]`
+
+Keymap configurable (issue #87). Rebindez chaque action de la vue liste avec des touches en grammaire crossterm, y compris des chords multi-touches comme `g g`. Une surcharge **remplace** le binding par défaut de cette action ; elle ne fusionne pas. Passer une liste vide (`down = []`) débinde l'action entièrement.
+
+```toml
+[tui.keys]
+down                    = ["j", "Down"]
+up                      = ["k", "Up"]
+top                     = ["g g"]
+bottom                  = ["G", "End"]
+quit                    = ["q"]
+sync                    = ["s"]
+delete_branch           = ["D"]
+toggle_sidebar          = ["V"]
+cycle_sidebar_layout    = ["Space"]
+command_palette         = [":"]
+```
+
+Chaque valeur est une liste de chaînes de chord. Au sein d'une chaîne de chord, les espaces séparent les frappes (donc `"g g"` est appuyer `g` deux fois) et `+` sépare les modificateurs de la touche (`"Ctrl+x Ctrl+s"`). Utilisez `"Space"` pour le caractère espace littéral. Modificateurs reconnus : `Ctrl`, `Alt`, `Shift`. Les touches nommées incluent `Tab`, `Enter`, `Esc`, `Up`, `Down`, `Left`, `Right`, `Backspace`, `BackTab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Space`. Une lettre shiftée (`"V"`, `"Shift+v"`) se canonicalise vers la même frappe majuscule quelle que soit la façon dont le terminal rapporte le shift.
+
+### Actions rebindables
+
+Ce sont les valeurs par défaut résolues du binaire actuel (après le redesign du
+keymap #290). `gwm tui keys` affiche la liste vivante avec une source par ligne,
+et fait foi si un futur build décale une valeur par défaut.
+
+| Slug d'action             | Chord(s) par défaut | Verbe                                                         |
+| :------------------------ | :------------------ | :------------------------------------------------------------ |
+| `down`                    | `j`, `Down`         | déplacer la sélection vers le bas                             |
+| `up`                      | `k`, `Up`           | déplacer la sélection vers le haut                            |
+| `top`                     | `g g`               | sauter à la première ligne                                    |
+| `bottom`                  | `G`, `End`          | sauter à la dernière ligne                                    |
+| `focus_swap`              | `Tab`               | échanger le focus entre la table et la sidebar                |
+| `focus_worktrees`         | `1`                 | focus sur le panneau des worktrees                            |
+| `focus_status`            | `2`                 | focus sur le panneau de statut                                |
+| `command_logs`            | `3`                 | ouvrir l'overlay Command Logs                                 |
+| `config_panel`            | `4`                 | ouvrir le panneau Settings                                    |
+| `toggle_sidebar`          | `V`                 | afficher / masquer la sidebar de détails                      |
+| `toggle_sidebar_mode`     | `S`                 | faire cycler le panneau Details (`commits` ↔ `stashes`)       |
+| `cycle_sidebar_layout`    | `Space`             | faire cycler le layout (`auto` → côte-à-côte → empilé → auto) |
+| `toggle_sidebar_position` | `v`                 | basculer la sidebar gauche ↔ droite                           |
+| `filter`                  | `/`                 | ouvrir la barre de filtre fuzzy                               |
+| `refresh`                 | `f`                 | rafraîchir la liste des worktrees                             |
+| `sync`                    | `s`                 | fetch + rebase sur l'upstream (`gwm sync`)                    |
+| `create`                  | `n`                 | ouvrir l'overlay de nouveau worktree                          |
+| `delete`                  | `d`                 | ouvrir l'overlay de confirmation de suppression               |
+| `bootstrap`               | `b`                 | ré-exécuter le bootstrap sur le worktree sélectionné          |
+| `delete_branch`           | `D`                 | armer la suppression de branche au remove                     |
+| `pull`                    | `p`                 | `git pull` sur la branche sélectionnée (async)                |
+| `push`                    | `P`                 | `git push` sur la branche sélectionnée (async)                |
+| `edit_worktree`           | `c`                 | renommer le worktree / la branche                             |
+| `exit_to_worktree`        | `e`                 | quitter et imprimer le chemin sélectionné sur stdout          |
+| `lazygit_pty`             | `l`                 | lazygit dans l'overlay PTY embarqué (`[git_tui]`)             |
+| `lazygit_fullscreen`      | `L`                 | lazygit en plein écran                                        |
+| `review_pty`              | `r`                 | outil de review dans l'overlay PTY (`[review]`)               |
+| `review_fullscreen`       | `R`                 | outil de review en plein écran                                |
+| `terminal_pty`            | `o`                 | dispatch d'ouverture dans l'overlay PTY (`[tui.open]`)        |
+| `terminal_fullscreen`     | `O`                 | menu de mode d'ouverture / terminal plein écran               |
+| `yank_path`               | `Y`                 | copier le chemin du worktree                                  |
+| `yank_branch_name`        | `y`                 | copier le nom de la branche                                   |
+| `yank_worktree_name`      | `w`                 | copier le nom du worktree                                     |
+| `mux_pane`                | `t`                 | ouvrir le worktree dans un nouveau pane tmux / zellij         |
+| `macro_one`               | `h`                 | exécuter `[tui.macro1]`                                       |
+| `macro_two`               | `H`                 | exécuter `[tui.macro2]`                                       |
+| `browse_links`            | `B`                 | parcourir les liens issue / PR                                |
+| `open_docs`               | `.`                 | ouvrir la doc dans le navigateur                              |
+| `link`                    | `i`                 | ouvrir le prompt de lien issue/PR                             |
+| `fetch_github`            | `F`                 | récupérer l'état d'issue/PR GitHub                            |
+| `help`                    | `?`                 | basculer l'overlay d'aide                                     |
+| `quit`                    | `q`                 | quitter la TUI                                                |
+| `command_palette`         | `:`                 | ouvrir la palette de commandes                                |
+
+`Ctrl+C` (quit d'urgence) et les touches contextuelles `Esc` / `Enter` sont des échappatoires codées en dur en dehors du keymap - elles continuent de fonctionner quel que soit `[tui.keys]`.
+
+**La validation au chargement** rejette, comme un `GwmError::Config` dur :
+
+- un slug d'**action inconnue** (l'erreur vous oriente vers `gwm tui keys` pour la liste complète) ;
+- une **erreur de parsing** dans une chaîne de chord (vide, `+` pendant, modificateur inconnu, nom de touche inconnu) ;
+- un **conflit de chord** - deux actions bindées sur le même chord ;
+- une **collision de préfixe** - un chord qui est un préfixe strict d'un autre chord bindé (par ex. binder `g` seul alors que `g g` est aussi bindé). Résoudre cela au runtime nécessiterait un timeout à la Vim dans la boucle d'événements, donc gwm refuse la config à la place.
+
+`gwm tui keys` affiche le keymap résolu avec une source par ligne ; `gwm doctor` avertit quand aucun binding non-`Ctrl+C` pour `quit` ne survit aux surcharges. L'overlay d'aide (`?`) est piloté par le keymap, donc la documentation correspond toujours aux bindings résolus.
+
+Voir [TUI → Keymap et palette](/fr/tui/keymap-and-palette).
+
+## `[tui.open]`
+
+Ce que fait la touche `o`. Détails complets dans [TUI → Dispatch d'ouverture](/fr/tui/open-dispatch).
+
+```toml
+[tui.open]
+mode = "shell"          # shell (default) | editor | finder
+shell_cmd  = ""          # override $SHELL when mode=shell; empty = unset
+editor_cmd = "hx"        # override $EDITOR when mode=editor; empty = unset
+```
+
+Les valeurs de `mode` inconnues sont une **erreur de config dure au moment du chargement**, pas un fallback silencieux.
+
+## `[theme]`
+
+Couleurs de la TUI basées sur les rôles (issue #33). Chaque signal visuel mappe vers un rôle sémantique plutôt qu'une couleur codée en dur, de sorte qu'un bloc `[theme]` re-skinne toute la TUI. Deux boutons : un `preset` optionnel (une palette intégrée) et un nombre quelconque de surcharges par rôle par-dessus.
+
+```toml
+[theme]
+preset = "catppuccin"     # optional — seed every role from a built-in palette
+focus  = "#89b4fa"        # per-role override on top of the preset
+accent = "mauve"          # (illustrative — named colours below)
+```
+
+`preset` (optionnel) initialise chaque rôle depuis une palette intégrée ; en son absence, gwm démarre depuis le schéma par défaut (le look codé en dur pré-#33). Presets intégrés :
+
+| Preset        | Alias              |
+| :------------ | :----------------- |
+| `catppuccin`  | `catppuccin-mocha` |
+| `gruvbox`     | `gruvbox-dark`     |
+| `tokyo-night` | `tokyonight`       |
+| `claude-dark` | `claude`           |
+
+`gwm theme list` affiche les noms de preset ; `gwm theme show <name>` dump un preset en bloc `[theme]` copiable-collable et round-trippable.
+
+### Rôles
+
+Surchargez n'importe laquelle de ces clés individuellement - une surcharge par rôle **l'emporte sur le preset** (et sur le défaut). La surcharge est appliquée par-dessus la base `preset` choisie.
+
+| Rôle           | Utilisé pour                                                                   | Défaut      |
+| :------------- | :----------------------------------------------------------------------------- | :---------- |
+| `focus`        | bordure focalisée / curseur / surbrillance d'overlay actif                     | `cyan`      |
+| `accent`       | titre de l'en-tête, hints de touches de l'overlay d'aide, prompt de la palette | `cyan`      |
+| `branch`       | nom de branche dans les listes et la carte d'identité de la sidebar            | `green`     |
+| `clean`        | indicateur de statut « working tree is clean »                                 | `green`     |
+| `dirty`        | indicateur de statut « working tree is dirty »                                 | `yellow`    |
+| `main`         | badge du worktree main / trunk                                                 | `yellow`    |
+| `locked`       | badge du worktree verrouillé (`🔒`)                                            | `magenta`   |
+| `prunable`     | badge du worktree élagable (`⚠`)                                               | `red`       |
+| `muted`        | texte dé-emphasé : hints, footers, placeholders                                | `dark_gray` |
+| `selection_bg` | arrière-plan de surbrillance de sélection                                      | `dark_gray` |
+| `name`         | nom du worktree + têtes `Issue #N` / `PR #N`                                   | `white`     |
+| `path`         | colonne du chemin du worktree dans la table                                    | `gray`      |
+| `staged`       | changements git-status indexés (côté index)                                    | `cyan`      |
+| `modified`     | modifications git-status côté working-tree                                     | `yellow`    |
+| `untracked`    | entrées git-status non suivies / créées (`??`)                                 | `green`     |
+
+### Formats de valeur de couleur
+
+Chaque rôle accepte une couleur sous l'une de trois formes :
+
+- **Nommée** - `cyan`, `Cyan`, `dark_gray`, `bright_blue` (insensible à la casse).
+- **Index de palette 256** - `0`..=`255` (par ex. `220`).
+- **Hex** - `#RRGGBB` (six chiffres hex + `#` en tête, par ex. `#89b4fa`). La forme courte `#RGB` n'est **pas** supportée - le parser refuse de deviner.
+
+**La validation s'exécute au chargement** (issue #33) : un `preset` inconnu, une clé de rôle inconnue, ou une valeur de couleur non parsable sont chacun un `GwmError::Config` dur, attribué à la coordonnée `theme.<role>` fautive. Les utilisateurs qui omettent `[theme]` voient le schéma par défaut inchangé.
+
+Voir [TUI → Thèmes](/fr/tui/themes).
+
+## `[doctor]`
+
+Boutons de réglage pour `gwm doctor`. Expose actuellement la liste de trunks utilisée par le check de branche orpheline.
+
+```toml
+[doctor]
+# Branches the orphan check treats as "merge destinations". A gwm-style
+# branch fully reachable from one of these is preserved per CONTRIBUTING
+# ("never delete the source branch after merge") and NOT flagged as orphan.
+# Empty list → every unclaimed gwm-style branch is flagged.
+trunks = ["dev", "main"]
+```
+
+Les dépôts utilisant un trunk non par défaut (`master`, `trunk`, `release-1.x`, …) doivent le lister ici pour garder le check d'orphelin pertinent.
+
+## `[gitmoji]` (issue #85)
+
+Surcharge par dépôt de la table intégrée `branch_type → :shortcode:` consommée par [`gwm commit-prefix`](/fr/cli/reference#gwm-commit-prefix---branch-name---unicode), [`gwm types --gitmoji`](/fr/cli/reference#gwm-types---gitmoji), et le hook commit-msg fourni ([`gwm hooks install commit-msg`](/fr/cli/reference#gwm-hooks-install-commit-msg---force)).
+
+```toml
+[gitmoji]
+feat      = ":rocket:"    # team uses 🚀 for new features instead of ✨
+migration = ":truck:"     # custom branch type
+```
+
+Valeurs par défaut (utilisées quand `[gitmoji]` est absent ou omet une clé) :
+
+| type de branche | shortcode               | unicode |
+| :-------------- | :---------------------- | :------ |
+| `feat`          | `:sparkles:`            | ✨      |
+| `fix`           | `:bug:`                 | 🐛      |
+| `hotfix`        | `:ambulance:`           | 🚑      |
+| `docs`          | `:memo:`                | 📝      |
+| `test`          | `:white_check_mark:`    | ✅      |
+| `refactor`      | `:recycle:`             | ♻       |
+| `chore`         | `:wrench:`              | 🔧      |
+| `perf`          | `:zap:`                 | ⚡      |
+| `ci`            | `:construction_worker:` | 👷      |
+| `build`         | `:package:`             | 📦      |
+
+`[gitmoji]` est **additif** - surcharger une entrée n'efface pas les neuf autres. Les types de branche personnalisés déclarés sous `[[branch_types]]` peuvent porter leur propre emoji ici sans redéclarer les built-ins.
+
+### Normalisation `--unicode` des surcharges
+
+Les surfaces qui rendent le préfixe en glyphe unicode (`gwm commit-prefix --unicode`, la colonne unicode de `gwm types --gitmoji`, et le hook commit-msg installé) **normalisent les surcharges `:shortcode:` connues vers leur glyphe** :
+
+```toml
+[gitmoji]
+feat = ":rocket:"
+```
+
+```text
+$ gwm commit-prefix --branch feat/#1-x
+:rocket: feat(#1):
+
+$ gwm commit-prefix --branch feat/#1-x --unicode
+🚀 feat(#1):
+```
+
+L'ensemble des shortcodes connus couvre les dix mappings intégrés plus une extension curatée des entrées Gitmoji les plus couramment échangées (`:rocket:`, `:fire:`, `:lock:`, `:art:`, `:lipstick:`, `:hammer:`, `:bookmark:`, …). **Les shortcodes inconnus passent verbatim** - pas de panic, pas de substitution :
+
+```toml
+[gitmoji]
+feat = ":foo:"          # not in the built-in unicode table
+```
+
+```text
+$ gwm commit-prefix --branch feat/#1-x --unicode
+:foo: feat(#1):
+```
+
+Sans `--unicode`, chaque surcharge est émise verbatim, que la table la connaisse ou non - la forme shortcode est celle que les consommateurs en aval (Markdown GitHub, commit linters, gitmoji-cli) parsent.
+
+## `[[labels]]` (issue #81)
+
+Set de labels GitHub déclaratif poussé vers le remote `origin` par [`gwm labels push`](/fr/cli/reference#gwm-labels-listpush).
+
+```toml
+[[labels]]
+name        = "bug"
+description = "Something isn't working"
+color       = "d73a4a"          # optional — deterministic pastel if omitted
+
+[[labels]]
+name        = "enhancement"
+description = "New feature or request"
+
+[[labels]]
+name        = "good first issue"
+description = "Good for newcomers"
+color       = "7057ff"
+```
+
+| Champ         | Type   | Requis | Signification                                                                                                                                                                                                       |
+| :------------ | :----- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`        | string | oui    | nom de label GitHub. Les espaces sont préservés verbatim - entourez-le de guillemets : `name = "good first issue"`.                                                                                                 |
+| `description` | string | non    | Vide / absent signifie « ne pas changer la description sur le remote ».                                                                                                                                             |
+| `color`       | string | non    | 6-hex minuscule, sans `#` en tête (`#D73A4A` est accepté et normalisé). Quand omis, gwm dérive un pastel déterministe depuis un hash FNV-1a de `name` afin que le même label obtienne la même couleur entre dépôts. |
+
+Ordre de résolution :
+
+1. **`color` déclarée** dans `.gwm.toml` l'emporte.
+2. **Pastel déterministe** depuis un hash du nom quand `color` est omis (défaut).
+3. **Pastel aléatoire** quand l'utilisateur passe `gwm labels push --random-colors`.
+
+Workflow :
+
+- `gwm labels list` - affiche le set résolu plus le diff face au remote (`+ create`, `~ update`, `= match`, `- extra-on-remote`).
+- `gwm labels push` - applique create + update.
+- `gwm labels push --dry-run` - plan seulement, aucune mutation du remote. Lit quand même les labels du remote via `gh label list` pour calculer le diff ; seuls les appels create / update / delete sont ignorés.
+- `gwm labels push --prune` - supprime aussi les labels du remote qui ne sont pas déclarés en config (destructif, opt-in).
+
+Sans bloc `[[labels]]`, `gwm labels {list|push}` sont des no-ops (`0 labels declared, nothing to push`) et ne font jamais appel à `gh`. Nécessite `gh` sur le `$PATH` une fois des labels déclarés (la même dépendance souple que `gwm status`).
+
+## `[[milestones]]` (issue #82)
+
+Set de milestones GitHub déclaratif poussé vers le remote `origin` par [`gwm milestones push`](/fr/cli/reference#gwm-milestones-listpush). Reflète la forme de `[[labels]]` ; l'endpoint REST est utilisé car `gh` n'a pas de sous-commande native `gh milestone`.
+
+```toml
+[[milestones]]
+title       = "v0.7.0"
+description = "Configurability sprint"
+due_on      = "2026-07-15"      # YYYY-MM-DD → end-of-day UTC
+state       = "open"            # default "open", or "closed"
+
+[[milestones]]
+title       = "v0.8.0"
+due_on      = "2026-10-01T17:00:00Z"   # full RFC3339 also accepted
+
+[[milestones]]
+title       = "v0.6.0"
+state       = "closed"          # archive declaratively
+```
+
+| Champ         | Type   | Requis | Signification                                                                                                                                                                        |
+| :------------ | :----- | :----- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`       | string | oui    | titre de milestone GitHub (unique par dépôt). Les espaces sont préservés verbatim.                                                                                                   |
+| `description` | string | non    | Vide / absent signifie « ne pas changer la description sur le remote ».                                                                                                              |
+| `due_on`      | string | non    | `YYYY-MM-DD` (matérialisé comme 23:59:59 UTC de ce jour, sémantique de bon sens « due Friday ») ou RFC3339 complet (`2026-07-15T17:00:00Z`). Absent signifie pas de date d'échéance. |
+| `state`       | string | non    | `"open"` (défaut) ou `"closed"`. Utilisez `"closed"` pour archiver un milestone de façon déclarative.                                                                                |
+
+Workflow :
+
+- `gwm milestones list` - affiche le set résolu plus le diff face au remote (`+ create`, `~ update`, `= match`, `- extra-on-remote`).
+- `gwm milestones push` - applique create + update.
+- `gwm milestones push --dry-run` - plan seulement, aucune mutation du remote. Lit quand même les milestones du remote via `gh api` pour calculer le diff ; seuls les appels create / update / delete sont ignorés.
+- `gwm milestones push --prune` - supprime aussi les milestones du remote qui ne sont pas déclarés en config (destructif, opt-in).
+
+Sans bloc `[[milestones]]`, `gwm milestones {list|push}` sont des no-ops (`0 milestones declared, nothing to push`) et ne font jamais appel à `gh`. Nécessite `gh` sur le `$PATH` une fois des milestones déclarés (la même dépendance souple que `gwm labels` / `gwm status`).
+
+## `[issue_template]` (issue #83)
+
+Valeurs par défaut par type de branche pour `gwm new <type> <desc>`. La commande rend un fichier YAML de formulaire d'issue GitHub depuis `.github/ISSUE_TEMPLATE/`, crée l'issue avec `gh issue create`, puis crée le worktree en utilisant le numéro d'issue renvoyé.
+
+```toml
+[issue_template]
+default = "feature_request.yml"
+
+[issue_template.by_type]
+feat   = { template = "feature_request.yml", surface = "cli", title_prefix = "[Feature]: ", labels = ["enhancement"] }
+fix    = { template = "bug_report.yml", surface = "cli", title_prefix = "[Bug]: " }
+docs   = { template = "task.yml", title_prefix = "[Docs]: " }
+hotfix = { template = "bug_report.yml", surface = "cli", title_prefix = "[Hotfix]: ", labels = ["priority: high"] }
+```
+
+| Champ          | Type             | Signification                                                                        |
+| :------------- | :--------------- | :----------------------------------------------------------------------------------- |
+| `default`      | string           | fichier de repli sous `.github/ISSUE_TEMPLATE/`                                      |
+| `template`     | string           | surcharge de template par type                                                       |
+| `surface`      | string           | valeur par défaut pour un champ de formulaire avec `id: surface`                     |
+| `title_prefix` | string           | surcharge le préfixe `title:` du formulaire d'issue                                  |
+| `labels`       | liste de strings | labels supplémentaires ajoutés aux labels déclarés par le YAML du formulaire d'issue |
+
+Les corps de template supportent les placeholders `{type}`, `{desc}` et `{repo}`. Les blocs markdown du formulaire d'issue sont préservés, les inputs/areas de texte deviennent des sections markdown, et les valeurs par défaut de dropdown configurées rendent comme des entrées single-line `**Label:** value`.
+
+## `[pr_template]` (issue #84)
+
+Corps de PR par type de branche pour `gwm pr [--draft] [--base <ref>] [--render]`. Sans la sous-commande, `gh pr create` se rabat sur `.github/pull_request_template.md` ; `gwm pr` permet à chaque type de branche de pointer vers son propre corps afin qu'une PR `docs/` n'obtienne pas la même checklist qu'une `hotfix/`.
+
+```toml
+[pr_template]
+default = ".github/pull_request_template.md"
+
+[pr_template.by_type]
+feat = { path = ".github/pr-templates/feat.md" }
+fix  = { path = ".github/pr-templates/fix.md" }
+docs = { path = ".github/pr-templates/docs.md" }
+
+[pr_template.by_type.chore]
+body = """
+## Summary
+{desc}
+
+Closes #{issue}
+
+## Test plan
+- [ ] cargo test
+"""
+```
+
+| Champ     | Type   | Signification                                                                        |
+| :-------- | :----- | :----------------------------------------------------------------------------------- |
+| `default` | string | fichier Markdown de repli (chemin relatif au workdir)                                |
+| `path`    | string | fichier Markdown par type (chemin relatif au workdir)                                |
+| `body`    | string | corps Markdown inline - l'emporte sur `path` quand les deux sont définis sur un type |
+
+`default` et `path` sont tous deux des chemins relatifs au workdir ; les chemins absolus, les parents `..`, et les préfixes de lecteur Windows sont rejetés pour empêcher un chemin de template d'échapper à la racine du worktree.
+
+Placeholders que le renderer substitue avant de remettre le corps à `gh pr create` :
+
+| Placeholder       | Source                                                                                 |
+| :---------------- | :------------------------------------------------------------------------------------- |
+| `{type}`          | type de branche parsé depuis le nom de la branche courante                             |
+| `{issue}`         | numéro d'issue parsé depuis le nom de branche (vide si aucun)                          |
+| `{desc}`          | slug de description parsé depuis le nom de branche                                     |
+| `{base}`          | trunk résolu depuis `[doctor].trunks` (le premier qui existe) ou la valeur de `--base` |
+| `{head}`          | shorthand de la branche courante                                                       |
+| `{repo}`          | slug `owner/repo` parsé depuis l'URL du remote `origin`                                |
+| `{commits}`       | `git log --pretty=format:- %s {base}..{head}` (un bullet par sujet de commit)          |
+| `{files_changed}` | `git diff --stat {base}..{head}`, plafonné à 30 lignes (`… N more lines trimmed`)      |
+
+`gwm pr --render` affiche le corps rendu sur stdout au lieu de créer une PR - utile pour `gwm pr --render | gh pr create --body-file -` quand vous voulez d'abord ajuster le corps dans `$EDITOR`.
+
+## `[aliases]` (issue #86)
+
+Alias CLI au niveau dépôt - alias déclaratifs façon `git config` qui suivent le dépôt d'une machine à l'autre. Chaque entrée mappe un nom d'alias vers une expansion à substitution d'argv exécutée AVANT que clap ne parse, de sorte que `wip = "create feat 0 wip"` fait que `gwm wip` se comporte comme `gwm create feat 0 wip`.
+
+```toml
+[aliases]
+wip    = "create feat 0 wip"
+ll     = "list --format names"
+sync   = "bootstrap"
+```
+
+Un fallback au niveau utilisateur vit à `~/.config/gwm/aliases.toml` (résolu comme la [config globale](/fr/configuration/global-config#location) : `$XDG_CONFIG_HOME` l'emporte directement, sinon le premier existant entre `~/.config` et le répertoire plateforme - issue #374) ; même forme de bloc `[aliases]`. Les alias de dépôt l'emportent sur les alias utilisateur en cas de collision de nom.
+
+Faites apparaître la chaîne résolue avec `gwm aliases list` - voir [CLI → `gwm aliases list`](/fr/cli/reference#gwm-aliases-list-issue-86) pour la sortie rendue et le flagging par source.
+
+**Règles imposées au chargement** (`Config::load_for_repo` retourne `GwmError::Config` en cas de violation) :
+
+| Règle                                                                                               | Raison                                                                                                   |
+| :-------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| Le nom d'alias NE DOIT PAS masquer une sous-commande intégrée (`list`, `switch`, …)                 | Les sous-commandes intégrées sont le binding le plus fort - un masquage silencieux est une usine à bugs. |
+| Le nom d'alias NE DOIT PAS masquer un alias visible intégré (`s`, `cd`)                             | Même raisonnement - `gwm s` devrait toujours atteindre `switch`.                                         |
+| La valeur d'alias NE DOIT PAS être vide                                                             | Rien vers quoi étendre.                                                                                  |
+| La valeur d'alias NE DOIT PAS contenir de métacaractères shell (`&&`, `\|\|`, `\|`, `;`, backticks) | Les alias sont de la substitution d'argv seulement - utilisez un alias shell pour la sémantique shell.   |
+
+Expansion en une seule passe - `wip = "ll"` suivi de `ll = "list --format names"` s'étend UNE FOIS puis dispatche ; le second saut n'est pas résolu.
+
+## Valeurs par défaut sans `.gwm.toml`
+
+| Réglage                         | Défaut                                                                                                        |
+| :------------------------------ | :------------------------------------------------------------------------------------------------------------ |
+| `[worktree].base`               | `{home}/cc-worktree/{repo}`                                                                                   |
+| `[worktree].path_pattern`       | `{type}-{issue}-{desc}`                                                                                       |
+| `[worktree].branch_pattern`     | `{type}/#{issue}-{desc}`                                                                                      |
+| `[[bootstrap.*]]`               | vide - pas de pipeline                                                                                        |
+| `[git_tui].command`             | `lazygit -p {path}`                                                                                           |
+| `[git_tui].fullscreen`          | `true`                                                                                                        |
+| `[review]`                      | inerte (`R` ne fait rien)                                                                                     |
+| `[tui].confirm_countdown_secs`  | `3`                                                                                                           |
+| `[tui].sidebar_position`        | `right`                                                                                                       |
+| `[tui].auto_refresh_secs`       | `60` (`0` désactive)                                                                                          |
+| `[tui.macro1]` / `[tui.macro2]` | absent - `h` / `H` sont des no-ops                                                                            |
+| `[tui.keys]`                    | keymap intégré (voir la table ci-dessus)                                                                      |
+| `[tui.keys.modal.*]`            | keymaps de modal intégrés (`gwm tui keys`)                                                                    |
+| `[tui.open].mode`               | `shell` (v0.6 - était `finder`)                                                                               |
+| `[theme].preset`                | aucun - schéma codé en dur par défaut                                                                         |
+| `[doctor].trunks`               | `["dev", "main"]`                                                                                             |
+| `[[labels]]`                    | vide - `gwm labels {list,push}` sont des no-ops                                                               |
+| `[issue_template]`              | vide - `gwm new` n'est pas configuré                                                                          |
+| `[pr_template]`                 | vide - `gwm pr` erreure avec un indice, `gh pr create` continue d'utiliser `.github/pull_request_template.md` |
+| `[aliases]`                     | vide - pas d'expansion d'alias CLI                                                                            |
+
+## Règles de validation
+
+- Les clés TOML inconnues sont une **erreur de chargement dure** - la table racine `[Config]` et presque toutes les sous-tables (`[worktree]`, `[bootstrap]`, `[hooks]`, `[doctor]`, `[tui]`, `[tui.open]`, `[git_tui]`, `[review]`, `[[labels]]`, `[[milestones]]`, `[[branch_types]]`, `[issue_template]`, `[pr_template]`) rejettent les champs qu'elles ne reconnaissent pas. Une clé errante au niveau racine (ou une clé inconnue dans une table à champs interdits) fait échouer le chargement avec une erreur `Config` au lieu d'être ignorée. Le même check s'exécute sur le résultat fusionné, donc une coquille dans le `~/.config/gwm/config.toml` global échoue tout aussi durement. Exceptions : `[theme]` aplatit les surcharges par rôle (les clés arbitraires nommées d'après un rôle sont acceptées, puis validées face au jeu de rôles connus - voir ci-dessous), et `[gitmoji]` / `[aliases]` sont des maps ouvertes clé→valeur.
+- Les valeurs inconnues de `[tui.open].mode`, `[tui].sidebar_position`, `[tui].sidebar_orientation` et `[tui].clipboard` **erreurent au chargement**.
+- `[theme]` erreure au chargement sur un `preset` inconnu, une clé de rôle inconnue, ou une valeur de couleur non parsable.
+- `[tui.keys]` erreure au chargement sur une action inconnue, un chord non parsable, un conflit de chord, ou une collision de préfixe.
+- `[tui.keys.modal.*]` erreure au chargement sur un contexte inconnu, un verbe inconnu, une touche non parsable ou multi-frappes, un binding sous un groupe de contexte au lieu d'une étape feuille, ou un conflit par contexte.
+- `[tui.macro1]` / `[tui.macro2]` erreurent au chargement sur un champ inconnu ; `open_in` n'accepte que `"pty"` ou `"mux_pane"`.
+- Les noms `[aliases]` qui masquent une sous-commande / un alias visible intégré, sont vides, ou contiennent des métacaractères shell **erreurent au chargement**.
+- Les références `[[bootstrap.guard]]` dans `[[bootstrap.copy]].guards` sont validées par `gwm doctor` (check #2).
+- Les prédicats `[[bootstrap.command]].when` avec des mots-clés inconnus valent `true` par défaut (afin que les anciennes configs continuent de tourner) ; `gwm doctor` (check #3) les fait remonter.
+
+Exécutez `gwm doctor` après chaque édition pour attraper les erreurs attrapables - voir [Intégrations → `gwm doctor`](/fr/integrations/doctor).

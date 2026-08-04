@@ -1,0 +1,263 @@
+---
+// Barre du haut calquée sur celle du portfolio kbrdn.dev
+// (app/components/layout/BlogHeader.vue) : hauteur de 3.5rem, conteneur de
+// 80rem bordé, marque à gauche derrière un filet, onglets qui se partagent
+// l'espace en mono uppercase, contrôles à droite séparés eux aussi par des
+// filets. L'onglet courant porte une barre orange sous lui, pas une pastille.
+//
+// La grille responsive du Header de Starlight est remplacée, pas étendue :
+// elle aligne la marque sur la sidebar et la recherche sur le contenu, ce qui
+// est l'inverse du principe ici (des colonnes bordées de bout en bout).
+import Search from 'virtual:starlight/components/Search';
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+import LanguageSelect from 'virtual:starlight/components/LanguageSelect';
+import config from 'virtual:starlight/user-config';
+
+interface Props {
+  /** Onglets de la barre. Un site produit peut passer les siens. */
+  tabs?: { href: string; label: string }[];
+  /**
+   * Version publiée du produit, sans le `v`. Rendue en badge à côté de la
+   * marque, donc présente sur toutes les pages. Optionnelle : un site sans
+   * version livrée n'en affiche pas.
+   */
+  version?: string;
+}
+
+const { tabs = [], version } = Astro.props;
+
+// Starlight ne rend sa recherche que si Pagefind est actif ou si le composant
+// a été surchargé — même condition que dans le Header d'origine.
+const shouldRenderSearch =
+  config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+
+// Le préfixe de locale fait partie du chemin : /fr/cli/ doit marquer l'onglet
+// « CLI » actif comme le fait /cli/.
+const path = Astro.url.pathname.replace(/^\/fr(?=\/|$)/, '') || '/';
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+const localised = (href: string) =>
+  Astro.url.pathname.startsWith('/fr/') ? `/fr${href}`.replace(/\/$/, '/') : href;
+---
+
+<div class="kbrdn-nav">
+  <div class="kbrdn-nav__brand">
+    <SiteTitle />
+    {version && <span class="kbrdn-nav__version">v{version}</span>}
+  </div>
+
+  {
+    tabs.length > 0 && (
+      <nav class="kbrdn-nav__tabs" aria-label="Sections">
+        {tabs.map((t) => (
+          <a
+            href={localised(t.href)}
+            class:list={['kbrdn-nav__tab', isActive(t.href) && 'is-active']}
+            aria-current={isActive(t.href) ? 'page' : undefined}
+          >
+            {t.label}
+          </a>
+        ))}
+      </nav>
+    )
+  }
+
+  <div class="kbrdn-nav__search print:hidden">{shouldRenderSearch && <Search />}</div>
+
+  <div class="kbrdn-nav__right print:hidden">
+    <div class="kbrdn-nav__cell kbrdn-nav__social">
+      <SocialIcons />
+    </div>
+    <div class="kbrdn-nav__cell"><ThemeSelect /></div>
+    <div class="kbrdn-nav__cell"><LanguageSelect /></div>
+  </div>
+</div>
+
+<style>
+  /* La barre remplit son bandeau. Sans ça elle ne prenait que la hauteur de son
+     contenu (31px pour 56px) : les filets de cellule s'arrêtaient en l'air et
+     l'onglet actif ressemblait à une boîte flottante. `height: 100%` ne résout
+     que parce que `header.header` a une hauteur définie et un padding nul. */
+  .kbrdn-nav {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    gap: 0;
+  }
+
+  /* Chaque zone est séparée par un filet, comme les cellules du header
+     portfolio — pas par du blanc. Le rembourrage est celui du portfolio
+     (`px-6`), y compris sur la marque : elle est en retrait du filet de la
+     coquille, elle ne le touche pas. */
+  .kbrdn-nav__brand,
+  .kbrdn-nav__cell {
+    display: flex;
+    align-items: center;
+    padding-inline: 1.5rem;
+    border-inline-end: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  .kbrdn-nav__brand {
+    flex-shrink: 0;
+    gap: 0.75rem;
+  }
+
+  /* Badge de version, même paire que celle de la bannière repo : texte accent,
+     fond et filet dilués dans l'accent. Passe par `color-mix` plutôt que par
+     les rgba figés du kit, pour suivre le thème clair comme le sombre. */
+  .kbrdn-nav__version {
+    font-family: var(--sl-font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    padding: 0.25rem 0.4rem;
+    color: var(--sl-color-accent);
+    background-color: color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 40%, transparent);
+    white-space: nowrap;
+  }
+
+  /* Les onglets se partagent tout l'espace libre entre la marque et les
+     contrôles (`flex items-stretch flex-1` + `flex-1` par onglet au
+     portfolio). C'est ce qui donne la barre en colonnes régulières ; les
+     laisser à leur largeur naturelle produit le tassement à gauche. */
+  .kbrdn-nav__tabs {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-width: 0;
+    /* Garde-fou. Les onglets sont en `nowrap` : sans ça, quand la barre manque
+       de place, ils débordent de leur boîte et vont se peindre PAR-DESSUS la
+       recherche et les contrôles — c'est un dépassement invisible au CSS, pas
+       une barre de défilement. Les points de bascule plus bas font que ça
+       n'arrive pas ; ceci est le filet si le contenu de la barre change. */
+    overflow: hidden;
+  }
+
+  .kbrdn-nav__tab {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 1.5rem;
+    border-inline-end: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    font-family: var(--sl-font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    color: var(--sl-color-gray-3);
+    transition:
+      color 200ms,
+      background-color 200ms;
+  }
+  .kbrdn-nav__tab:hover {
+    color: var(--sl-color-white);
+    background-color: color-mix(in srgb, var(--sl-color-gray-5) 30%, transparent);
+  }
+
+  /* Onglet courant : texte orange, fond d'accent très dilué, barre de 2px en
+     bas (la classe `nav-tab-active` du portfolio). */
+  .kbrdn-nav__tab.is-active {
+    color: var(--sl-color-accent);
+    background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+  }
+  .kbrdn-nav__tab.is-active::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 2px;
+    background-color: var(--sl-color-accent);
+  }
+
+  /* Le portfolio n'a pas de recherche : elle prend une cellule de largeur fixe
+     juste avant les contrôles, plutôt que d'absorber l'espace libre — sinon
+     c'est elle qui pousse les contrôles à droite et les onglets se tassent. */
+  .kbrdn-nav__search {
+    display: flex;
+    align-items: stretch;
+    flex: none;
+    width: 14rem;
+    border-inline-end: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+  /* Le déclencheur est une cellule de la barre, pas un widget posé dessus :
+     il perd son cadre et son fond, ce sont les filets qui le délimitent. */
+  .kbrdn-nav__search :global(button[data-open-modal]) {
+    flex: 1;
+    height: 100%;
+    padding-inline: 1.5rem;
+    border: none;
+    background: transparent;
+  }
+
+  /* `display: flex` explicite : il venait de l'utilitaire `md:sl-flex` que le
+     balisage portait, et qui pilotait aussi la visibilité. En le retirant pour
+     que les contrôles restent visibles en mobile, on a emporté la mise en page
+     avec — les trois cellules s'empilaient dans une colonne de 41px. */
+  .kbrdn-nav__right {
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+  }
+  /* Le dernier contrôle ferme la barre : c'est le filet de la coquille qui la
+     borne, pas un filet de cellule qui doublerait le trait. */
+  .kbrdn-nav__right .kbrdn-nav__cell:last-child {
+    border-inline-end: none;
+  }
+  .kbrdn-nav__social {
+    gap: 0.75rem;
+  }
+
+  /* ═══════════════ Replis de la barre ═══════════════
+     Tout déployé, la barre demande 1116px : marque 199 + onglets 323 +
+     recherche 224 + contrôles 370. Et la coquille lui en retranche 56 sous
+     110rem, pour réserver la place du bouton hamburger (cf. `.kbrdn-nav` dans
+     theme.css). Il lui faut donc 1174px de fenêtre pour tout tenir — largement
+     au-dessus des 50rem où elle se repliait, d'où les onglets qui débordaient
+     et se peignaient par-dessus la recherche entre les deux.
+     La barre se RESSERRE avant de renoncer aux onglets, et ce n'est pas du
+     confort : la page d'accueil est un `template: splash`, donc sans volet
+     latéral — Starlight n'y rend aucun bouton hamburger. Les onglets masqués,
+     il ne reste que la recherche. On sacrifie donc d'abord ce qui fait doublon
+     ailleurs : la largeur de la recherche (⌘K continue de l'ouvrir), le
+     rembourrage des onglets, les icônes sociales (présentes dans le pied de
+     page) et le badge de version (présent sur la page d'accueil).
+     Chiffres mesurés dans le navigateur, pas estimés — à recalculer si le
+     contenu de la barre change. */
+  @media (max-width: 73.9375rem) {
+    .kbrdn-nav__search {
+      flex: none;
+      width: auto;
+      padding-inline: 0;
+    }
+    .kbrdn-nav__tab {
+      padding-inline: 0.75rem;
+    }
+    .kbrdn-nav__social,
+    .kbrdn-nav__version {
+      display: none;
+    }
+  }
+
+  /* Et seulement là, les onglets cèdent : la barre n'a plus rien à rendre. Le
+     pied de page porte la même navigation, section par section. */
+  @media (max-width: 57.9375rem) {
+    .kbrdn-nav__tabs {
+      display: none;
+    }
+    .kbrdn-nav__brand,
+    .kbrdn-nav__cell {
+      padding-inline: 0.75rem;
+    }
+    /* Les onglets masqués, plus rien n'occupe l'espace libre : sans ça tout se
+       tasse à gauche et les contrôles se retrouvent au milieu de la barre. */
+    .kbrdn-nav__right {
+      margin-inline-start: auto;
+    }
+  }
+</style>

@@ -24,3 +24,78 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   deploy workflow.
 - Nix dev shell (`flake.nix`).
 - PLAN.md — full roadmap.
+- gwm docs navigation skeleton: four-group sidebar (Démarrer / Guides /
+  Référence / Concepts) and stub pages for `tui`, `doctor`, `cli`, `gwm-toml`,
+  `worktrees`, `bootstrap`, `trust-ledger` (content filled in follow-up issues).
+- gwm docs: provisional TUI visual placeholders — uniform SVG frames
+  ("capture à venir") on every doc page (list view, create modal, command logs,
+  config panel, doctor report, bootstrap report, trust prompt, on-disk layout,
+  `gwm tui keys` output), each flagged with a `TODO` to swap for a real
+  capture/asciinema in a follow-up.
+
+### Changed
+
+- gwm site: renamed `guides/getting-started` to `guides/prise-en-main` and
+  wired the splash hero action to the new slug.
+- gwm docs: filled the `guides/installation` page (converted to `.mdx`) with the
+  real install channels — Homebrew tap, `cargo binstall`, Cargo from source
+  (MSRV 1.82), prebuilt binaries, Nix flake — using Starlight `Tabs` / `Steps` /
+  `Aside`, cross-checked against `gwm-cli`.
+- gwm docs: filled the `guides/prise-en-main` page (converted to `.mdx`) — the
+  first-use walkthrough (`create` → `list` → `cd`/`gcd` → TUI → `remove` →
+  `doctor`), cross-checked against `gwm-cli`.
+- gwm docs: filled the `reference/gwm-toml` page (converted to `.mdx`) — the
+  full `.gwm.toml` schema (`worktree`, `bootstrap.*`, `hooks.*`, launchers,
+  `tui`/`tui.keys`/`tui.open`, `theme`, `doctor`, `gitmoji`, `labels`,
+  `milestones`, `issue_template`, `pr_template`, `aliases`, defaults &
+  validation rules), cross-checked against `gwm-cli` `config.rs` and
+  `gwm.toml.example`.
+- gwm docs: filled the `reference/cli` page (converted to `.mdx`) — the full
+  subcommand reference (worktrees, config, branch/commit, GitHub, TUI/themes,
+  multiplexer/shell, doctor/trust, aliases) with flags, examples and the
+  0/1/2 exit-code table, cross-checked against `gwm-cli` `src/cli.rs`.
+- gwm docs: filled the `guides/tui` page (converted to `.mdx`) — keyboard
+  navigation, details sidebar, create/delete/link overlays, configurable `l`/`R`
+  launchers (placeholders, fullscreen, base resolution) and tmux/zellij
+  integration, cross-checked against `gwm-cli` `src/tui/`, `launcher.rs` and
+  `multiplexer.rs`.
+- gwm docs: filled the `guides/doctor` and `concepts/trust-ledger` pages
+  (converted to `.mdx`) — the 8 `gwm doctor` health checks with 0/1/2 exit
+  codes, and the TOFU trust ledger (threat model, gate decision tree,
+  `gwm trust` surface, ledger format), cross-checked against `gwm-cli`
+  `src/doctor.rs` and `src/trust.rs`.
+- gwm docs: filled the `concepts/worktrees` and `concepts/bootstrap` pages
+  (converted to `.mdx`) — the worktree model & naming convention (kebab-case
+  normalization, `gwm-base` anchor) and the bootstrap pipeline (copies, regex
+  guards, fallbacks, no-symlink, lifecycle hooks, `when:` predicates),
+  cross-checked against `gwm-cli` `src/naming.rs` and `src/bootstrap.rs`.
+- gwm docs: fleshed out the splash landing (`index.mdx`) with a "Par où
+  commencer ?" navigation grid (`LinkCard`) linking the main entry points, and
+  completed the Phase 1 cross-page consistency pass — no dead internal links, no
+  orphan pages.
+- gwm docs: enriched all nine pages to the gwm v0.9.0 TUI surface — documented
+  the pane-focus keys (`1`/`2`), Command Logs overlay (`3`), Configuration panel
+  (`4`), `sync` action (`S`), open-docs (`.`), the command palette (`:`), the
+  in-title fuzzy filter and off-thread `f`/`r` refresh; added the resolved
+  `gwm tui keys` action/key table, the `[tui.keys]` v0.9.0 bindings, on-disk
+  worktree layout and real `gwm doctor` / bootstrap report examples, all
+  cross-checked against `gwm-cli` (`src/tui/keymap.rs`, `palette.rs`, `cli.rs`,
+  `doctor.rs`, `bootstrap.rs`, `config.rs`).
+
+### Fixed
+
+- gwm site: Markdown tables (and other GFM constructs) now render. On this Astro
+  6.4 / Starlight 0.39 setup GFM was not active by default — `remark-gfm` was
+  absent from the markdown pipeline, so every table on every page rendered as
+  raw `| … |` pipes in both dev and the production build. Added `remark-gfm` and
+  wired it into `markdown.remarkPlugins` in `sites/gwm/astro.config.mjs`.
+- gwm docs: corrected the `concepts/bootstrap` pipeline — `no_symlink` runs
+  **before** `copy` (issue #93, strip destination symlinks before opening them
+  for writing), guards run on the source inside the copy loop, and a `✗` on a
+  core step is **recorded but non-fatal** (the worktree is not rolled back;
+  re-run `gwm bootstrap`) — the prior text inverted the order and claimed an
+  automatic rollback (`src/bootstrap.rs`, `src/cli.rs`).
+- gwm docs: corrected three `guides/doctor` check severities — unknown `when:`
+  keyword is `✗` not `!` (`Check::failed`), every missing PATH binary is `!` not
+  a `[git_tui]`-specific `✗`, and the base-directory check has a `!` case when
+  neither base nor parent exists yet (`src/doctor.rs`).

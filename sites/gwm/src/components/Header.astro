@@ -1,0 +1,20 @@
+---
+// Barre du haut de gwm : le composant partagé, avec les onglets du produit.
+// Starlight n'accepte qu'un chemin de fichier par slot de composant, sans
+// props — d'où ce fin wrapper local qui porte la liste des onglets.
+import Nav from '@kbrdn/ds-shared/components/Header.astro';
+// Version publiée, écrite par `bun run sync:gwm` depuis le Cargo.toml de
+// gwm-cli. Importée plutôt qu'écrite en dur : écrite ici, elle se périmerait
+// dès la livraison suivante, et c'est le binaire qui fait foi, pas cette page.
+import release from '../data/gwm-release.json';
+---
+
+<Nav
+  version={release.version}
+  tabs={[
+    { href: '/getting-started/', label: 'Docs' },
+    { href: '/cli/', label: 'CLI' },
+    { href: '/tui/', label: 'TUI' },
+    { href: '/changelog/', label: 'Changelog' },
+  ]}
+/>

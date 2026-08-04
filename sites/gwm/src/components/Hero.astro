@@ -1,0 +1,455 @@
+---
+// Hero custom gwm — croise deux références :
+//   - la structure du hero de herdr.dev : eyebrow, titre, accroche, commande
+//     d'installation copiable, puis le reste de la page ;
+//   - la grammaire de la bannière repo (`~/.claude/skills/me/banner-repo`) :
+//     wordmark mono avec curseur orange, badge de version, accroche en Fenix,
+//     chips de features en mono, ligne `$ …` encadrée, et surtout le **motif à
+//     droite** — le graphe de branches, qui est le visuel propre à gwm : un
+//     tronc, N branches, une par worktree.
+//
+// Reste data-driven sur la frontmatter `hero` de la page (titre, tagline,
+// actions) comme le Hero natif de Starlight. Ce qui est propre au produit
+// (chips, graphe, commande) vit ici : ce composant n'est pas partagé.
+//
+// Géométrie identique à celle des sections de la landing : filets horizontaux
+// pleine largeur, contenu centré sur 64rem. C'est ce qui aligne le badge du
+// hero sur les libellés des sections en dessous.
+import { LinkButton } from '@astrojs/starlight/components';
+import { getCollection } from 'astro:content';
+// Les deux variantes du logo produit (mêmes que celles de la barre du haut).
+// Elles ne sont pas monochromes — les nœuds sont bleu / vert / orange et le
+// liseré vaut la couleur du fond — donc pas de `currentColor` possible : il
+// faut les deux fichiers et une bascule au thème.
+import LogoDark from '../assets/gwm-logo-dark.svg';
+import LogoLight from '../assets/gwm-logo-light.svg';
+
+// Starlight cible cet id pour l'ancre « haut de page » (cf. constants.ts interne).
+const PAGE_TITLE_ID = '_top';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
+
+// Version affichée dans le badge : dérivée du changelog plutôt qu'écrite en dur,
+// sinon elle périme au premier `bun run sync:gwm`. Une page par version publiée,
+// nommée `X-Y-Z.md`, donc le max sémantique des identifiants fait foi.
+const versions = (await getCollection('docs'))
+  .map((e) => e.id.match(/^changelog\/(\d+)-(\d+)-(\d+)$/))
+  .filter((m) => m !== null)
+  .map((m) => [Number(m[1]), Number(m[2]), Number(m[3])]);
+versions.sort((a, b) => b[0] - a[0] || b[1] - a[1] || b[2] - a[2]);
+const latest = versions[0] ? `v${versions[0].join('.')}` : null;
+
+// Features en jetons plutôt qu'en phrase : identifiants et noms de fichiers,
+// donc identiques en anglais et en français — ce composant sert les deux pages.
+const CHIPS = ['CLI + TUI', 'libgit2', '.gwm.toml', 'TOFU trust', 'JSON + daemon'];
+
+// Commande d'installation la plus courte qui marche : même forme que celle du
+// pied de page partagé (une seule ligne, pas de `brew tap` séparé).
+const INSTALL = 'brew install kbrdn1/tap/gwm';
+
+// Le motif : le tronc `main` et quatre branches, reprises telles quelles de la
+// capture de la TUI plus bas dans la page — le hero et la capture doivent
+// raconter le même dépôt. Couleurs = jetons sémantiques du thème, donc justes
+// en clair comme en sombre.
+const BRANCHES = [
+  { label: 'feat/#42-payment-webhooks', color: 'var(--sl-color-accent)', current: true },
+  { label: 'fix/#57-rate-limit-headers', color: 'var(--sl-color-red)' },
+  { label: 'docs/#71-openapi-examples', color: 'var(--sl-color-purple)' },
+  { label: 'chore/#63-bump-axum', color: 'var(--sl-color-blue)' },
+];
+
+// Géométrie du graphe (viewBox 490x300). Le tronc est à gauche, chaque branche
+// part d'un point du tronc et dérive vers sa pastille + son libellé. La largeur
+// est calée sur le libellé le plus long (25 caractères de mono à 21px, soit
+// ~315px, posés à x=146) : plus large, le texte rétrécirait pour rien.
+const TRUNK_X = 14;
+const TOP = 16;
+const BOTTOM = 284;
+const END_X = 128;
+const LABEL_X = 146;
+const DRIFT = [-14, -4, 6, 16];
+const rows = BRANCHES.map((b, i) => {
+  const from = TOP + 46 + ((BOTTOM - TOP - 70) / (BRANCHES.length - 1)) * i;
+  const to = from + DRIFT[i % DRIFT.length];
+  return { ...b, from, to };
+});
+---
+
+<div class="kbrdn-hero">
+  <div class="kbrdn-hero__inner">
+    <div class="kbrdn-hero__col">
+      <div class="kbrdn-hero__eyebrow">
+        <span class="kbrdn-hero__kicker">
+          <span class="kbrdn-hero__dot" aria-hidden="true"></span>
+          Git Worktree Manager
+        </span>
+        {latest && <span class="kbrdn-hero__version">{latest}</span>}
+      </div>
+
+      <h1 id={PAGE_TITLE_ID} data-page-title class="kbrdn-hero__title">
+        {
+          /* Le mot « gwm » est juste à côté : la marque est décorative ici.
+            `light:sl-hidden` / `dark:sl-hidden` sont les utilitaires de bascule
+            de Starlight, ceux qu'il emploie lui-même pour le logo de la barre. */
+        }
+        <span class="kbrdn-hero__logo" aria-hidden="true">
+          <LogoDark class="light:sl-hidden" />
+          <LogoLight class="dark:sl-hidden" />
+        </span>
+        <span class="kbrdn-hero__word">
+          <span set:html={title} /><span class="kbrdn-hero__cursor" aria-hidden="true">_</span>
+        </span>
+      </h1>
+
+      {tagline && <p class="kbrdn-hero__tagline" set:html={tagline} />}
+
+      <ul class="kbrdn-hero__chips">
+        {CHIPS.map((c) => <li>{c}</li>)}
+      </ul>
+
+      <div class="kbrdn-hero__cmd">
+        <code><span class="kbrdn-hero__prompt" aria-hidden="true">$</span>{INSTALL}</code>
+        <button type="button" data-copy={INSTALL} aria-label="Copy the install command">copy</button
+        >
+      </div>
+
+      {
+        actions.length > 0 && (
+          <div class="kbrdn-hero__actions">
+            {actions.map(
+              ({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+                <LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+                  {text}
+                  {icon?.html && <Fragment set:html={icon.html} />}
+                </LinkButton>
+              ),
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    <div class="kbrdn-hero__graph" aria-hidden="true">
+      <svg viewBox="0 0 490 300" role="presentation">
+        <line
+          x1={TRUNK_X}
+          y1={TOP}
+          x2={TRUNK_X}
+          y2={BOTTOM}
+          class="kbrdn-hero__trunk"
+          stroke-width="2"></line>
+        <circle cx={TRUNK_X} cy={TOP} r="5" fill="none" class="kbrdn-hero__trunk" stroke-width="2"
+        ></circle>
+        <circle
+          cx={TRUNK_X}
+          cy={BOTTOM}
+          r="5"
+          fill="none"
+          class="kbrdn-hero__trunk"
+          stroke-width="2"></circle>
+        <text x={TRUNK_X + 14} y={TOP + 6} class="kbrdn-hero__trunk-label">main</text>
+
+        {
+          rows.map((b) => (
+            <g>
+              <path
+                d={`M ${TRUNK_X} ${b.from} C 64 ${b.from}, 78 ${b.to}, ${END_X} ${b.to}`}
+                fill="none"
+                stroke={b.color}
+                stroke-width="2"
+              />
+              <circle cx={TRUNK_X} cy={b.from} r="3.5" fill={b.color} />
+              <circle
+                cx={END_X}
+                cy={b.to}
+                r="6"
+                fill={b.current ? b.color : 'var(--sl-color-bg)'}
+                stroke={b.color}
+                stroke-width="2"
+              />
+              <text x={LABEL_X} y={b.to + 6} fill={b.color} class="kbrdn-hero__branch-label">
+                {b.label}
+              </text>
+            </g>
+          ))
+        }
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Bouton copier de la commande d'installation. Pas de dépendance : le bouton
+  // porte la commande en attribut, l'état revient de lui-même après 1,6 s.
+  document.querySelectorAll<HTMLButtonElement>('.kbrdn-hero__cmd button').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+        const before = btn.textContent;
+        btn.textContent = 'copied';
+        btn.dataset.copied = 'true';
+        setTimeout(() => {
+          btn.textContent = before;
+          delete btn.dataset.copied;
+        }, 1600);
+      } catch {
+        // Presse-papiers refusé (contexte non sécurisé) : le texte reste
+        // sélectionnable à la main, on ne ment pas sur le résultat.
+      }
+    });
+  });
+</script>
+
+<style>
+  .kbrdn-hero {
+    position: relative;
+    width: 100%;
+    border-bottom: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  /* Toute la largeur de la coquille, comme les bandes en dessous : le
+     rembourrage de 1.5rem est le même partout, c'est lui qui aligne le badge du
+     hero sur les libellés de section. */
+  .kbrdn-hero__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    align-items: center;
+    padding: clamp(2rem, calc(1rem + 5vmin), 3.5rem) 1.5rem;
+  }
+
+  /* Le motif ne prend une colonne que lorsqu'il reste de la place pour les
+     libellés de branche ; en dessous il passe sous le texte. */
+  @media (min-width: 60rem) {
+    .kbrdn-hero__inner {
+      grid-template-columns: minmax(0, 1fr) 30rem;
+      gap: 2.5rem;
+    }
+  }
+
+  .kbrdn-hero__col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .kbrdn-hero__eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Badge mono uppercase + point orange pulsé (cf. « Available for hire »). */
+  .kbrdn-hero__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--sl-color-accent) 6%, transparent);
+  }
+
+  /* Badge de version, à droite de l'eyebrow — même paire que la bannière repo. */
+  .kbrdn-hero__version {
+    padding: 0.3rem 0.6rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--sl-color-accent-high);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
+  }
+
+  .kbrdn-hero__dot {
+    position: relative;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: var(--sl-color-accent);
+  }
+  .kbrdn-hero__dot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--sl-color-accent);
+    animation: kbrdn-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes kbrdn-ping {
+    75%,
+    100% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+  }
+
+  /* Wordmark en mono serré, comme la bannière repo — pas en Fenix : c'est le nom
+     d'un binaire, il se lit comme dans un terminal. Le `_` orange est le curseur
+     de la bannière.
+     `!important` obligatoire : Astro scope ses styles avec `:where(.astro-…)`,
+     qui ajoute zéro spécificité. La classe pèse donc (0,1,0) et perd contre le
+     `.content-panel h1` de theme.css (0,1,1) — le titre repartait en Fenix 2rem. */
+  .kbrdn-hero__title {
+    display: flex;
+    align-items: center;
+    gap: 0.28em;
+    margin: 1rem 0 0;
+    font-family: var(--sl-font-mono) !important;
+    font-size: clamp(3rem, calc(1rem + 6vw), 5rem) !important;
+    line-height: 0.95;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--sl-color-white);
+  }
+  /* Dimensionné en `em` : la marque suit le wordmark à toutes les tailles. Le
+     dessin n'occupe que y=2..22 de sa boîte de 24, d'où une boîte un peu plus
+     grande que la hauteur d'x des lettres pour tomber juste optiquement. */
+  .kbrdn-hero__logo {
+    display: flex;
+    flex-shrink: 0;
+    width: 0.72em;
+    height: 0.72em;
+  }
+  /* Surtout PAS de `display` ici. Les utilitaires de bascule de Starlight
+     masquent en `display: none` depuis une couche `@layer` : une règle à nous,
+     hors couche, gagnerait quelle que soit la spécificité et les DEUX variantes
+     s'afficheraient l'une sur l'autre. On laisse donc le conteneur flex
+     blockifier celle qui reste. */
+  .kbrdn-hero__logo :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+  .kbrdn-hero__word {
+    min-width: 0;
+  }
+  .kbrdn-hero__cursor {
+    color: var(--sl-color-accent);
+  }
+
+  /* Tagline en Fenix orange (accent display du portfolio). */
+  .kbrdn-hero__tagline {
+    margin: 0.875rem 0 0;
+    font-family: 'Fenix', Georgia, serif;
+    font-size: clamp(var(--sl-text-lg), calc(0.5rem + 2vw), var(--sl-text-2xl));
+    line-height: 1.3;
+    color: var(--sl-color-accent);
+  }
+
+  /* Chips de features : mono, cadre net, fond enfoncé. */
+  .kbrdn-hero__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .kbrdn-hero__chips li {
+    padding: 0.3rem 0.6rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-2);
+    background-color: var(--sl-color-gray-6);
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  /* Ligne `$ …` encadrée + bouton copier, comme le bloc d'install de herdr. */
+  .kbrdn-hero__cmd {
+    display: flex;
+    align-items: stretch;
+    max-width: 100%;
+    margin-top: 1.5rem;
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    background-color: var(--sl-color-gray-6);
+  }
+  .kbrdn-hero__cmd code {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    color: var(--sl-color-white);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .kbrdn-hero__prompt {
+    color: var(--sl-color-accent);
+    font-weight: 700;
+  }
+  .kbrdn-hero__cmd button {
+    flex-shrink: 0;
+    padding-inline: 0.75rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    background: transparent;
+    border: none;
+    border-inline-start: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    cursor: pointer;
+  }
+  .kbrdn-hero__cmd button:hover,
+  .kbrdn-hero__cmd button[data-copied] {
+    color: var(--sl-color-accent);
+    background-color: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
+  }
+
+  .kbrdn-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Coins nets sur les boutons d'action du hero. */
+  .kbrdn-hero__actions :global(a) {
+    border-radius: 0;
+  }
+
+  /* Le motif : un tronc, une branche par worktree. */
+  .kbrdn-hero__graph svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .kbrdn-hero__trunk {
+    stroke: var(--sl-color-gray-4);
+  }
+  .kbrdn-hero__trunk-label,
+  .kbrdn-hero__branch-label {
+    font-family: var(--sl-font-mono);
+    font-size: 21px;
+    font-weight: 700;
+  }
+  .kbrdn-hero__trunk-label {
+    fill: var(--sl-color-gray-3);
+  }
+
+  /* Sur petit écran le graphe passe sous le texte, dans sa propre bande. */
+  @media (max-width: 59.99rem) {
+    .kbrdn-hero__graph {
+      max-width: 26rem;
+      margin-top: 0.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kbrdn-hero__dot::before {
+      animation: none;
+    }
+  }
+</style>

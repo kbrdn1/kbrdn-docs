@@ -1,43 +1,282 @@
 ---
 title: gwm
-description: Git Worktree Manager — CLI + TUI pour gérer les worktrees Git, avec bootstrap par repo.
+description: Git Worktree Manager - a Rust CLI and ratatui TUI that manages git worktrees across every project, with a per-repo bootstrap.
 template: splash
+tableOfContents: false
+# Starlight compose `<title>{title} | {siteTitle}</title>` sans cas particulier
+# pour la home : le titre de la landing valant le nom du site, elle sortait
+# `gwm | gwm`. Le `title` frontmatter ne bouge pas — le Hero et la nav
+# l'affichent tel quel — donc c'est le head qu'on surcharge, et Starlight
+# déduplique par balise (`title`, `meta[property]`), ces entrées remplacent
+# les siennes. Même traitement pour `og:title`, qui reprend `title` brut.
+head:
+  - tag: title
+    content: gwm - Git Worktree Manager (CLI + TUI)
+  - tag: meta
+    attrs:
+      property: og:title
+      content: gwm - Git Worktree Manager (CLI + TUI)
 hero:
-  tagline: Gérez vos worktrees Git partout, en CLI comme en TUI.
+  tagline: Manage your git worktrees anywhere, from the CLI or the TUI.
   actions:
-    - text: Prise en main
-      link: /guides/getting-started/
+    - text: Get started
+      link: /getting-started/
       icon: right-arrow
-    - text: Code source
+    - text: Source code
       link: https://github.com/kbrdn1/gwm-cli
       icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import Section from '@kbrdn/ds-shared/components/Section.astro';
+import FeatureRow from '@kbrdn/ds-shared/components/FeatureRow.astro';
 import RepoCard from '@kbrdn/ds-shared/components/RepoCard.astro';
+import Stats from '../../components/Stats.astro';
+import Capture from '../../components/Capture.astro';
+import tuiHero from '../../assets/captures/hero.png';
+import createBootstrap from '../../assets/create-bootstrap.png';
+import trustLedger from '../../assets/captures/trust-ledger.png';
+import githubLinking from '../../assets/captures/github-linking.png';
+import sideBySide from '../../assets/captures/side-by-side.png';
+import doctor from '../../assets/captures/doctor.png';
+import palette from '../../assets/captures/palette.png';
+import themeCatppuccin from '../../assets/captures/theme-catppuccin.png';
+import themeGruvbox from '../../assets/captures/theme-gruvbox.png';
+import themeTokyoNight from '../../assets/captures/theme-tokyo-night.png';
+import themeClaudeDark from '../../assets/captures/theme-claude-dark.png';
 
-<CardGrid stagger>
-  <Card title="CLI + TUI" icon="seti:rust">
-    Crée, liste et supprime des worktrees en une commande, ou pilote-les depuis une TUI ratatui.
-  </Card>
-  <Card title="Bootstrap par repo" icon="setting">
-    Un fichier `.gwm.toml` décrit conventions de branche, copies de fichiers, gardes regex et hooks
-    shell.
-  </Card>
-  <Card title="libgit2 natif" icon="approve-check">
-    Opérations de worktree via libgit2 vendored — pas de shell-out fragile.
-  </Card>
-  <Card title="Conventions intégrées" icon="open-book">
-    `gwm create feat 12 ma-feature` crée la branche `feat/#12-ma-feature` et le worktree en une
-    fois.
-  </Card>
-</CardGrid>
+<Stats />
 
-## Le dépôt
+<Section pad="column" label="What it is" id="about">
+
+**gwm** creates one isolated worktree per branch in a single command, following
+the `<type>/#<issue>-<desc>` convention, and prepares each one through a
+bootstrap described in `.gwm.toml`. One branch is one physical directory: its
+own `target/`, its own dependencies, its own local config. Nothing is stashed,
+nothing is rebuilt on every switch.
+
+It is a single self-contained binary. Worktree operations run on vendored
+libgit2, so there is no shell-out to parse and no `gwq` to install first.
+
+</Section>
+
+<Section pad="column" label="Install">
+
+```bash
+# Homebrew
+brew install kbrdn1/tap/gwm
+
+# Prebuilt archives, no Rust toolchain
+cargo binstall gwm-cli
+
+# From crates.io
+cargo install gwm-cli
+```
+
+<p class="gwm-meta">
+  macOS · Linux · Windows · single self-contained binary · MIT ·{' '}
+  <a href="/getting-started/install/">eleven install channels →</a>
+</p>
+
+</Section>
+
+<Section label="The interface">
+
+<Capture
+  src={tuiHero}
+  alt="The gwm TUI listing five worktrees of a repo, with the status sidebar showing the selected worktree's branch, diff, linked issue and recent commits"
+  cmd="gwm"
+  tag="TUI"
+  loading="eager"
+  caption="Five worktrees of one repo, their branch, their state, and the selected one broken out in the sidebar - branch, diff, linked issue, working tree, commits."
+/>
+
+Bare `gwm` opens the list. Everything else is one key away: `/` filters, `2`
+focuses the sidebar, `n` creates, `L` drops into lazygit, `O` opens the worktree
+in your editor.
+
+<Capture
+  src={palette}
+  alt="The gwm command palette open over the worktree list, fuzzy-filtering the registered actions on the string work"
+  cmd="gwm  ›  :"
+  tag="Palette"
+  caption="Or address the same actions by name: : opens the palette, every list-view verb is in it, and every one of them is rebindable."
+/>
+
+Every pane is documented in [the TUI guide](/tui/), from the keybindings to the
+command palette and the theme presets.
+
+</Section>
+
+<Section pad="column" label="What you get">
+
+<FeatureRow n="01" title="One command per worktree">
+  `gwm create feat 12 my-feature` opens the `feat/#12-my-feature` branch, its worktree, and runs the
+  repo's bootstrap. `gwm remove` takes it all back down, with `--dry-run` if you want to look first.
+
+  <Capture
+    src={createBootstrap}
+    alt="Terminal output: gwm init writes a .gwm.toml from the rust preset, then gwm create opens the feat/#1-health-check branch, its worktree, and prints the bootstrap report"
+    cmd="gwm create feat 1 health-check --allow-bootstrap"
+    tag="CLI"
+    caption="From an empty repo to a bootstrapped worktree - and the bootstrap says exactly what it did, hook by hook."
+  />
+</FeatureRow>
+
+<FeatureRow n="02" title="Bootstrap that belongs to the repo">
+  `.gwm.toml` describes branch conventions, file copies, regex guards, no-symlink invariants and
+  lifecycle hooks. Everyone who clones gets the same worktrees, and a TOFU trust ledger asks before
+  running anything.
+
+  <Capture
+    src={trustLedger}
+    alt="gwm printing the full bootstrap surface of an untrusted .gwm.toml - path, origin, hash, the copies and commands it would run - then asking to trust it"
+    cmd="gwm create feat 4 stripe-gateway"
+    tag="Trust"
+    caption="An untrusted .gwm.toml shows its whole surface - every copy, every command - before a single one runs."
+  />
+</FeatureRow>
+
+<FeatureRow n="03" title="The issue and the PR, in the worktree">
+  A branch named `feat/#42-…` links itself to issue #42 with zero config, `gh` or `glab` fetches the
+  live state, and the detected PR lands next to it - title, state, CI. It lives in git config, per
+  branch, so it survives a move and is never committed.
+
+  <Capture
+    src={githubLinking}
+    alt="The gwm sidebar showing an auto-linked issue and a gh-detected open pull request with its CI status"
+    cmd="gwm status"
+    tag="GitHub"
+    caption="Issue auto-linked from the branch name, PR detected, CI running 8/9 - without leaving the list."
+  />
+</FeatureRow>
+
+<FeatureRow n="04" title="A TUI when the CLI is not enough">
+  Bare `gwm` opens a ratatui interface: filter, status sidebar, embedded lazygit and shell overlays,
+  a command palette, and a keymap you can rebind live from the settings panel.
+
+  <Capture
+    src={sideBySide}
+    alt="The gwm TUI in its side-by-side layout, the status sidebar on the left and the worktree list on the right"
+    cmd="gwm  ›  Space"
+    tag="Layout"
+    caption="Space cycles the layout auto → side-by-side → stacked, v flips the sidebar left ↔ right."
+  />
+</FeatureRow>
+
+<FeatureRow n="05" title="Built for scripts too">
+  `--format=json` on `list`, `doctor` and `path` with frozen schemas, plus a JSON-RPC daemon with a
+  subscribe stream. `gwm statusline` renders a one-line summary for tmux, starship or a zsh prompt.
+
+  <Capture
+    src={doctor}
+    alt="gwm doctor output: eight checks, each passing, with the detail line under it"
+    cmd="gwm doctor"
+    tag="CLI"
+    caption="Same checks in --format=json, with a frozen schema and an exit code you can branch on."
+  />
+</FeatureRow>
+
+<FeatureRow n="06" title="Fleet chores across worktrees">
+  `gwm exec -- cargo test` runs a command in every worktree with a per-worktree rollup, and `gwm
+  clean` reports reclaimable build directories before deleting anything.
+</FeatureRow>
+
+</Section>
+
+<Section label="Themes">
+
+Colours are role-based, not hard-coded: `focus`, `dirty`, `clean`, `branch` and
+the rest each take a colour, and four presets ship in the binary.
+
+<div class="gwm-grid">
+  <Capture
+    src={themeClaudeDark}
+    alt="The gwm TUI rendered with the claude-dark preset"
+    cmd='preset = "claude-dark"'
+    tag="Theme"
+  />
+  <Capture
+    src={themeCatppuccin}
+    alt="The gwm TUI rendered with the catppuccin preset"
+    cmd='preset = "catppuccin"'
+    tag="Theme"
+  />
+  <Capture
+    src={themeGruvbox}
+    alt="The gwm TUI rendered with the gruvbox preset"
+    cmd='preset = "gruvbox"'
+    tag="Theme"
+  />
+  <Capture
+    src={themeTokyoNight}
+    alt="The gwm TUI rendered with the tokyo-night preset"
+    cmd='preset = "tokyo-night"'
+    tag="Theme"
+  />
+</div>
+
+Set one in `.gwm.toml`, override any single role on top of it - see
+[Themes](/tui/themes/).
+
+</Section>
+
+<Section pad="column" label="In herdr" id="herdr">
+
+[herdr](https://herdr.dev) is a terminal multiplexer, and `herdr-plugin-gwm`
+drives gwm from inside it: create, switch, remove, materialise a PR with `gwm
+review`, `exec` and `clean` across worktrees, plus gwm's own TUI in a pane.
+
+gwm stays the single source of truth. The plugin never creates a worktree on the
+herdr side - it adopts what gwm produced and closes the reflection when gwm
+removes it, so the two can't drift apart.
+
+```bash
+herdr plugin install kbrdn1/herdr-plugin-gwm
+```
+
+<p class="gwm-meta">
+  herdr ≥ 0.7.4 · <code>gwm</code> on PATH · jq · fzf · macOS · Linux · MIT ·{' '}
+  <a href="/integrations/herdr/">every action, in detail →</a>
+</p>
+
+<RepoCard
+  owner="kbrdn1"
+  repo="herdr-plugin-gwm"
+  description="herdr plugin that drives gwm for git worktree management - gwm stays the source of truth, herdr adopts."
+  language="Shell"
+  languageColor="#89e051"
+  license="MIT"
+  cta="View on GitHub"
+/>
+
+</Section>
+
+<Section pad="column" label="Where to start">
+
+- [Install](/getting-started/install/) - every channel, from Homebrew to Nix
+- [First worktree](/getting-started/first-worktree/) - the first-run path, end to end
+- [CLI reference](/cli/reference/) - every subcommand, flag and exit code
+- [.gwm.toml schema](/configuration/gwm-toml/) - the complete per-repo configuration
+- [Integrations](/integrations/) - GitHub and GitLab linking, doctor, daemon consumers
+- [Changelog](/changelog/) - every released version
+
+</Section>
+
+<Section pad="column" label="The repository">
+
+Every page on this site is generated from the `docs/` tree inside the repo -
+the same tree that travels with the code and the releases. The docs and the
+binary they describe cannot drift apart.
 
 <RepoCard
   owner="kbrdn1"
   repo="gwm-cli"
-  description="Git Worktree Manager en Rust (CLI + TUI), libgit2 natif, bootstrap par repo."
+  description="Git Worktree Manager in Rust (CLI + TUI), native libgit2, per-repo bootstrap."
+  language="Rust"
+  languageColor="#dea584"
+  license="MIT"
+  cta="View on GitHub"
 />
+
+</Section>

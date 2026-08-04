@@ -1,0 +1,128 @@
+---
+title: First worktree
+description: Walkthrough of `gwm create` - branch naming, path layout, and the bootstrap pipeline.
+sidebar:
+  order: 2
+---
+
+This page walks through what `gwm create` does end-to-end on a fresh repo: where the worktree lands on disk, how the branch is named, and what the bootstrap pipeline runs (if any).
+
+![30-second tour: gwm init → gwm create → gwm](../../../assets/captures/first-worktree.gif)
+
+## The one-line version
+
+```bash
+cd /path/to/your/repo
+gwm create feat 42 user-authentication
+```
+
+This creates:
+
+- A worktree at `~/cc-worktree/<repo>/feat-42-user-authentication`
+- A branch named `feat/#42-user-authentication`
+- A `branch.feat/#42-user-authentication.gwm-base` git config entry, anchoring the [review-base resolution chain](/tui/launchers#base-resolution) at the trunk you branched from
+
+The `gwm create` form is `gwm create <type> <issue> <description>`. Supported `<type>` values are documented in [Configuration → `.gwm.toml` schema](/configuration/gwm-toml#supported-branch-types) - `feat`, `fix`, `hotfix`, `docs`, `test`, `refactor`, `chore`, `perf`, `ci`, `build` by default.
+
+## Branch and path conventions
+
+The defaults - and how to override them - are TOML-driven:
+
+```toml
+[worktree]
+base           = "{home}/cc-worktree/{repo}"
+path_pattern   = "{type}-{issue}-{desc}"
+branch_pattern = "{type}/#{issue}-{desc}"
+```
+
+Available placeholders: `{home}`, `{repo}` (the repo **name**), `{repo_path}` (the main repo's absolute working directory), `{repo_parent}` (its parent directory), `{type}`, `{issue}`, `{desc}`. Tilde (`~/…`) is also expanded. `{repo_path}` / `{repo_parent}` let `base` be expressed relative to the repo on disk - e.g. `base = "{repo_parent}/worktrees"` keeps worktrees in a sibling directory next to the main checkout. Override anything in your `.gwm.toml` to match your team's branch convention - see [Configuration → `.gwm.toml` schema](/configuration/gwm-toml).
+
+The `{desc}` slot is **kebab-case normalised** by gwm - `"User Authentication"`, `"user authentication"`, and `"User_Authentication"` all become `user-authentication` on disk and in the branch name. This keeps shell completion and fuzzy lookup deterministic.
+
+## The trust prompt (first run only)
+
+If the repo has a `.gwm.toml` declaring a bootstrap surface (copies, guards, no-symlinks, or commands), the **first** `gwm create` on that repo opens a one-shot trust prompt before touching anything:
+
+```
+gwm: this repo's .gwm.toml has not been trusted yet.
+     path   : /path/to/repo/.gwm.toml
+     origin : git@github.com:foo/bar.git
+     hash   : 3a4f9c2bdeadbeef...
+     bootstrap surface:
+       - copy   .env.testing → .env.testing
+       - run    composer install (composer install --no-interaction)
+
+Trust this .gwm.toml? [y/N/show]:
+```
+
+`y` records the approval in `~/.config/gwm/trust.toml` and proceeds, `N` aborts (the worktree is **not** created - no orphaned state), `show` re-prints the raw `.gwm.toml` for inspection. Subsequent runs on the same repo pass silently until `.gwm.toml` changes (any byte edit re-prompts).
+
+For CI runners and other non-interactive contexts, bypass with `--allow-bootstrap` or `GWM_ALLOW_BOOTSTRAP=1`. The bypass does not record an entry, so an interactive run on the same machine later still prompts. See [Configuration → TOFU trust ledger](/configuration/trust-ledger) for the full threat model and ledger management commands (`gwm trust list / revoke / show`).
+
+## The bootstrap pipeline
+
+If a `.gwm.toml` is present at the repo root, `gwm create` runs a bootstrap body immediately after the `git worktree add`. That body is a fixed sequence of file-level steps:
+
+1. **Copies** - `[[bootstrap.copy]]` rules duplicate files from the main checkout into the new worktree (e.g. `.env.testing`, `.envrc`, vendored secrets).
+2. **Guards** - `[[bootstrap.guard]]` rules vet each copied file against regex deny-lists. A match triggers either an `abort` (refuse to create the worktree) or `seed-from-example` (substitute a known-good fallback). The original use case was refusing to inherit a `.env` pointing at AWS RDS.
+3. **No-symlink check** - `[[bootstrap.no_symlink]]` rules verify that listed paths (typically `vendor/`, `node_modules/`) are **not** symlinks back into the main checkout, since a stray symlink would silently pollute the main repo's build output.
+4. **Fallback files** - `[bootstrap.fallback.*]` blocks materialise inline contents when a required source file is missing (the `seed-from-example` path).
+
+The bootstrap report prints inline with `✓` (success), `!` (warning, non-blocking), or `✗` (failure, blocks the worktree) sigils per step - same convention as `gwm doctor`. A `✗` aborts and the worktree is rolled back.
+
+### Lifecycle hooks (`[hooks.*]`)
+
+Shell commands run via the `[hooks.*]` lifecycle, which **brackets** the file-level body above. `gwm create` fires these phases in order:
+
+- `pre_create` - before `git worktree add` (the worktree does not exist yet).
+- `pre_bootstrap` → file-level body → `post_bootstrap` - wrapping the copies/guards/no-symlink/fallback steps.
+- `post_create` - last, after the worktree and its bootstrap are in place.
+
+(`gwm remove` runs the remaining two phases, `pre_remove` and `post_remove`.) Each entry is a `[[hooks.<phase>]]` table with `name`, `run`, an optional [`when:` predicate](/configuration/when-predicates) (`file_exists:`, `cmd_exists:`, `env_set:`, …), an optional `env` map, and an `on_fail` policy - `abort` (default, blocks and rolls back), `warn` (report and continue), or `ignore` (silently continue):
+
+```toml
+[[hooks.post_create]]
+name    = "install deps"
+run     = "bun install"
+when    = "file_exists:package.json"
+on_fail = "warn"
+```
+
+The legacy `[[bootstrap.command]]` mechanism still works - its steps are folded into `post_create` - but it is marked **legacy; prefer `[[hooks.post_create]]`**, which gives you the full phase set and per-step `on_fail` control.
+
+Skip the bootstrap body (copies/guards/no-symlink/fallback **and** the legacy `[[bootstrap.command]]` steps) with `--no-bootstrap`. Note this does **not** skip the native `pre_create` / `post_create` lifecycle hooks - those still fire:
+
+```bash
+gwm create feat 42 foo --no-bootstrap
+```
+
+To skip lifecycle hooks, pass `--skip-hooks` with a comma-separated list of phases:
+
+```bash
+gwm create feat 42 foo --skip-hooks pre_create,post_create
+```
+
+To attach the new worktree to an **existing** local branch of the same name (instead of erroring on the stale tip), pass `--reuse-branch`:
+
+```bash
+gwm create feat 42 foo --reuse-branch
+```
+
+Re-run it later (e.g. after editing `.gwm.toml`) without recreating the worktree:
+
+```bash
+gwm bootstrap                  # on the CWD worktree
+gwm bootstrap auth             # ...or on a fuzzy-matched name
+```
+
+## What's stored where
+
+- The worktree lives at `<base>/<path_pattern>` - outside the main checkout by default, so it survives `git clean -fdx` and IDE reindex storms on the main tree.
+- The branch is a normal local branch - visible in `git branch`, ignored by no special config.
+- `branch.<name>.gwm-base` records the trunk this branch was cut from. It's used by the [review launcher](/tui/launchers#base-resolution) to compute `git diff base..head` even after the branch's upstream is gone.
+- If you used the auto-link convention (`<type>/#<N>-<slug>`), the GitHub issue link is derived on the fly - no extra config needed. See [Integrations → GitHub issue / PR linking](/integrations/github-linking).
+
+## Next
+
+- [Wire up `gcd`](/getting-started/shell-init) so you can `cd` into the new worktree in one keystroke
+- [Tour the TUI](/tui) - bare `gwm` now opens onto your fresh worktree

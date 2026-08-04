@@ -1,0 +1,115 @@
+---
+// Section de landing calquée sur celles de la home du portfolio
+// (app/pages/index.vue : `p-6 border-dashed-horizontal border-y w-full`, puis un
+// conteneur intérieur `max-w-5xl mx-auto`). Les triangles de coin aux
+// intersections viennent de app/assets/css/components.css :107-165.
+//
+// Ce que la section ne fait PAS, parce que le portfolio ne le fait pas :
+// aucun motif de fond, aucun filet vertical sur le conteneur intérieur. Les
+// deux traits verticaux de la coquille sont dessinés par les panneaux de
+// gouttière (voir `.page` dans theme.css), et le motif ne vit que là.
+interface Props {
+  /** Libellé mono uppercase affiché au-dessus du contenu. */
+  label?: string;
+  /** Ancre de la section, pour un lien direct depuis la navigation. */
+  id?: string;
+  /**
+   * Largeur utile, décidée section par section :
+   *   `wide` (défaut) — le contenu occupe toute la coquille. Pour les bandes
+   *     de figures, où la capture EST le propos.
+   *   `column` — colonne de lecture centrée, libellé compris. Tout ce qu'elle
+   *     contient partage la même largeur, donc les mêmes deux bords : c'est ce
+   *     qui manquait quand la prose s'arrêtait à mi-bande et que les captures,
+   *     elles, filaient jusqu'au filet.
+   */
+  pad?: 'wide' | 'column';
+}
+
+const { label, id, pad = 'wide' } = Astro.props;
+---
+
+<section id={id} class="kbrdn-section">
+  <span class="kbrdn-section__corner kbrdn-section__corner--tl" aria-hidden="true"></span>
+  <span class="kbrdn-section__corner kbrdn-section__corner--tr" aria-hidden="true"></span>
+  <div class="kbrdn-section__inner" data-pad={pad}>
+    {label && <h2 class="kbrdn-section__label">{label}</h2>}
+    <slot />
+  </div>
+  <span class="kbrdn-section__corner kbrdn-section__corner--bl" aria-hidden="true"></span>
+  <span class="kbrdn-section__corner kbrdn-section__corner--br" aria-hidden="true"></span>
+</section>
+
+<style>
+  .kbrdn-section {
+    position: relative;
+    width: 100%;
+    border-block: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+  /* Deux sections qui se suivent ne doivent pas doubler le filet. */
+  .kbrdn-section + .kbrdn-section {
+    border-top: none;
+  }
+
+  /* `wide` : le contenu occupe toute la coquille, c'est la bande elle-même qui
+     borne. Pour les deux sections de figures, où la capture EST le propos. */
+  .kbrdn-section__inner {
+    padding: 1.5rem;
+  }
+
+  /* `column` : colonne de lecture centrée. Largeur du portfolio (`max-w-5xl` =
+     64rem), plus les deux rembourrages, pour que la colonne UTILE fasse bien
+     64rem. Le libellé est dedans : centrer sans lui le détacherait de son
+     propre texte. Et tout ce que la section contient — prose, captures, cartes
+     — partage cette largeur, donc les deux mêmes bords. */
+  .kbrdn-section__inner[data-pad='column'] {
+    max-width: calc(64rem + 3rem);
+    margin-inline: auto;
+  }
+
+  /* Triangles de 6px aux quatre intersections de filets. La section fait la
+     largeur de la coquille, donc `50% - 40rem` retombe sur ses propres bords. */
+  .kbrdn-section__corner {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .kbrdn-section__corner--tl {
+    top: 0;
+    left: max(0px, calc(50% - var(--kbrdn-shell-width, 80rem) / 2));
+    border-width: 6px 6px 0 0;
+    border-color: var(--kbrdn-corner-color, var(--sl-color-gray-5)) transparent transparent
+      transparent;
+  }
+  .kbrdn-section__corner--tr {
+    top: 0;
+    right: max(0px, calc(50% - var(--kbrdn-shell-width, 80rem) / 2));
+    border-width: 6px 0 0 6px;
+    border-color: var(--kbrdn-corner-color, var(--sl-color-gray-5)) transparent transparent
+      transparent;
+  }
+  .kbrdn-section__corner--bl {
+    bottom: 0;
+    left: max(0px, calc(50% - var(--kbrdn-shell-width, 80rem) / 2));
+    border-width: 0 6px 6px 0;
+    border-color: transparent transparent var(--kbrdn-corner-color, var(--sl-color-gray-5))
+      transparent;
+  }
+  .kbrdn-section__corner--br {
+    bottom: 0;
+    right: max(0px, calc(50% - var(--kbrdn-shell-width, 80rem) / 2));
+    border-width: 0 0 6px 6px;
+    border-color: transparent transparent var(--kbrdn-corner-color, var(--sl-color-gray-5))
+      transparent;
+  }
+
+  /* Le portfolio masque ses triangles sous 768px : ils tombent au milieu du
+     contenu quand la fenêtre est plus étroite que le conteneur. */
+  @media (max-width: 48rem) {
+    .kbrdn-section__corner {
+      display: none;
+    }
+  }
+</style>

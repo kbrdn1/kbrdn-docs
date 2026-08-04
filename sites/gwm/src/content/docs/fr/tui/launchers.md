@@ -1,0 +1,143 @@
+---
+title: Lanceurs configurables (TUI git et review)
+description: Sections `[git_tui]` et `[review]` - expansion des placeholders, overlay PTY embarqué vs plein écran, chaîne de résolution de la base.
+sidebar:
+  order: 5
+---
+
+Ajoutés par [#75](https://github.com/kbrdn1/gwm-cli/issues/75) / [#76](https://github.com/kbrdn1/gwm-cli/pull/76) ; l'overlay PTY embarqué est arrivé avec [#35](https://github.com/kbrdn1/gwm-cli/issues/35).
+
+Deux lanceurs configurables - la **TUI git** (lazygit par défaut) et l'outil de **review** - sont pilotés par des sections `.gwm.toml` configurables par l'utilisateur partageant la même mini-API. Tous deux prennent une chaîne de template `command`, substituent des placeholders, la découpent avec [`shell-words`](https://docs.rs/shell-words), et exécutent le résultat avec `cwd = worktree.path`.
+
+Chaque lanceur a **deux raccourcis** (issue [#35](https://github.com/kbrdn1/gwm-cli/issues/35) / [#290](https://github.com/kbrdn1/gwm-cli/issues/290)) qui partagent la même commande résolue mais diffèrent dans la façon d'héberger l'enfant :
+
+| Touche | Slug d'action        | Comment ça tourne                                                   |
+| :----- | :------------------- | :------------------------------------------------------------------ |
+| `l`    | `lazygit_pty`        | TUI git dans un **overlay PTY embarqué** (~90 % de l'écran)         |
+| `L`    | `lazygit_fullscreen` | TUI git en **plein écran** - honore `[git_tui] fullscreen`          |
+| `r`    | `review_pty`         | outil de review dans un **overlay PTY embarqué** (~90 % de l'écran) |
+| `R`    | `review_fullscreen`  | outil de review en **plein écran** - honore `[review] fullscreen`   |
+
+Les quatre slugs sont remappables sous [`[tui.keys]`](/fr/configuration/gwm-toml#tuikeys).
+
+## L'overlay PTY embarqué (`l` / `r`)
+
+Les variantes PTY exécutent le lanceur **à l'intérieur de la TUI** - pas de bascule d'alt-screen, pas de suspension. Le programme enfant est piloté par un véritable pseudo-terminal ([`portable-pty`](https://docs.rs/portable-pty)) et rendu comme un widget [`tui-term`](https://docs.rs/tui-term) dans une modale dimensionnée à environ 90 % × 90 % du terminal. La liste des worktrees reste visible derrière la bordure de l'overlay.
+
+- Les frappes sont transmises directement à l'enfant, donc lazygit / votre outil de review se comportent exactement comme dans un terminal normal.
+- `Esc` ferme l'overlay et revient à la liste. Dans lazygit, son propre `q` quitte lazygit, et l'overlay se referme automatiquement quand l'enfant se termine.
+- Les variantes PTY **ignorent** le champ `fullscreen` de la section - ce champ ne gouverne que les raccourcis plein écran ci-dessous. L'overlay PTY est toujours embarqué.
+
+## Les variantes plein écran (`L` / `R`)
+
+Les raccourcis `L` / `R` conservent le modèle de lancement d'origine - ils lisent la même commande résolue mais hébergent l'enfant en dehors de l'overlay :
+
+| Étape | Ce qui se passe                                                                                                                                                                    |
+| :---- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Lire la section `[git_tui]` ou `[review]` depuis `.gwm.toml` (valeurs par défaut ci-dessous).                                                                                      |
+| 2     | Résoudre les placeholders : `{path}`, `{base}`, `{head}`, `{diff}`.                                                                                                                |
+| 3     | Découper le résultat en `argv` avec `shell-words` (gère le quoting comme un shell POSIX).                                                                                          |
+| 4     | Sonder `argv[0]` contre `$PATH`. Binaire manquant → erreur dans la barre de statut, pas de spawn, pas de scintillement.                                                            |
+| 5     | Si `fullscreen = true` → suspendre la TUI (mode raw off, alt-screen laissé), lancer `Command::status()`, restaurer à la sortie.                                                    |
+| 6     | Si `fullscreen = false` → garder la TUI dans l'alt-screen, lancer `Command::output()`, **bloquer** jusqu'à la sortie, déposer la première ligne de stderr dans la barre de statut. |
+
+Le placeholder `{diff}` est **paresseux** - gwm ne matérialise un fichier temporaire contenant `git diff {base}..{head}` que lorsque le template référence `{diff}`. La durée de vie du fichier temporaire est liée au processus lancé (son impl `Drop` le délie à la fin), de sorte que le relecteur voit toujours un instantané cohérent.
+
+> **`fullscreen = false` est synchrone.** La TUI est **insensible** jusqu'à ce que le processus enfant se termine - `Command::output()` l'attend. Convient pour les outils rapides en print seul (`claude --print`, `gh pr view --web`) ; choisissez `fullscreen = true` pour tout ce qui est long afin que la TUI soit correctement suspendue et que votre terminal reste utilisable.
+
+## `[git_tui]` - la TUI git (`l` / `L`)
+
+Par défaut : `lazygit -p {path}`, plein écran.
+
+```toml
+[git_tui]
+# template de commande (placeholder unique : {path}). Le comportement
+# d'avant v0.6 est la valeur par défaut — vos configs existantes ne voient aucun changement.
+command = "lazygit -p {path}"
+
+# suspendre la TUI pour l'appel (recommandé pour les TUI qui possèdent l'alt-screen)
+fullscreen = true
+```
+
+Exemples - tout outil prenant un chemin de worktree fonctionne :
+
+```toml
+[git_tui]
+command = "gitui -d {path}"        # gitui
+
+[git_tui]
+command = "tig --all"              # tig (exécuté dans le worktree)
+fullscreen = true
+
+[git_tui]
+command = "code -n {path}"         # VS Code dans une nouvelle fenêtre
+fullscreen = false                  # l'IDE fork, ne pas suspendre
+```
+
+## `[review]` - l'outil de review (`r` / `R`)
+
+Pas de valeur par défaut - `r` et `R` sont inertes tant qu'ils ne sont pas configurés.
+
+Deux façons équivalentes de le configurer :
+
+### A) `command` libre (contrôle total)
+
+```toml
+[review]
+command = "claude --print 'review the diff {base}..{head}'"
+fullscreen = false
+default_base = "main"               # optionnel, voir « chaîne de résolution de la base » ci-dessous
+```
+
+### B) `tool = "<preset>"` (sucre syntaxique)
+
+```toml
+[review]
+tool = "lumen"                      # raccourci pour la table ci-dessous
+```
+
+| Preset   | `command` déplié                                  | `fullscreen` |
+| :------- | :------------------------------------------------ | :----------- |
+| `lumen`  | `lumen diff {base}..{head}`                       | `true`       |
+| `claude` | `claude --print 'review the diff {base}..{head}'` | `false`      |
+| `codex`  | `codex review {base}..{head}`                     | `false`      |
+| `aider`  | `aider --message 'review {base}..{head}'`         | `true`       |
+| `gh`     | `gh pr view --web`                                | `false`      |
+
+Si `command` et `tool` sont tous deux définis dans le même bloc, `command` l'emporte et la TUI affiche un avertissement unique au démarrage (« votre `tool = X` est masqué par `command` ») pour que vous remarquiez la config morte.
+
+## Espaces réservés
+
+| Placeholder | Disponible dans      | Déplié en                                                                                              |
+| :---------- | :------------------- | :----------------------------------------------------------------------------------------------------- |
+| `{path}`    | les deux             | chemin absolu du worktree sélectionné                                                                  |
+| `{base}`    | `[review]` seulement | résultat de la [chaîne de résolution de la base](#résolution-de-la-base)                               |
+| `{head}`    | `[review]` seulement | le nom de la branche courante (`branch.<name>` dans la config git)                                     |
+| `{diff}`    | `[review]` seulement | chemin absolu d'un fichier temporaire contenant `git diff {base}..{head}` (paresseux - voir ci-dessus) |
+
+Référencer `{diff}` dans un template `[git_tui]` est une erreur de config détectée au chargement (le lanceur de TUI git ne porte pas le handle de dépôt nécessaire pour matérialiser le diff).
+
+## Résolution de la base
+
+Le placeholder `{base}` suit cette chaîne - le premier résultat non vide l'emporte :
+
+1. **`branch.<name>.merge`** - la ref de suivi upstream de la branche, s'il y en a une.
+2. **`branch.<name>.gwm-base`** - défini automatiquement par `gwm create` pour que le parent d'origine reste récupérable même quand l'upstream est abandonné.
+3. **`[review].default_base`** - le fallback configuré par l'utilisateur dans `.gwm.toml`.
+4. **`dev`** - la convention de projet de gwm (seulement si `dev` existe localement).
+5. **`main`** - la valeur git universelle par défaut (sentinelle finale - garantie non vide).
+
+La chaîne est implémentée dans [`src/launcher.rs::resolve_review_base`](https://github.com/kbrdn1/gwm-cli/blob/main/src/launcher.rs#L167-L187). Le fallback préfère `dev` seulement quand il existe localement - renvoyer `dev` aveuglément quand le dépôt n'a que `main` ferait échouer bruyamment les appels `git rev-list` / `git diff` ultérieurs du lanceur (détecté par la review de Copilot sur la PR #76).
+
+## Interaction avec `gwm doctor`
+
+`gwm doctor` (post-v0.6) sonde le binaire `[git_tui]` résolu - ainsi que le binaire `[review]` lorsqu'un lanceur de review est configuré - contre `$PATH` dans le cadre de sa vérification `external binaries on PATH` :
+
+- N'importe quel binaire de lanceur manquant → **Warning** (code de sortie `1`), en nommant les binaires absents de `$PATH`. Le lanceur de review n'est sondé que lorsque vous en avez réellement configuré un (`command` ou `tool`), donc un `[review]` non configuré n'est jamais signalé.
+
+Voir [Intégrations → `gwm doctor`](/fr/integrations/doctor) pour la ventilation complète des vérifications.
+
+## En lien
+
+- [Raccourcis clavier](/fr/tui/keybindings) - où `l` / `L` / `r` / `R` vivent dans la table des touches, plus le résumé des remappages
+- [Configuration → schéma `.gwm.toml`](/fr/configuration/gwm-toml#git_tui-et-review) - listing complet des champs avec types et valeurs par défaut

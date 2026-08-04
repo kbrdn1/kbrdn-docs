@@ -1,0 +1,391 @@
+---
+title: Raccourcis clavier
+description: Chaque touche que la TUI écoute - liste, barre latérale, filtre, surcouche de confirmation, invites de liaison.
+sidebar:
+  order: 1
+---
+
+La table complète des touches pour l'interface ratatui de `gwm`. Appuyez sur `?` à tout moment pour la même table sous forme de surcouche dans l'application.
+
+![L'overlay Keybindings `?` intégré](../../../../assets/captures/keybindings.png)
+
+> **Le keymap est entièrement configurable.** Chaque binding ci-dessous est
+> une **valeur par défaut** - le bloc `[tui.keys]` dans `.gwm.toml` remappe
+> n'importe quelle action de la vue liste, y compris les chords multi-touches
+> comme `g g`. La surcouche d'aide `?` est pilotée par le keymap, donc elle
+> affiche toujours les bindings que vous avez réellement résolus, et non ces
+> valeurs par défaut. Voir [Keymap & palette de
+> commandes](/fr/tui/keymap-and-palette) et
+> [Configuration → `[tui.keys]`](/fr/configuration/gwm-toml#tuikeys).
+>
+> **Les touches des modales sont remappables elles aussi.** Les touches de
+> chaque surcouche ci-dessous sont les valeurs par défaut de verbes typés sous
+> `[tui.keys.modal.<contexte>]`
+> ([#219](https://github.com/kbrdn1/gwm-cli/issues/219)). La même touche
+> physique peut signifier des choses différentes selon la modale (`Enter` vaut
+> `submit` dans le formulaire de création mais `activate` dans la modale de
+> confirmation de suppression). `Ctrl+C`, les `Esc` / `Enter` contextuels de la
+> vue liste et l'`Esc` d'urgence de la surcouche PTY restent codés en dur par
+> conception. Voir [Keymap & palette de
+> commandes](/fr/tui/keymap-and-palette#touches-de-modale-remappables).
+
+## Vue liste (par défaut)
+
+> **Refonte du keymap (v0.10)** - [#290](https://github.com/kbrdn1/gwm-cli/issues/290)
+> a réorganisé les bindings de la vue liste en chords logiques et ajouté
+> plusieurs verbes (pull / push, renommage, sortie-vers-worktree, copies du nom
+> de branche / de worktree, panneau de multiplexeur, macros utilisateur). La
+> table ci-dessous est l'ensemble de valeurs par défaut résolu, imprimé par
+> `gwm tui keys`. Les anciens slugs `[tui.keys]` d'avant #290 (`git_tui`,
+> `review`, `yank`, `open`, `open_menu`, …) se chargent toujours via des alias
+> de rétrocompatibilité, donc un override existant continue de fonctionner.
+
+| Touche      | Action (slug)                                                                                                                                                                                                                                                                                                                                                                         |
+| :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `↑` / `k`   | worktree précédent (`up`) - fait défiler la barre latérale quand elle a le focus                                                                                                                                                                                                                                                                                                      |
+| `↓` / `j`   | worktree suivant (`down`) - fait défiler la barre latérale quand elle a le focus                                                                                                                                                                                                                                                                                                      |
+| `J` / `K`   | fait défiler le [bloc `Working Tree`](/fr/tui/sidebar#bloc-working-tree) vers le bas / le haut (`wt_scroll_down` / `wt_scroll_up`) - focus status uniquement                                                                                                                                                                                                                          |
+| `gg`        | sauter au premier worktree (`top`)                                                                                                                                                                                                                                                                                                                                                    |
+| `G` / `End` | sauter au dernier worktree (`bottom`)                                                                                                                                                                                                                                                                                                                                                 |
+| `n`         | nouveau worktree (`create` ; formulaire : type → issue → description) · protégé par le [registre de confiance TOFU](/fr/configuration/trust-ledger) - refuse avec une indication dans la barre de statut sur un `.gwm.toml` non approuvé                                                                                                                                              |
+| `c`         | renommer le worktree sélectionné (`edit_worktree` ; formulaire pré-rempli depuis la branche courante) - renomme la branche locale, la branche distante si elle existe, et déplace le répertoire du worktree, le tout hors thread. Avec le **pane status focalisé**, `c` ouvre la [surcouche des checks CI](#surcouche-des-checks-ci-c) à la place (routage contextuel, comme `j`/`k`) |
+| `d`         | supprimer la sélection (`delete` ; confirmer `y` · compte à rebours quand `D` est armé - voir [surcouche de confirmation](/fr/tui/confirm-countdown))                                                                                                                                                                                                                                 |
+| `D`         | basculer « supprimer la branche au retrait » (`delete_branch`)                                                                                                                                                                                                                                                                                                                        |
+| `b`         | relancer le bootstrap sur le worktree sélectionné (`bootstrap`), hors thread (le spinner de la barre de statut s'anime pendant l'exécution ; la vue Report s'ouvre à la fin) · même [barrière de confiance](/fr/configuration/trust-ledger) que `n`                                                                                                                                   |
+| `s`         | synchroniser le worktree sélectionné sur son upstream (`sync`) - fetch + rebase, hors thread (spinner) ; refuse un arbre sale / un upstream manquant / des conflits                                                                                                                                                                                                                   |
+| `p`         | git pull la branche du worktree sélectionné (`pull`), hors thread (progression dans la barre de statut)                                                                                                                                                                                                                                                                               |
+| `P`         | git push la branche du worktree sélectionné (`push`), hors thread                                                                                                                                                                                                                                                                                                                     |
+| `f`         | rafraîchir la liste des worktrees (`refresh`)                                                                                                                                                                                                                                                                                                                                         |
+| `F`         | rafraîchir le statut de l'issue / PR GitHub (`fetch_github`) - fetch `gh` hors thread, spinner                                                                                                                                                                                                                                                                                        |
+| `e`         | quitter la TUI et imprimer le chemin sélectionné sur stdout (`exit_to_worktree`) - permet les patterns shell `cd "$(gwm)"`                                                                                                                                                                                                                                                            |
+| `o`         | ouvrir un `$SHELL` natif dans une [surcouche PTY](/fr/tui/open-dispatch) embarquée sur le worktree (`terminal_pty`)                                                                                                                                                                                                                                                                   |
+| `O`         | ouvrir un `$SHELL` natif en plein écran, en suspendant la TUI (`terminal_fullscreen`)                                                                                                                                                                                                                                                                                                 |
+| `l`         | lancer la commande [`[git_tui]`](/fr/tui/launchers) configurée dans une surcouche PTY embarquée (`lazygit_pty`)                                                                                                                                                                                                                                                                       |
+| `L`         | lancer la commande [`[git_tui]`](/fr/tui/launchers) configurée en plein écran (`lazygit_fullscreen`)                                                                                                                                                                                                                                                                                  |
+| `r`         | lancer la commande [`[review]`](/fr/tui/launchers) configurée dans une surcouche PTY (`review_pty`) - relecteur IA / web sur `git diff base..head`                                                                                                                                                                                                                                    |
+| `R`         | lancer la commande [`[review]`](/fr/tui/launchers) configurée en plein écran (`review_fullscreen`)                                                                                                                                                                                                                                                                                    |
+| `t`         | ouvrir le worktree sélectionné dans un nouveau panneau tmux / zellij (`mux_pane`) - repli sur une indication dans la barre de statut si aucun multiplexeur n'est détecté                                                                                                                                                                                                              |
+| `h`         | lancer la commande [`[tui.macro1]`](/fr/configuration/gwm-toml#tuimacro1-et-tuimacro2) configurée par l'utilisateur (`macro_one`)                                                                                                                                                                                                                                                     |
+| `H`         | lancer la commande [`[tui.macro2]`](/fr/configuration/gwm-toml#tuimacro1-et-tuimacro2) configurée par l'utilisateur (`macro_two`)                                                                                                                                                                                                                                                     |
+| `y`         | copier le **nom de branche** du worktree sélectionné dans le presse-papiers (`yank_branch_name`)                                                                                                                                                                                                                                                                                      |
+| `Y`         | copier le **chemin** du worktree sélectionné dans le presse-papiers (`yank_path`) - pbcopy / wl-copy / xclip / xsel / clip                                                                                                                                                                                                                                                            |
+| `w`         | copier le **slug / nom** du worktree sélectionné dans le presse-papiers (`yank_worktree_name`)                                                                                                                                                                                                                                                                                        |
+| `B`         | menu d'ouverture pour l'issue / PR liée (`browse_links` ; `i` issue, `p` pr → ouvre le navigateur)                                                                                                                                                                                                                                                                                    |
+| `.`         | ouvrir la documentation gwm dans le navigateur par défaut (`open_docs`)                                                                                                                                                                                                                                                                                                               |
+| `i`         | invite de liaison (`link`) - choisir `i` ou `p`, puis des chiffres, pour rattacher une issue / PR                                                                                                                                                                                                                                                                                     |
+| `V`         | basculer la barre latérale de détails (`toggle_sidebar`) - sur un terminal étroit, elle se place sous la table au lieu de disparaître                                                                                                                                                                                                                                                 |
+| `S`         | basculer le mode Détails de la barre latérale (`toggle_sidebar_mode`) - `commits` ↔ `stashes` - voir [mode stashes](/fr/tui/sidebar#mode-stashes)                                                                                                                                                                                                                                     |
+| `Space`     | faire défiler la disposition de la barre latérale (`cycle_sidebar_layout`) - `auto` (pilotée par la largeur) → `side-by-side` → `stacked`                                                                                                                                                                                                                                             |
+| `v`         | basculer la position de la barre latérale gauche ↔ droite (`toggle_sidebar_position` ; disposition side-by-side uniquement)                                                                                                                                                                                                                                                           |
+| `Tab`       | échanger le focus entre la liste des worktrees et la barre latérale (`focus_swap`)                                                                                                                                                                                                                                                                                                    |
+| `1`         | donner le focus au panneau des worktrees (`focus_worktrees`)                                                                                                                                                                                                                                                                                                                          |
+| `2`         | ouvrir (si masqué) et donner le focus au panneau de statut (`focus_status`)                                                                                                                                                                                                                                                                                                           |
+| `3`         | ouvrir l'overlay Command Logs (`command_logs`) - transcription scrollable des commandes lancées par gwm                                                                                                                                                                                                                                                                               |
+| `4`         | ouvrir le [panneau Paramètres](#panneau-paramètres-4) (`config_panel`) - éditer le thème / les worktrees / la TUI et **tous les keymaps**, avec une colonne de source par ligne                                                                                                                                                                                                       |
+| `x`         | ouvrir la [surcouche de sélection exec](#surcouche-de-sélection-exec-x) (`exec_overlay`) - choisir un profil [`[exec.profiles]`](/fr/configuration/gwm-toml#exec) et le lancer dans une [surcouche PTY](/fr/tui/launchers#la-surcouche-pty-embarquée-l--r) sur le worktree sélectionné                                                                                                |
+| `X`         | ouvrir la [surcouche de nettoyage](#surcouche-de-nettoyage-x) (`clean_overlay`) - prévisualiser et récupérer l'espace des artefacts de build du worktree sélectionné (compte à rebours de sécurité avant suppression)                                                                                                                                                                 |
+| `a`         | ouvrir la [surcouche des sessions d'agents](#surcouche-des-sessions-dagents-a) (`agent_sessions`) - lister les sessions d'agents IA (Claude Code, Codex, opencode, Mistral Vibe) attachées au worktree sélectionné                                                                                                                                                                    |
+| `C`         | ouvrir la [surcouche des checks CI](#surcouche-des-checks-ci-c) (`ci_checks`) - une ligne par check du rollup de la PR liée ; aussi `c` quand le pane status a le focus                                                                                                                                                                                                               |
+| `/`         | ouvrir la barre de [filtre flou](/fr/tui/filter) (`filter` ; `Enter` confirme · `Esc` efface)                                                                                                                                                                                                                                                                                         |
+| `:`         | ouvrir la [palette de commandes](/fr/tui/keymap-and-palette#palette-de-commandes) (`command_palette`)                                                                                                                                                                                                                                                                                 |
+| `Enter`     | afficher le chemin sélectionné dans la barre de statut                                                                                                                                                                                                                                                                                                                                |
+| `?`         | surcouche d'aide (`help`)                                                                                                                                                                                                                                                                                                                                                             |
+| `q`         | quitter (`quit`)                                                                                                                                                                                                                                                                                                                                                                      |
+| `Esc`       | effacer un filtre persistant s'il y en a un, sinon quitter                                                                                                                                                                                                                                                                                                                            |
+
+## Surcouche de confirmation de suppression
+
+La surcouche affiche deux boutons sélectionnables, `[ Confirm ]` / `[ Cancel ]`,
+avec le focus par défaut sur **Cancel** - le choix sûr pour une action
+destructrice, de sorte qu'un `Enter` involontaire annule au lieu de supprimer. Les
+raccourcis classiques `y` / `n` fonctionnent toujours quel que soit le focus.
+
+| Touche        | Verbe (`[tui.keys.modal.confirm]`)                                                                                                       |
+| :------------ | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| `←` / `h`     | donner le focus à `[ Confirm ]` (`focus_confirm`)                                                                                        |
+| `→` / `l`     | donner le focus à `[ Cancel ]` (`focus_cancel`)                                                                                          |
+| `Tab`         | basculer le focus entre les deux boutons (`toggle_focus` ; par défaut Cancel)                                                            |
+| `Enter`       | activer le bouton focalisé (`activate` ; Confirm → supprime · Cancel → ferme)                                                            |
+| `y`           | confirmer (`confirm` ; classique) ou armer le compte à rebours (quand `D` est armé - voir [compte à rebours](/fr/tui/confirm-countdown)) |
+| `y` à nouveau | pendant un compte à rebours armé, le **désarme** sans déclencher                                                                         |
+| `n` / `Esc`   | annuler (`cancel`)                                                                                                                       |
+
+Pendant que le compte à rebours de sécurité est armé, un spinner animé se place à côté de la
+barre de progression comme loader en direct.
+
+## Surcouche de création / renommage
+
+Le formulaire Nouveau worktree (`n`) et le formulaire de renommage (`c`)
+partagent les mêmes verbes `[tui.keys.modal.create]` :
+
+| Touche                  | Verbe (`[tui.keys.modal.create]`)                                                                                          |
+| :---------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `Tab`                   | champ suivant (`next_field`)                                                                                               |
+| `BackTab` (`Shift+Tab`) | champ précédent (`prev_field`)                                                                                             |
+| `↑` / `←` / `h`         | type de worktree précédent (`prev_type` ; sur le champ type)                                                               |
+| `↓` / `→` / `l`         | type de worktree suivant (`next_type` ; sur le champ type)                                                                 |
+| `Ctrl+t`                | bascule nommage structuré ↔ libre (`toggle_mode`)                                                                          |
+| `Enter`                 | soumettre et bootstrapper / renommer (`submit` ; soumis à la [barrière de confiance TOFU](/fr/configuration/trust-ledger)) |
+| `Esc`                   | annuler (`cancel`)                                                                                                         |
+
+`Ctrl+t` bascule le formulaire Nouveau worktree entre le triplet `<type>/#<issue>-<desc>` et un unique champ `Name` libre ([#416](https://github.com/kbrdn1/gwm-cli/issues/416)). Le mode libre retire le sélecteur de type et le champ issue - il n'en a aucune notion - et valide le nom à la soumission plutôt qu'à chaque frappe, pour qu'on puisse taper à travers un état intermédiaire. Les deux côtés conservent ce qui a été saisi, donc basculer pour regarder l'autre formulaire ne perd rien. Ce qu'un worktree libre abandonne est listé dans [CLI → nommage libre](/fr/cli/reference#nommage-libre---name).
+
+La liaison est modifiée par Ctrl à dessein : la surcouche de création réserve les touches imprimables non modifiées à ses champs texte, donc une lettre seule serait avalée pendant la saisie d'une description.
+
+Elle fonctionne aussi dans le formulaire de renommage ([#479](https://github.com/kbrdn1/gwm-cli/issues/479)). Elle y était inerte parce que ce formulaire n'affichait et ne soumettait que le triplet, donc y basculer aurait écrit dans un champ qu'il ne montrait jamais ; le formulaire a désormais les deux modes, donc le verbe fait ce que son nom annonce.
+
+Un worktree créé avec `gwm create --name` ouvre le formulaire de renommage en **mode libre**, avec sa branche courante pré-remplie, au lieu d'être refusé comme avant. `Ctrl+t` passe ensuite d'une forme à l'autre dans les deux sens, ce qui rend les quatre renommages possibles :
+
+| depuis    | vers      | la branche devient                   | le répertoire devient              |
+| :-------- | :-------- | :----------------------------------- | :--------------------------------- |
+| libre     | libre     | le nom, tel quel                     | le nom, `/` aplati en `-`          |
+| libre     | structuré | `branch_pattern` appliqué au triplet | `path_pattern` appliqué au triplet |
+| structuré | libre     | le nom, tel quel                     | le nom, `/` aplati en `-`          |
+| structuré | structuré | inchangé                             | inchangé                           |
+
+La bascule ne pré-remplit que ce qui est encore vide, donc un aller-retour n'écrase jamais ce que vous avez saisi. En quittant le mode structuré, le nom est pré-rempli avec la branche courante telle quelle. En quittant le mode libre, la description est pré-remplie avec une forme kebab du nom, bornée à la même longueur que le champ accepte à la frappe, et l'issue reste vide parce qu'un nom libre ne porte aucun numéro d'issue. Le **type**, lui, n'est ni pré-rempli ni vidé : il reste sur ce qu'affiche le sélecteur, c'est-à-dire le premier type configuré sur un formulaire qu'on vient d'ouvrir, exactement comme dans le formulaire Nouveau worktree. Il est visible dans le sélecteur et la preview annonce la branche qu'il produit, donc lisez cette ligne avant de soumettre si vous promouvez un spike vers le pattern.
+
+Les noms sont validés avec exactement les règles de `gwm create --name`, donc un nom qu'un formulaire refuse, l'autre le refuse aussi. Le **worktree principal** n'est jamais renommé depuis ici : sa branche est la branche par défaut du dépôt, et `git worktree move` ne sait de toute façon pas déplacer le checkout principal.
+
+Si le `.gwm.toml` du dépôt n'est pas approuvé, `Enter` place la barre de statut du formulaire sur un message de refus au lieu de lancer le bootstrap - le répertoire du worktree n'est **pas** créé dans ce cas, donc vous pouvez corriger l'état de confiance dans un autre terminal (`gwm bootstrap` depuis le CLI, ou définir `GWM_ALLOW_BOOTSTRAP=1` et relancer) puis réessayer. Voir [Configuration → registre de confiance TOFU](/fr/configuration/trust-ledger#comportement-de-la-tui) pour la formulation exacte et l'arbre de décision complet.
+
+## Panneau Paramètres (`4`)
+
+`4` ouvre le panneau Paramètres dans la TUI. Les onglets (`Tab` / `Shift+Tab`)
+le découpent en `Theme`, `Worktree`, `TUI`, `Keys` et la vue `All` en lecture
+seule (config résolue). `L` bascule la couche d'édition entre le `.gwm.toml`
+du projet et la config globale utilisateur ; le sélecteur de couche décide dans
+quel fichier une édition est écrite.
+
+| Touche            | Action                                                                  |
+| :---------------- | :---------------------------------------------------------------------- |
+| `Tab` / `BackTab` | onglet suivant / précédent                                              |
+| `↑` / `↓`         | sélectionner un champ / un binding (défile sur l'onglet `All`)          |
+| `L`               | basculer la couche d'édition (projet ↔ global)                          |
+| `Space` / `Enter` | activer : cycler un choix, éditer une valeur ou **remapper une touche** |
+| `Esc` / `q`       | fermer                                                                  |
+
+### Onglet Keys - éditeur de keymaps en direct
+
+L'onglet `Keys` liste **tous** les bindings remappables : les actions globales
+de la vue liste (`[global]`) et chaque verbe modal groupé par contexte
+(`[modal.<contexte>]`), chacun avec sa ou ses touches courantes et une pastille
+de source `default` / `user` / `repo`. Sélectionnez un binding et appuyez sur la
+touche d'activation (`Space` / `Enter`) pour capturer une nouvelle touche - la
+colonne des touches devient un champ `[ … ]` :
+
+| Touche                  | Action                                                                                     |
+| :---------------------- | :----------------------------------------------------------------------------------------- |
+| n'importe quelle touche | l'enregistrer dans le binding                                                              |
+| `Enter`                 | valider un chord global multi-touches (les verbes modaux se valident à la première touche) |
+| `Backspace`             | retirer la dernière touche capturée (chord global)                                         |
+| `Esc`                   | annuler la capture, binding inchangé                                                       |
+
+La capture écrit le binding sous forme de tableau TOML dans la couche ciblée
+(`[tui.keys]` pour une action globale, `[tui.keys.modal.<contexte>]` pour un
+verbe modal), le valide (un conflit / une collision de préfixe annule
+l'écriture et laisse le binding précédent actif) et recharge le keymap pour que
+la nouvelle touche fonctionne immédiatement. Une capture vide (`Enter` sans rien
+enregistrer - global uniquement) délie l'action. `Esc`, `Enter`, `Backspace` et
+`Ctrl+C` ne peuvent pas être assignés par capture - éditez `.gwm.toml` à la main
+pour ces cas (voir [`[tui.keys]`](/fr/configuration/gwm-toml#tuikeys)).
+
+## Invite de liaison issue / PR (`i`)
+
+La première étape (`[tui.keys.modal.link.choose_target]`) est un sélecteur
+navigable issue-ou-PR ; la seconde (`[tui.keys.modal.link.input_number]`)
+prend le numéro.
+
+| Étape             | Touche    | Verbe                           |
+| :---------------- | :-------- | :------------------------------ |
+| choix de la cible | `j` / `↓` | cible suivante (`next`)         |
+| choix de la cible | `k` / `↑` | cible précédente (`prev`)       |
+| choix de la cible | `i`       | sélectionner issue (`issue`)    |
+| choix de la cible | `p`       | sélectionner PR (`pr`)          |
+| choix de la cible | `Enter`   | confirmer la cible (`accept`)   |
+| choix de la cible | `Esc`     | annuler (`cancel`)              |
+| saisie du numéro  | chiffres  | taper le numéro de l'issue / PR |
+| saisie du numéro  | `Enter`   | valider la liaison (`submit`)   |
+| saisie du numéro  | `Esc`     | annuler (`cancel`)              |
+
+## Menu d'ouverture issue / PR (`B`)
+
+| Touche                | Verbe (`[tui.keys.modal.open_menu]`)             |
+| :-------------------- | :----------------------------------------------- |
+| `j` / `k` / `↓` / `↑` | naviguer entre issue et PR (`toggle`)            |
+| `i`                   | ouvrir l'issue liée dans le navigateur (`issue`) |
+| `p`                   | ouvrir la PR liée dans le navigateur (`pr`)      |
+| `Enter`               | ouvrir la cible surlignée (`accept`)             |
+| `Esc` / `q`           | fermer (`close`)                                 |
+
+## Surcouche de sélection exec (`x`)
+
+Liste les noms `[exec.profiles.*]` ; `Enter` résout la ligne en surbrillance
+vers son tableau `command` et le lance - **sans shell** - dans une surcouche PTY
+embarquée ancrée au worktree sélectionné (la même surcouche que `l` / `r`).
+Refuse de s'ouvrir avec un message en barre de statut quand aucun
+`[exec.profiles]` n'est configuré. Contrairement à `gwm exec --workspace` en
+CLI, la surcouche lance le profil dans l'**unique** worktree sélectionné (un seul
+PTY ne peut pas faire de fan-out).
+
+| Touche    | Verbe (`[tui.keys.modal.exec]`)         |
+| :-------- | :-------------------------------------- |
+| `j` / `↓` | profil suivant (`next`)                 |
+| `k` / `↑` | profil précédent (`prev`)               |
+| `Enter`   | lancer le profil sélectionné (`accept`) |
+| `Esc`     | annuler (`cancel`)                      |
+
+## Surcouche de nettoyage (`X`)
+
+Prévisualise les artefacts de build récupérables dans le worktree sélectionné et
+les supprime sur confirmation. Le scan est filtré par le **même** garde-fou de
+sécurité que `gwm clean --yes` : seuls les répertoires que git considère ignorés
+**et** ne contenant aucun fichier suivi sont comptés ; tout le reste est listé
+comme _ignoré_ et jamais touché. Le picker ouvre toujours sur un choix
+`(default)` - le jeu que `gwm clean` résout sans `--profile` (l'intégré
+`target` / `node_modules` / `dist` / `build`, ou `[clean.profiles.default]` s'il
+est défini) - suivi des `[clean.profiles]` configurés ; `j` / `k` les font
+défiler (avec re-scan à chaque fois). La touche de
+confirmation arme le même compte à rebours de sécurité que la
+[surcouche de confirmation de suppression](/fr/tui/confirm-countdown) (piloté par
+`[tui] confirm_countdown_secs`) ; une seconde confirmation ou `Esc` le désarme,
+et la récupération se déclenche automatiquement à la fin du compte à rebours.
+
+> Le scan est **synchrone** à l'ouverture de la surcouche : l'ouvrir sur un très
+> gros `target/` peut donc bloquer brièvement l'UI le temps de calculer les
+> tailles. Le passage du scan sur le moteur off-thread (#231) est un suivi.
+
+| Touche        | Verbe (`[tui.keys.modal.clean]`)               |
+| :------------ | :--------------------------------------------- |
+| `j` / `↓`     | profil suivant (`next`)                        |
+| `k` / `↑`     | profil précédent (`prev`)                      |
+| `y` / `Enter` | armer / déclencher la récupération (`confirm`) |
+| `n` / `Esc`   | annuler / désarmer (`cancel`)                  |
+
+## Surcouche des sessions d'agents (`a`)
+
+Liste chaque session d'agent IA attachée au worktree sélectionné - une ligne
+par session, la plus récente d'abord, avec l'agent, sa fraîcheur
+(**active** = activité d'artefact dans les 5 dernières minutes, **idle**
+sinon), une heure de dernière activité lisible et le **nom** de la session
+(le nom de session vivant de Claude Code quand elle tourne, sinon son
+premier prompt ; le nom de thread Codex - `session_index.jsonl`, donc un
+rename s'affiche - sinon son premier prompt ; le titre de session
+d'opencode depuis `opencode.db` ; le titre enregistré par Vibe) - l'id
+complet quand les artefacts n'ont pas de nom. La détection lit les artefacts de session
+sur disque de chaque agent (Claude Code, Codex, opencode, Mistral Vibe) - aucune énumération de processus, même chemin de code sur Linux, macOS et
+Windows (un raffinement Unix : une session Claude Code dont le PID
+enregistré a disparu passe idle immédiatement). Un worktree sans session ouvre la surcouche avec une ligne
+explicite _no agent session found_ plutôt qu'une modale vide.
+
+Les lignes sont sélectionnables : `j` / `k` déplacent la surbrillance (la
+fenêtre suit, avec une scrollbar quand la liste déborde), `a` **épingle** la
+session sélectionnée au worktree et `d` retire l'épingle - le même override
+manuel que `gwm agents attach` / `detach` (l'auto-détection reste le
+défaut). La session épinglée est marquée `pinned` sur sa ligne.
+
+La même détection alimente la colonne **AGENT** de la table des worktrees
+(l'agent le plus récemment actif, coloré selon sa fraîcheur) et une ligne
+résumé `Agent:` dans le bloc Worktree de la
+[sidebar de détails](/fr/tui/sidebar). La détection tourne hors du thread de
+rendu et se re-vérifie toutes les 30 secondes ; les sessions de plus de 30
+jours ne sont pas scannées.
+
+| Touche      | Verbe (`[tui.keys.modal.detail]`)                                                                                                                                                                                         |
+| :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `j` / `↓`   | session suivante (`select_next`)                                                                                                                                                                                          |
+| `k` / `↑`   | session précédente (`select_prev`)                                                                                                                                                                                        |
+| `a`         | épingler la session (`attach`) - sur une liste vide (`no agent session found`), bascule sur l'invite d'attache par id                                                                                                     |
+| `d`         | désépingler la session sélectionnée (`detach`) - les autres épingles restent                                                                                                                                              |
+| `i`         | attacher par id (`attach_by_id`) - invite façon palette filtrant TOUTES les sessions détectées (une session sans worktree est justement celle à épingler) ; taper filtre, `↑`/`↓` choisit, `Enter` attache, `Esc` revient |
+| `Esc` / `q` | fermer (`close`)                                                                                                                                                                                                          |
+
+> Une session _terminée_ ne s'observe pas toujours depuis les seuls
+> artefacts : seul Mistral Vibe enregistre un marqueur de fin explicite, et
+> sous Unix une session Claude Code dont le PID enregistré a disparu retombe
+> immédiatement en idle (#441). Pour les autres backends et sous Windows,
+> une session qui vient de se terminer peut apparaître **active** pendant
+> jusqu'à 5 minutes : un scan de processus général reste un non-objectif
+> délibéré pour l'instant (#408, #414).
+
+## Surcouche des checks CI (`C`)
+
+Liste chaque entrée du `statusCheckRollup` de la PR liée - une ligne par
+check, dans l'ordre du rollup, l'icône d'état colorée avec les mêmes rôles
+de thème que l'indicateur CI de la barre latérale (passing / failing /
+running) et le nom du check, plus une colonne de détails alignée à droite
+en muted avec le workflow propriétaire et la durée du run (temps écoulé
+avec une ellipse quand le check est en cours). S'ouvre depuis n'importe où
+dans la vue liste avec `C`, ou avec `c` quand le pane status a le focus (le
+même dispatch contextuel qui transforme `j` / `k` en défilement de la barre
+latérale) - l'indicateur CI de la ligne PR affiche cette touche
+(`… CI passing 10/10 [c]`). Sans PR liée ou avec un rollup vide, rien ne
+s'ouvre et la barre de statut explique pourquoi.
+
+| Touche                | Verbe (`[tui.keys.modal.ci_checks]`)                                                                                                                                                                                                                      |
+| :-------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `j` / `k` (`↓` / `↑`) | déplacer la sélection (`select_next` / `select_prev`)                                                                                                                                                                                                     |
+| `Enter`               | ouvrir l'URL de détails du check sélectionné dans le navigateur (`open`)                                                                                                                                                                                  |
+| `/`                   | filtrer la liste (`filter`) - requête sous-chaîne en direct, Enter ouvre le surligné. Pendant la saisie, les touches imprimables alimentent la requête (convention palette, comme l'invite d'attache) ; les verbes remappables s'appliquent en mode liste |
+| `f`                   | re-fetch la PR et rafraîchit les lignes en place (`refresh`) - même touche que le refresh de la vue liste                                                                                                                                                 |
+| `Esc` / `q`           | fermer (`close`)                                                                                                                                                                                                                                          |
+
+## Surcouche d'aide (`?`)
+
+Les touches s'affichent comme des **badges** colorés (le même style de puce que la
+statusline du bas) avec des en-têtes de section thématisés, de sorte qu'un binding
+se distingue de sa description. Toutes les couleurs suivent le `[theme]` résolu.
+
+La surcouche documente **tous** les contextes de touches : les actions globales
+et de la vue liste, puis une section par overlay modal (formulaire de création,
+suppression, menu de liens, prompt de liaison, palette de commandes, profils
+exec, nettoyage, sessions d'agent, checks CI, journal de commandes, panneau de
+réglages, rapport de bootstrap, l'échappatoire PTY et la navigation de la
+surcouche elle-même). Chaque verbe modal est résolu en direct contre
+`[tui.keys.modal.<contexte>]` : un remappage s'affiche tel quel et un verbe
+explicitement délié s'affiche `(unbound)`. Un test de complétude verrouille
+toute la surface - un nouveau verbe ne peut pas arriver non documenté.
+
+| Touche                       | Action                 |
+| :--------------------------- | :--------------------- |
+| `j` / `k` (`Down` / `Up`)    | défiler                |
+| `h` / `l` (`Left` / `Right`) | panoramique            |
+| `g` / `G` (`Home` / `End`)   | aller en haut / en bas |
+| `Esc` / `q` / `?` / `Enter`  | fermer                 |
+
+## Résumé des remappages v0.10
+
+La refonte du keymap [#290](https://github.com/kbrdn1/gwm-cli/issues/290) a
+déplacé plusieurs touches pour faire de la place aux nouveaux verbes. Les
+changements les plus importants à réapprendre :
+
+| Avant v0.10                                     | v0.10+             | Pourquoi                                                                                |
+| :---------------------------------------------- | :----------------- | :-------------------------------------------------------------------------------------- |
+| `L` (liaison)                                   | `i`                | `L` lance désormais lazygit en plein écran ; `i` est l'invite de liaison issue/PR       |
+| `S` (sync)                                      | `s`                | verbe mutateur en minuscule ; `S` bascule désormais la barre latérale Commits ↔ Stashes |
+| `p` (toggle suppr. branche)                     | `D`                | `p` est désormais `pull` ; `D` arme « supprimer la branche au retrait »                 |
+| `O` (menu d'ouverture)                          | `B`                | `O` ouvre désormais un terminal plein écran ; `B` parcourt les liens issue/PR           |
+| `o` (open dispatch)                             | `o` (terminal PTY) | `o` ouvre désormais une surcouche PTY `$SHELL` embarquée                                |
+| `v` / `V` (toggle / disposition barre latérale) | `V` / `Space`      | `V` bascule la barre latérale, `Space` cycle la disposition                             |
+| `y` (copie chemin)                              | `Y`                | `y` copie désormais le **nom de branche** ; `Y` copie le chemin ; `w` copie le slug     |
+| `R` (review)                                    | `r` / `R`          | `r` lance la review dans une surcouche PTY, `R` la lance en plein écran                 |
+| _(aucune)_                                      | `c`                | renommer le worktree sélectionné (`edit_worktree`)                                      |
+| _(aucune)_                                      | `e`                | quitter la TUI vers le chemin sélectionné (`exit_to_worktree`)                          |
+| _(aucune)_                                      | `t`                | ouvrir le worktree dans un nouveau panneau tmux / zellij (`mux_pane`)                   |
+| _(aucune)_                                      | `h` / `H`          | lancer `[tui.macro1]` / `[tui.macro2]`                                                  |
+
+Les overrides `[tui.keys]` existants écrits avec les anciens slugs (`git_tui`,
+`review`, `yank`, `open`, `open_menu`, …) continuent de fonctionner via des
+alias de rétrocompatibilité - seules les touches physiques par défaut ont bougé.
+
+## Résumé des remappages v0.6
+
+Trois touches ont changé lorsque [#75 (lanceurs configurables)](https://github.com/kbrdn1/gwm-cli/issues/75) a été intégrée. Mettez votre mémoire musculaire à jour en conséquence :
+
+| Avant v0.6 | v0.6+ | Pourquoi                                                                                                    |
+| :--------- | :---- | :---------------------------------------------------------------------------------------------------------- |
+| `r`        | `f`   | `r` conservé comme **alias** pour la mémoire musculaire, mais le mnémonique documenté est désormais `f`     |
+| `R`        | `F`   | libère `R` pour le nouveau lanceur de relecture ; `F` fait le rafraîchissement GitHub que `R` faisait avant |
+| _(aucune)_ | `R`   | lance la commande `[review]` configurée (lumen / claude / codex / aider / gh / personnalisée)               |
+
+Si vous aviez câblé l'une de ces touches dans un script personnalisé (peu probable - elles sont uniquement liées à la TUI), rien ne casse ; il s'agit purement de la surcouche dans l'application.

@@ -1,32 +1,355 @@
 ---
-// Override du Footer Starlight, partagé par tous les sites produits.
-// Rend le footer par défaut puis ajoute une ligne commune (consistance).
-// Réf. : https://starlight.astro.build/guides/overriding-components/
+// Pied de page partagé, calqué sur celui du portfolio kbrdn.dev
+// (app/components/layout/Footer.vue) : conteneur de 80rem bordé à gauche et à
+// droite, et surtout une grille de TROIS colonnes — une colonne large à gauche
+// fermée par un filet, une sous-grille 2×2 de listes de liens au centre, une
+// pile de blocs d'information à droite — puis une barre de copyright centrée.
+//
+// La colonne de gauche du portfolio est son formulaire de contact. Une doc ne
+// collecte rien : elle prend la même place et le même poids visuel avec le
+// résumé du projet et sa ligne d'installation.
+//
+// Tout le texte suit la langue de la page. Un libellé écrit en dur ressortirait
+// en français au milieu du site anglais, qui est la racine.
+//
+// Le bloc de pagination (Précédent / Suivant) reste rendu par Starlight
+// au-dessus. Réf. : https://starlight.astro.build/guides/overriding-components/
 import Default from '@astrojs/starlight/components/Footer.astro';
 
 const year = new Date().getFullYear();
+const fr = (Astro.currentLocale || '').startsWith('fr');
+const p = (path: string) => (fr ? `/fr${path}` : path);
+
+const t = {
+  about: fr ? 'Le projet' : 'The project',
+  blurb: fr
+    ? 'gwm gère les worktrees Git de tous vos dépôts, en ligne de commande comme en TUI, avec un bootstrap décrit par le dépôt lui-même.'
+    : 'gwm manages git worktrees across all your repositories, from the command line or the TUI, with a bootstrap the repo itself describes.',
+  docs: 'Documentation',
+  reference: fr ? 'Référence' : 'Reference',
+  project: fr ? 'Projet' : 'Project',
+  links: fr ? 'Liens' : 'Links',
+  version: 'Version',
+  status: fr ? 'Statut' : 'Status',
+  licence: fr ? 'Licence' : 'License',
+  maintained: fr ? 'Activement maintenu' : 'Actively maintained',
+  start: fr ? 'Prise en main' : 'Getting started',
+  first: fr ? 'Premier worktree' : 'First worktree',
+  config: 'Configuration',
+  integrations: fr ? 'Intégrations' : 'Integrations',
+  schema: fr ? 'Schéma .gwm.toml' : '.gwm.toml schema',
+  issues: fr ? 'Signaler un bug' : 'Report an issue',
+  rights: fr ? 'Tous droits réservés.' : 'All rights reserved.',
+  builtWith: fr ? 'Construit avec' : 'Built with',
+  and: fr ? 'et' : 'and',
+};
+
+// Quatre groupes exactement : la sous-grille du centre est en 2×2, un cinquième
+// groupe casserait l'alignement sur la colonne de droite.
+const columns = [
+  {
+    title: t.docs,
+    links: [
+      { href: p('/getting-started/'), label: t.start },
+      { href: p('/getting-started/first-worktree/'), label: t.first },
+      { href: p('/configuration/'), label: t.config },
+      { href: p('/integrations/'), label: t.integrations },
+    ],
+  },
+  {
+    title: t.reference,
+    links: [
+      { href: p('/cli/'), label: 'CLI' },
+      { href: p('/tui/'), label: 'TUI' },
+      { href: p('/configuration/gwm-toml/'), label: t.schema },
+      { href: '/changelog/', label: 'Changelog' },
+    ],
+  },
+  {
+    title: t.project,
+    links: [
+      { href: 'https://github.com/kbrdn1/gwm-cli', label: 'GitHub', external: true },
+      { href: 'https://crates.io/crates/gwm-cli', label: 'crates.io', external: true },
+      { href: 'https://github.com/kbrdn1/gwm-cli/issues', label: t.issues, external: true },
+      { href: p('/roadmap/'), label: 'Roadmap' },
+    ],
+  },
+  {
+    title: t.links,
+    links: [
+      { href: 'https://kbrdn.dev', label: 'kbrdn.dev', external: true },
+      { href: 'https://kbrdn.dev/blog', label: 'Blog', external: true },
+      { href: 'https://github.com/sponsors/kbrdn1', label: 'Sponsor', external: true },
+      { href: 'mailto:hello@kbrdn.dev', label: 'hello@kbrdn.dev' },
+    ],
+  },
+];
+
+// Le bloc par défaut n'est rendu QUE s'il a quelque chose à montrer. Sur une
+// landing (`template: splash`) il n'y a ni page précédente ni page suivante :
+// Starlight sortait quand même un `<footer class="sl-flex">` vide de 72px, qui
+// avec ses marges (24 dessus, 48 dessous) creusait 144px de blanc entre la
+// dernière section et le pied de page. Ailleurs, rien ne change.
+const { prev, next } = Astro.locals.starlightRoute.pagination;
+const hasPagination = Boolean(prev || next);
 ---
 
-<Default />
+{hasPagination && <Default />}
 
-<div class="kbrdn-footer">
-  <p>
-    Documentation construite avec <a href="https://starlight.astro.build">Starlight</a>
-    · © {year}
-    <a href="https://kbrdn.dev">Kylian Bardini</a>
-  </p>
-</div>
+<footer class="kbrdn-footer">
+  <div class="kbrdn-footer__shell">
+    <div class="kbrdn-footer__grid">
+      <!-- Colonne de gauche : elle porte le filet qui la sépare du centre. -->
+      <div class="kbrdn-footer__intro">
+        <h2 class="kbrdn-footer__title">{t.about}</h2>
+        <p class="kbrdn-footer__blurb">{t.blurb}</p>
+        <pre class="kbrdn-footer__cmd"><code>brew install kbrdn1/tap/gwm</code></pre>
+      </div>
+
+      <!-- Centre : sous-grille 2×2 de listes de liens. -->
+      <div class="kbrdn-footer__cols">
+        {
+          columns.map((col) => (
+            <div class="kbrdn-footer__col">
+              <h2 class="kbrdn-footer__title">{col.title}</h2>
+              <nav aria-label={col.title}>
+                {col.links.map((l) => (
+                  <a
+                    href={l.href}
+                    target={l.external ? '_blank' : undefined}
+                    rel={l.external ? 'noopener noreferrer' : undefined}
+                  >
+                    {l.label}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- Droite : blocs empilés, comme Localisation / Disponibilité / Email. -->
+      <div class="kbrdn-footer__meta">
+        <div class="kbrdn-footer__block">
+          <h2 class="kbrdn-footer__title">{t.status}</h2>
+          <span class="kbrdn-footer__badge">
+            <span class="kbrdn-footer__dot" aria-hidden="true"></span>
+            {t.maintained}
+          </span>
+        </div>
+        <div class="kbrdn-footer__block">
+          <h2 class="kbrdn-footer__title">{t.licence}</h2>
+          <a
+            class="kbrdn-footer__value"
+            href="https://github.com/kbrdn1/gwm-cli/blob/main/LICENSE"
+            target="_blank"
+            rel="noopener noreferrer">MIT</a
+          >
+        </div>
+        <div class="kbrdn-footer__block">
+          <h2 class="kbrdn-footer__title">Contact</h2>
+          <a class="kbrdn-footer__value" href="mailto:hello@kbrdn.dev">hello@kbrdn.dev</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="kbrdn-footer__bottom">
+      <p>
+        © {year}{' '}
+        <a href="https://kbrdn.dev" target="_blank" rel="noopener noreferrer">Kylian Bardini</a>. {
+          t.rights
+        }
+      </p>
+      <p>
+        {t.builtWith}
+        <a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro</a>
+        {t.and}
+        <a href="https://starlight.astro.build" target="_blank" rel="noopener noreferrer"
+          >Starlight</a
+        >.
+      </p>
+    </div>
+  </div>
+</footer>
 
 <style>
+  /* Le pied de page occupe simplement sa colonne. Au-delà de 110rem cette
+     colonne EST la coquille de 80rem (les volets sont sortis dans les
+     gouttières), donc il se cale de lui-même sur la barre du haut, sans le
+     moindre calcul de décalage — et il ne croise plus le volet de navigation.
+     Les marges négatives annulent le rembourrage de la colonne de lecture : le
+     pied de page va d'un filet du volet à l'autre, et ce sont EUX qui le
+     bordent. Sans ça il héritait du rembourrage du contenu, ajoutait le sien,
+     et doublait le filet vertical aux deux extrémités. */
   .kbrdn-footer {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--sl-color-gray-5);
-    font-size: var(--sl-text-xs);
+    margin-top: 3rem;
+    margin-inline: calc(-1 * var(--kbrdn-content-pad, 0px));
+    margin-bottom: calc(-1 * var(--kbrdn-content-pad, 0px));
+    border-top: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  /* Rembourrage intérieur constant : il aligne les libellés des colonnes sur le
+     texte au-dessus. Il ne peut pas suivre `--kbrdn-content-pad`, qui vaut zéro
+     sur la landing — le pied de page collerait alors aux filets. */
+  .kbrdn-footer__shell {
+    padding: 3rem 1.5rem;
+  }
+
+  /* Trois colonnes égales, `gap-12` au portfolio. */
+  .kbrdn-footer__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 50rem) {
+    .kbrdn-footer__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    /* `md:pr-12 md:border-r` : la colonne de gauche est fermée par un filet. */
+    .kbrdn-footer__intro {
+      padding-inline-end: 3rem;
+      border-inline-end: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    }
+  }
+
+  .kbrdn-footer__intro {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: flex-start;
+  }
+  .kbrdn-footer__blurb {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
     color: var(--sl-color-gray-3);
+  }
+  .kbrdn-footer__cmd {
+    margin: 0;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    overflow-x: auto;
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-2);
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    background: color-mix(in srgb, var(--sl-color-gray-6) 40%, transparent);
+  }
+
+  /* Sous-grille 2×2 des listes de liens. */
+  .kbrdn-footer__cols {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .kbrdn-footer__col,
+  .kbrdn-footer__block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  /* Pile de blocs d'information à droite (`space-y-6`). */
+  .kbrdn-footer__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* `font-mono text-xs uppercase tracking-wider text-neutral-500` : graisse
+     normale et interlettrage court, pas du gras très espacé. */
+  .kbrdn-footer__title {
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    margin: 0;
+    border: none;
+  }
+
+  .kbrdn-footer__col nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .kbrdn-footer__col nav a,
+  .kbrdn-footer__value {
+    font-size: 0.875rem;
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+    transition: color 200ms;
+  }
+  .kbrdn-footer__col nav a:hover,
+  .kbrdn-footer__value:hover {
+    color: var(--sl-color-accent);
+  }
+
+  /* Pastille de disponibilité du portfolio : bordure et fond d'accent très
+     dilués, point orange qui pulse. */
+  .kbrdn-footer__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.625rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    color: var(--sl-color-accent);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
+    background: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+  }
+
+  .kbrdn-footer__dot {
+    position: relative;
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background: var(--sl-color-accent);
+  }
+  .kbrdn-footer__dot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--sl-color-accent);
+    animation: kbrdn-footer-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes kbrdn-footer-ping {
+    75%,
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kbrdn-footer__dot::before {
+      animation: none;
+    }
+  }
+
+  .kbrdn-footer__bottom {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
     text-align: center;
   }
-  .kbrdn-footer a {
-    color: var(--sl-color-text-accent);
+  .kbrdn-footer__bottom p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-3);
+  }
+  .kbrdn-footer__bottom p + p {
+    margin-top: 0.375rem;
+  }
+  .kbrdn-footer__bottom a {
+    color: var(--sl-color-accent);
+    text-decoration: none;
+  }
+  .kbrdn-footer__bottom a:hover {
+    text-decoration: underline;
   }
 </style>

@@ -1,0 +1,146 @@
+---
+title: Contributing
+description: Gitmoji + Conventional Commits, branch naming, PR checklist, CHANGELOG split rules.
+sidebar:
+  order: 2
+---
+
+This page summarises the repo's contribution conventions. The full long-form lives in [`CONTRIBUTING.md`](https://github.com/kbrdn1/gwm-cli/blob/main/CONTRIBUTING.md) at the repo root; this page exists so the docs site can carry the same info without forking the source of truth.
+
+## Branch naming
+
+```
+<type>/#<issue>-<short-description>
+```
+
+Examples:
+
+```
+feat/#42-user-auth
+fix/#117-leak
+docs/#77-sync-v0-6-0-docs
+chore/#56-precommit-hook
+```
+
+- `<type>` - one of `feat`, `fix`, `hotfix`, `docs`, `test`, `refactor`, `chore`, `perf`, `ci`, `build`.
+- `<issue>` - the GitHub issue number (digits only). One issue per branch keeps the auto-link working (see [GitHub linking](/integrations/github-linking#auto-detection)).
+- `<short-description>` - kebab-case, ~3-4 words, normalised automatically by `gwm create`.
+
+Never work directly on `main` or `dev`. `gwm create <type> <N> <slug>` produces a conformant branch + worktree in one step.
+
+## Commit format
+
+Gitmoji + Conventional Commits - one commit per concern, atomic, descriptive:
+
+```
+<emoji> <type>(<scope>)<!>: <subject>
+
+<body — optional, wrap at 72>
+
+refs #N            ← intermediate commits
+closes #N          ← ONLY on the last commit of the series
+```
+
+### Emoji + type table
+
+| Emoji | Type            | Use for                                               |
+| :---- | :-------------- | :---------------------------------------------------- |
+| ✨    | `feat`          | new capability                                        |
+| 🐛    | `fix`           | bug fix                                               |
+| ♻️    | `refactor`      | restructuring without behaviour change                |
+| ✅    | `test`          | tests added or fixed                                  |
+| 📝    | `docs`          | README / CHANGELOG / inline doc / this very tree      |
+| 🔧    | `chore`         | tooling, config, deps                                 |
+| 🏗️    | `build`         | release / cut / version bump                          |
+| 👷    | `ci`            | workflows                                             |
+| ⚡    | `perf`          | measured performance improvement                      |
+| 🚑️    | `hotfix`        | urgent fix shipped outside the normal release cadence |
+| 🔥    | `chore(remove)` | dead code / file removal                              |
+| ⬆️    | `chore(bump)`   | dependency bump                                       |
+| 🔒    | `security`      | security-relevant fix                                 |
+
+### Scopes (gwm-cli)
+
+`config`, `naming`, `worktree`, `bootstrap`, `cli`, `tui`, `tests`, `docs`, `ci`, `structure`, `launcher`, `github`, `doctor`, `skill`, `changelog`. Pick whichever subsystem the diff touches; add new ones sparingly.
+
+### Commit-prefix helpers
+
+gwm can produce the canonical prefix for you so you don't hand-type the emoji + type + issue scope:
+
+```bash
+gwm commit-prefix                 # → :sparkles: feat(#41): (for the current branch)
+gwm commit-prefix --unicode       # → ✨ feat(#41):
+gwm commit-prefix --branch fix/#117-leak
+```
+
+For a fully automatic flow, install the opt-in `commit-msg` hook - it prepends the resolved prefix when your message doesn't already start with one:
+
+```bash
+gwm hooks install commit-msg          # refuses to clobber an existing hook
+gwm hooks install commit-msg --force  # overwrite an existing hook
+```
+
+The hook honours `core.hooksPath`, resolves linked-worktree `.git` files, and degrades gracefully when `gwm` isn't on `$PATH` at commit time. Teams can override individual emoji via the `[gitmoji]` block in `.gwm.toml`; `gwm types --gitmoji` prints the resolved table with unicode + `:shortcode:` columns.
+
+### Breaking changes
+
+Append `!` after the type and add a `BREAKING CHANGE:` footer:
+
+```
+✨ feat(config)!: rename [worktree.base] to [worktree.root]
+
+BREAKING CHANGE: rename [worktree.base] to [worktree.root]. Existing
+configs continue to parse but emit a one-shot deprecation warning;
+the alias will be removed in v1.0.
+```
+
+## CHANGELOG split
+
+The repo uses a **root + per-version** split:
+
+- [`CHANGELOG.md`](https://github.com/kbrdn1/gwm-cli/blob/main/CHANGELOG.md) at the root holds **only**:
+  - `## [Unreleased]` - the in-progress section new commits add to (`Added / Changed / Fixed / Docs / Dependencies`)
+  - `## Past releases` - a one-line index of every stable + pre-release, pointing at `changelogs/<version>.md`
+- [`changelogs/<version>.md`](https://github.com/kbrdn1/gwm-cli/tree/main/changelogs) - one file per release, with the full notes.
+  - Pre-release notes (`-rc.N`, `-alpha.N`, `-beta.N`) live under `changelogs/pre-releases/<version>.md`.
+
+When you ship a feature mid-cycle, append a bullet to `[Unreleased]` in the root file:
+
+```md
+## [Unreleased]
+
+### Added
+
+- ✨ **TUI yank** (`y`) — copy the selected worktree's path to the system clipboard. ([#73](https://github.com/kbrdn1/gwm-cli/issues/73))
+```
+
+At release time (cut by a `🏗️ build: cut vX.Y.Z` commit), `[Unreleased]` is moved into a new `changelogs/<version>.md` and the root section is reset to empty. The CI `release.yml` job sources its release notes from `changelogs/<version>.md`, never from the root file - fixed by commit `4a76a3d` after an earlier release used a wrong source.
+
+## Pull-request checklist
+
+Every PR should tick:
+
+- Branch follows `<type>/#<issue>-<description>`
+- Commits follow Gitmoji + Conventional Commits, atomic
+- A failing test pinned the behaviour first, then went green - see [Testing → TDD is mandatory](/development/testing#tdd-is-mandatory). PRs that add or change behaviour without a companion test diff are sent back.
+- `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check` all green across the ubuntu / macos / windows matrix
+- CHANGELOG.md updated under `[Unreleased]` (or N/A for pure refactors with no observable change)
+- `gwm doctor` runs cleanly on a fresh worktree of the branch
+
+The PR template ([`.github/PULL_REQUEST_TEMPLATE.md`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/PULL_REQUEST_TEMPLATE.md)) carries the full version.
+
+### Merge strategy
+
+PRs land as a **regular merge commit** - never squash, never delete the source branch. The atomic commit history is the artefact; squashing it away loses the per-concern trail the Conventional Commits format exists to preserve.
+
+## History
+
+gwm started as a Rust rewrite of `tools/worktree-manager.sh` - a bash script tied to one team's Laravel stack and one incident history (the `.env`-pointing-at-AWS-RDS incident behind [Regex guards](/configuration/guards#the-origin-story)). The Rust version keeps the lessons, makes them configurable per repo, and ships as a single binary so it works in every repo without per-project shell-script copies.
+
+The bash heritage is still visible in places - the `✓ / ! / ✗` sigils in bootstrap and doctor reports, the kebab-case slug normalisation, the no-symlink invariants on `vendor/` and `node_modules/` - all carried over from the original script. The Rust rewrite added the TUI, the configurability surface (`.gwm.toml`), the `when:` predicate grammar, the GitHub linking, and the configurable launchers.
+
+## Related
+
+- [Testing](/development/testing) - what to run before pushing, sentinel-test convention
+- [Roadmap](/roadmap) - open items contributors can pick up
+- [`CONTRIBUTING.md`](https://github.com/kbrdn1/gwm-cli/blob/main/CONTRIBUTING.md) - the long-form source of truth

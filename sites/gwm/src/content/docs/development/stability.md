@@ -1,0 +1,150 @@
+---
+title: Stability & compatibility
+description: What gwm's 1.0 SemVer promise covers, what it deliberately leaves free to change, the MSRV policy, and how deprecations are run.
+sidebar:
+  order: 3
+---
+
+gwm follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+(`MAJOR.MINOR.PATCH`). This page is the explicit, published compatibility
+contract that backs the `1.0` line: it states which surfaces are covered by
+that promise (a breaking change there forces a **major** bump) and which are
+deliberately left free to change in a **minor** or **patch**.
+
+The rule of thumb: anything a _machine_ parses is covered; anything a _human_
+reads on screen is not.
+
+## Covered by SemVer (breaking change → major)
+
+These surfaces are part of the public contract. A backward-incompatible change - renaming or removing something, or changing its type or documented meaning - is a conscious **major** version decision.
+
+- **CLI surface** - the subcommands, their flags, and their documented
+  argument shapes. Adding a subcommand or an optional flag is additive
+  (minor); renaming or removing one is breaking.
+- **Exit codes** - the deterministic `0` / `1` / `2` contract documented per
+  command (e.g. `gwm doctor`'s severity-derived code). Scripts and CI jobs key
+  off these, so a code's meaning is frozen under this promise.
+- **`--format=json` output schemas** - the JSON payloads of `gwm list`,
+  `gwm doctor`, `gwm path`, and `gwm status --json`, documented under
+  [`docs/schema/`](https://github.com/kbrdn1/gwm-cli/tree/main/docs/schema)
+  and pinned by `tests/contract_tests.rs`.
+- **Daemon JSON-RPC 2.0 protocol** - the `list` / `doctor` / `path` /
+  `subscribe` methods, the `worktrees.changed` notification, and the standard
+  JSON-RPC error codes. A daemon `list` result is byte-identical to
+  `gwm list --format=json`, so the two share one `SCHEMA_VERSION`.
+- **`.gwm.toml` schema** - the top-level key set
+  (`forge`, `worktree`, `bootstrap`, `hooks`, `doctor`, `tui`, `theme`,
+  `git_tui`, `review`, `labels`, `milestones`, `branch_types`, `aliases`,
+  `gitmoji`, `issue_template`, `pr_template`, `exec`, `clean`). A renamed or
+  removed stable key is breaking; adding an optional one (as `forge` was in
+  #419) is not.
+
+### Frozen by test vs. covered by promise
+
+Three of these surfaces are _mechanically_ frozen - a rename fails CI before
+it can ship: the **JSON schemas**, the **daemon method/notification names**,
+and the **`.gwm.toml` section set**, all pinned by `tests/contract_tests.rs`
+against the single source of truth in
+[`src/contract.rs`](https://github.com/kbrdn1/gwm-cli/blob/main/src/contract.rs).
+
+The **CLI subcommands/flags** and the **exit-code meanings** are _not_ freeze-
+tested end-to-end (only `doctor`'s `exit_code` field rides the JSON schema);
+they are covered by this written SemVer promise and reviewed per PR. Treat
+them as just as binding - the absence of a guard test is not a licence to
+break them silently.
+
+### The machine-contract detail lives elsewhere
+
+The per-field tiers (which exact fields are **stable** vs **experimental**),
+the drift-detection mechanism (`SCHEMA_VERSION` on the daemon notification,
+`gwm --version` for one-shot CLI consumers), and the `additionalProperties`
+rules are documented in full in
+[`docs/schema/README.md`](https://github.com/kbrdn1/gwm-cli/blob/main/docs/schema/README.md).
+Notably, a few fields are **experimental** and may change without a major bump - e.g. the workspace-only `repo` field on a `list` row and the top-level
+`repo` on `status --json`. When in doubt about a specific field, that tiers
+table is authoritative.
+
+## NOT covered by SemVer (may change in minor/patch)
+
+These are free to change without a major bump. Do not build automation on top
+of them.
+
+- **TUI layout & colours** - pane arrangement, widget placement, the theme /
+  colour scheme, and any visual detail of the ratatui interface. Scripting
+  against the rendered TUI is unsupported.
+- **Human-readable strings** - log lines, status-bar messages, help blurbs,
+  the human (non-`--format=json`) output of any command. Parse the JSON
+  surface instead; the prose is allowed to be reworded at any time.
+- **Internal Rust API** - the `gwm-cli` crate publishes a `[lib]` target
+  (named `gwm`) alongside the binary, but **only as a byproduct**: the binary
+  and the `tests/` integration suite share one module tree, and Rust
+  integration tests can reach it only through a `pub` lib. That surface (~460
+  `pub` items across ~33 modules) is an internal test seam, **not** a public
+  API - it is `#![doc(hidden)]` (nothing is advertised on docs.rs) and carries
+  **no SemVer guarantee**. Do not `cargo add gwm-cli` to depend on `gwm::*`;
+  those items may change in any release. (Decision recorded for [#342]: the
+  library API is _disclaimed_, not gated with `cargo-semver-checks` - owning
+  ~460 items as a frozen contract would trip a major bump on every routine
+  internal refactor, which is the wrong trade-off for a seam that exists to be
+  tested, not consumed.)
+
+[#342]: https://github.com/kbrdn1/gwm-cli/issues/342
+
+## MSRV policy
+
+The Minimum Supported Rust Version is declared as `rust-version` in
+[`Cargo.toml`](https://github.com/kbrdn1/gwm-cli/blob/main/Cargo.toml)
+(currently **1.95**) - the floor the crate is expected to compile against.
+
+Two CI jobs hold that floor. The clippy job runs on the _stable_ toolchain with
+`-D warnings`, and `clippy::incompatible_msrv` is warn-by-default, so an
+accidental use of a **std API** newer than the declared floor fails CI. The
+`msrv` job installs the declared toolchain itself (read out of `Cargo.toml`,
+never hardcoded) and runs `cargo check --all-targets --locked`, which covers
+what clippy cannot: a newer **language / edition** feature, or a **dependency**
+whose own floor is higher than ours. `--locked` matters twice over. Cargo's
+`rust-version` gate is evaluated at _resolve_ time against the committed
+lockfile, so a dependency that **declares** a higher floor fails before
+anything is built; and the compile that follows is the only thing that catches
+a dependency which declares **nothing at all**.
+
+That last case is not hypothetical, and it is why this section no longer
+recommends reading the floor out of `cargo metadata`. Until
+[#491](https://github.com/kbrdn1/gwm-cli/issues/491) the declared floor read
+`1.86` with nothing enforcing it. Metadata put the real floor at `1.88` (the
+ratatui 0.30 stack, `time 0.3.47`); compiling put it at `1.95`, because
+`libsqlite3-sys 0.38.1` (a normal dependency, via `rusqlite` with `bundled`)
+declares no `rust-version` and its build script uses `cfg_select!`, stable
+since 1.95.0. A crate that declares nothing is invisible to every
+metadata-based check, so the floor is whatever a build says it is.
+
+In practice an MSRV bump rides a **minor** release, not a major one - it has
+historically been driven by a dependency raising its own floor (the `1.86` bump
+came in with `tui-term` / `portable-pty` when the PTY overlay landed, the
+`1.95` bump with `rusqlite`'s bundled `libsqlite3-sys`), and is treated as a
+routine toolchain update rather than a breaking change to the public contract.
+Bumps are called out in the changelog so packagers are not surprised.
+
+## Deprecation process
+
+When a covered surface has to change in a backward-incompatible way:
+
+1. **Announce** - document the deprecation in the changelog under the release
+   that introduces it, and (where the surface supports it) emit a runtime
+   warning pointing at the replacement.
+2. **Keep the old path working** through the rest of the current major line - a deprecation is a heads-up, not an immediate removal.
+3. **Remove only on a major bump**, with the removal listed in that release's
+   notes alongside the migration path.
+
+Additive changes (a new subcommand, an optional flag, a new optional JSON
+field, a new daemon method) are **not** deprecations - they ship in a minor
+release and require no warning, because existing consumers keep working
+unchanged (consumers MUST ignore unknown JSON fields).
+
+## See also
+
+- [`docs/schema/README.md`](https://github.com/kbrdn1/gwm-cli/blob/main/docs/schema/README.md) - the per-field stable/experimental tiers and the drift-detection contract.
+- [`src/contract.rs`](https://github.com/kbrdn1/gwm-cli/blob/main/src/contract.rs) - the single source of truth for `SCHEMA_VERSION` and the frozen
+  method/section sets.
+- [Contributing → Releases](/development/contributing) and
+  [`CONTRIBUTING.md`](https://github.com/kbrdn1/gwm-cli/blob/main/CONTRIBUTING.md) - the SemVer release process and tagging workflow.

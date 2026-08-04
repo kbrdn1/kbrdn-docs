@@ -1,0 +1,162 @@
+---
+title: Install
+description: Install gwm from crates.io, source, Homebrew, prebuilt binaries, or a Nix flake.
+sidebar:
+  order: 1
+---
+
+gwm ships a single self-contained binary. Pick whichever channel fits your workflow - they all produce the same `gwm` executable.
+
+## From source
+
+```bash
+git clone https://github.com/kbrdn1/gwm-cli.git
+cd gwm-cli
+cargo install --path .
+```
+
+The binary lands in `~/.cargo/bin/gwm`. Requires a recent stable Rust toolchain - MSRV is **1.95**.
+
+## From crates.io
+
+```bash
+cargo install gwm-cli
+```
+
+The crate is published as [`gwm-cli`](https://crates.io/crates/gwm-cli) - the bare `gwm` name on crates.io is an unrelated third-party project - and still installs the `gwm` command. This compiles from the published source (same toolchain / MSRV requirement as _from source_ above); use _via cargo-binstall_ below to skip the `git2` / vendored-libgit2 build entirely.
+
+## Via cargo-binstall
+
+```bash
+cargo binstall gwm-cli
+```
+
+[`cargo-binstall`](https://github.com/cargo-bins/cargo-binstall) reads the `[package.metadata.binstall]` block in `gwm`'s `Cargo.toml`, downloads the prebuilt archive matching your host triple from the GitHub Release, extracts it, and drops the binary in `~/.cargo/bin/`. No Rust toolchain or `git2`/libgit2 C compile is needed at install time - much faster than `cargo install` on first run.
+
+The metadata points at the same artefacts the release workflow publishes (`gwm-v{version}-{target}.tar.gz`, or `.zip` on Windows), so any tagged release is binstall-able. `tests/binstall_metadata_tests.rs` pins the block against drift.
+
+## Via Homebrew (macOS)
+
+```bash
+brew tap kbrdn1/tap
+brew install gwm
+```
+
+The formula lives at [`kbrdn1/homebrew-tap`](https://github.com/kbrdn1/homebrew-tap) (`Formula/gwm.rb`) and is refreshed automatically on every **stable** release of `gwm-cli` by the `homebrew-tap-update` job in [`release.yml`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/workflows/release.yml). The canonical formula template is at [`packaging/homebrew/gwm.rb.template`](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/homebrew/gwm.rb.template). Pre-release tags (`-rc.N`, `-alpha.N`, `-beta.N`) are filtered out, so `brew install gwm` always points at a stable build.
+
+See [Integrations → Homebrew & Nix](/integrations/homebrew-nix) for the tap-update pipeline and the flake outputs in detail.
+
+## Via Scoop (Windows)
+
+```powershell
+scoop bucket add gwm https://github.com/kbrdn1/scoop-gwm
+scoop install gwm
+```
+
+The manifest lives at [`kbrdn1/scoop-gwm`](https://github.com/kbrdn1/scoop-gwm) (`bucket/gwm.json`) and is refreshed automatically on every **stable** release by the `scoop-bucket-update` job in [`release.yml`](https://github.com/kbrdn1/gwm-cli/blob/main/.github/workflows/release.yml) - the Windows counterpart of the Homebrew tap. The canonical template is at [`packaging/scoop/gwm.json.template`](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/scoop/gwm.json.template). Pre-release tags are filtered out, so `scoop install gwm` always points at a stable build. `scoop update gwm` picks up each new version once the release job pushes the refreshed `bucket/gwm.json` - the manifest's `autoupdate` block is maintainer-side metadata (consumed by Scoop's `checkver`/excavator tooling to regenerate the manifest), not what drives client-side updates.
+
+## Prebuilt binaries
+
+Releases at <https://github.com/kbrdn1/gwm-cli/releases> ship signed binaries with `.sha256` sidecars for:
+
+- Linux (`x86_64`, `aarch64`)
+- macOS (Intel, Apple Silicon)
+- Windows (`x86_64`)
+
+Drop the binary on your `$PATH`, mark it executable, and you're done.
+
+## Debian / Ubuntu (`.deb`)
+
+Every stable release ships `.deb` packages for `x86_64` (`amd64`) and `aarch64` (`arm64`), built by [`cargo-deb`](https://github.com/kornelski/cargo-deb) and attached to the [release](https://github.com/kbrdn1/gwm-cli/releases). Download the one for your architecture and install it:
+
+```bash
+# x86_64 — grab gwm-cli_<version>-1_amd64.deb from the releases page, then:
+sudo apt install ./gwm-cli_<version>-1_amd64.deb
+# aarch64 → gwm-cli_<version>-1_arm64.deb
+```
+
+Use `apt install ./…` (note the leading `./`) rather than `dpkg -i`: the package `Depends` on `git`, and `apt` pulls it automatically, whereas `dpkg -i` does not resolve dependencies and fails on a system that doesn't already have git.
+
+The package is named **`gwm-cli`** and declares `Conflicts: gwm` - Debian ships an unrelated `gwm` X11 window manager that also owns `/usr/bin/gwm`, so the two can't be installed together (remove the window manager first if you happen to have it). The installed command is still `gwm`. The binary links only glibc dynamically (libgit2 and zlib are statically linked), and gwm shells out to the `git` binary at runtime - so `Depends: libc6 (>= 2.34), git`. The packages are built on `ubuntu-latest`, so they declare a glibc floor and install cleanly only on distributions at or above it (RHEL 8 and Ubuntu 20.04 are too old; use `cargo install` there). Each `.deb` has a `.sha256` sidecar for verification.
+
+## Fedora / RHEL / openSUSE (`.rpm`)
+
+Likewise, `.rpm` packages for `x86_64` and `aarch64` are built by [`cargo-generate-rpm`](https://github.com/cat-in-136/cargo-generate-rpm) and attached to every stable release:
+
+```bash
+# Fedora / RHEL (x86_64)
+sudo dnf install ./gwm-cli-<version>-1.x86_64.rpm
+# aarch64 → gwm-cli-<version>-1.aarch64.rpm
+# openSUSE:
+sudo zypper install ./gwm-cli-<version>-1.x86_64.rpm
+```
+
+Install via `dnf`/`zypper` (not `rpm -i`): the package `Requires: git`, and those resolve it automatically, whereas `rpm -i` does not pull dependencies and fails without git already installed.
+
+## Arch Linux (AUR)
+
+Arch and derivatives (Manjaro, EndeavourOS, …) install from the AUR via any helper:
+
+```bash
+yay -S gwm-cli-bin
+# or: paru -S gwm-cli-bin
+```
+
+> [!WARNING]
+> **`gwm-cli-bin` is maintained by a community contributor, not by this project.** It was submitted to the AUR independently, so gwm's release pipeline has no push rights on it and cannot refresh it. Its version can therefore lag behind a release: at the time of writing it sits at **1.5.0** while the current release is **1.6.0**.
+>
+> Nothing suggests bad faith - the package is correct in shape, points at this repository, and declares the right dependencies. But it is a build produced by a third party, which is worth knowing before installing. For the current version on Arch, use `cargo binstall gwm-cli` or a prebuilt tarball. Tracked in [#430](https://github.com/kbrdn1/gwm-cli/issues/430).
+
+`gwm-cli-bin` is a **prebuilt-binary** package: it downloads the `x86_64` or `aarch64` linux-gnu tarball from the matching GitHub Release, verifies its `sha256`, and installs the `gwm` binary, the MIT license, and shell completions for bash/zsh/fish - no compilation, no Rust toolchain. It `provides`/`conflicts` both `gwm-cli` and `gwm` (it owns `/usr/bin/gwm`), so it won't co-install with a source build of the same tool.
+
+This repository briefly shipped an `aur-publish` job meant to push a stable build on every release. It was removed: for the ownership reason above it could never push, so all it did was fail silently on every tag. The [`PKGBUILD` template](https://github.com/kbrdn1/gwm-cli/blob/main/packaging/aur/PKGBUILD.template) and its render script are still maintained and tested, and the AUR is now fed by hand like Nixpkgs and aqua.
+
+## Via Nix flake
+
+A `flake.nix` lives at the repo root. With flakes enabled:
+
+```bash
+# one-shot run, no clone
+nix run github:kbrdn1/gwm-cli -- list
+
+# install into your profile
+nix profile install github:kbrdn1/gwm-cli
+
+# in a NixOS / nix-darwin config, via the overlay
+nixpkgs.overlays = [ inputs.gwm.overlays.default ];
+environment.systemPackages = [ pkgs.gwm ];
+```
+
+The package is built via `rustPlatform.buildRustPackage` and pins `Cargo.lock`; `git2`'s `vendored-libgit2` feature keeps the closure free of system libgit2.
+
+## Via aqua
+
+[aqua](https://aquaproj.github.io/) is a declarative, version-pinned CLI version manager. gwm lives in the **standard registry**, so no custom registry wiring is needed:
+
+```bash
+# add the package to aqua.yaml and install it in one step
+aqua g -i kbrdn1/gwm-cli
+
+# or declare it yourself, then install
+#   packages:
+#     - name: kbrdn1/gwm-cli@v1.6.0
+aqua i
+```
+
+aqua downloads the prebuilt binary for your platform from the matching GitHub Release and verifies its `sha256` against the `.sha256` sidecar published alongside it. No compilation, no Rust toolchain. Linux, macOS and Windows are all covered (Intel and ARM); Windows on ARM runs the x64 build under emulation.
+
+The package requires **standard registry `v4.539.0` or newer**: that is the release that first shipped it. If `aqua g -i kbrdn1/gwm-cli` reports an unknown package, your `aqua.yaml` is pinned to an older registry `ref`; bump it.
+
+## Verify the install
+
+```bash
+gwm --version
+gwm doctor                     # run a battery of sanity checks
+```
+
+If `gwm doctor` returns non-zero, jump to [`gwm doctor`](/integrations/doctor) for the per-check remediation hints.
+
+## Next
+
+- [Create your first worktree](/getting-started/first-worktree)
+- [Wire up `gcd` for one-line `cd` into a worktree](/getting-started/shell-init)

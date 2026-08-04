@@ -1,0 +1,128 @@
+---
+title: Premier worktree
+description: Pas à pas de `gwm create` - nommage de branche, organisation des chemins et pipeline de bootstrap.
+sidebar:
+  order: 2
+---
+
+Cette page détaille de bout en bout ce que fait `gwm create` sur un dépôt vierge : où le worktree atterrit sur le disque, comment la branche est nommée et ce que le pipeline de bootstrap exécute (le cas échéant).
+
+![Tour de 30 secondes : gwm init → gwm create → gwm](../../../../assets/captures/first-worktree.gif)
+
+## La version en une ligne
+
+```bash
+cd /path/to/your/repo
+gwm create feat 42 user-authentication
+```
+
+Cela crée :
+
+- Un worktree dans `~/cc-worktree/<repo>/feat-42-user-authentication`
+- Une branche nommée `feat/#42-user-authentication`
+- Une entrée de config git `branch.feat/#42-user-authentication.gwm-base`, qui ancre la [chaîne de résolution de la base de review](/fr/tui/launchers#résolution-de-la-base) sur le tronc depuis lequel vous avez branché
+
+La forme de `gwm create` est `gwm create <type> <issue> <description>`. Les valeurs de `<type>` prises en charge sont documentées dans [Configuration → schéma `.gwm.toml`](/fr/configuration/gwm-toml#types-de-branche-supportés) - `feat`, `fix`, `hotfix`, `docs`, `test`, `refactor`, `chore`, `perf`, `ci`, `build` par défaut.
+
+## Conventions de branche et de chemin
+
+Les valeurs par défaut - et la manière de les surcharger - sont pilotées par TOML :
+
+```toml
+[worktree]
+base           = "{home}/cc-worktree/{repo}"
+path_pattern   = "{type}-{issue}-{desc}"
+branch_pattern = "{type}/#{issue}-{desc}"
+```
+
+Placeholders disponibles : `{home}`, `{repo}` (le **nom** du dépôt), `{repo_path}` (le répertoire de travail absolu du dépôt principal), `{repo_parent}` (son répertoire parent), `{type}`, `{issue}`, `{desc}`. Le tilde (`~/…`) est également développé. `{repo_path}` / `{repo_parent}` permettent d'exprimer `base` relativement au dépôt sur le disque - par ex. `base = "{repo_parent}/worktrees"` garde les worktrees dans un répertoire frère, à côté du checkout principal. Surchargez ce que vous voulez dans votre `.gwm.toml` pour correspondre à la convention de branche de votre équipe - voir [Configuration → schéma `.gwm.toml`](/fr/configuration/gwm-toml).
+
+Le slot `{desc}` est **normalisé en kebab-case** par gwm - `"User Authentication"`, `"user authentication"` et `"User_Authentication"` deviennent tous `user-authentication` sur le disque et dans le nom de branche. Cela rend la complétion shell et la recherche fuzzy déterministes.
+
+## Le prompt de confiance (uniquement au premier lancement)
+
+Si le dépôt a un `.gwm.toml` déclarant une surface de bootstrap (copies, guards, no-symlinks ou commandes), le **premier** `gwm create` sur ce dépôt ouvre un prompt de confiance unique avant de toucher quoi que ce soit :
+
+```
+gwm: this repo's .gwm.toml has not been trusted yet.
+     path   : /path/to/repo/.gwm.toml
+     origin : git@github.com:foo/bar.git
+     hash   : 3a4f9c2bdeadbeef...
+     bootstrap surface:
+       - copy   .env.testing → .env.testing
+       - run    composer install (composer install --no-interaction)
+
+Trust this .gwm.toml? [y/N/show]:
+```
+
+`y` enregistre l'approbation dans `~/.config/gwm/trust.toml` et poursuit, `N` annule (le worktree n'est **pas** créé - aucun état orphelin), `show` réimprime le `.gwm.toml` brut pour inspection. Les lancements suivants sur le même dépôt passent silencieusement jusqu'à ce que `.gwm.toml` change (toute modification d'un octet redéclenche le prompt).
+
+Pour les runners CI et autres contextes non interactifs, contournez avec `--allow-bootstrap` ou `GWM_ALLOW_BOOTSTRAP=1`. Le contournement n'enregistre aucune entrée, de sorte qu'un lancement interactif ultérieur sur la même machine déclenche tout de même le prompt. Voir [Configuration → registre de confiance TOFU](/fr/configuration/trust-ledger) pour le modèle de menace complet et les commandes de gestion du registre (`gwm trust list / revoke / show`).
+
+## Le pipeline de bootstrap
+
+Si un `.gwm.toml` est présent à la racine du dépôt, `gwm create` exécute un corps de bootstrap immédiatement après le `git worktree add`. Ce corps est une séquence fixe d'étapes au niveau fichier :
+
+1. **Copies** - les règles `[[bootstrap.copy]]` dupliquent des fichiers du checkout principal vers le nouveau worktree (par ex. `.env.testing`, `.envrc`, secrets vendorisés).
+2. **Guards** - les règles `[[bootstrap.guard]]` examinent chaque fichier copié au regard de deny-lists regex. Une correspondance déclenche soit un `abort` (refus de créer le worktree), soit un `seed-from-example` (substitution d'un fallback connu comme valide). Le cas d'usage d'origine était le refus d'hériter d'un `.env` pointant vers AWS RDS.
+3. **Vérification no-symlink** - les règles `[[bootstrap.no_symlink]]` vérifient que les chemins listés (typiquement `vendor/`, `node_modules/`) ne sont **pas** des liens symboliques pointant vers le checkout principal, car un symlink égaré polluerait silencieusement la sortie de build du dépôt principal.
+4. **Fichiers de fallback** - les blocs `[bootstrap.fallback.*]` matérialisent un contenu inline lorsqu'un fichier source requis est manquant (le chemin `seed-from-example`).
+
+Le rapport de bootstrap s'imprime inline avec les sigles `✓` (succès), `!` (avertissement, non bloquant) ou `✗` (échec, bloque le worktree) par étape - même convention que `gwm doctor`. Un `✗` annule et le worktree est rollback.
+
+### Hooks de cycle de vie (`[hooks.*]`)
+
+Les commandes shell s'exécutent via le cycle de vie `[hooks.*]`, qui **encadre** le corps au niveau fichier ci-dessus. `gwm create` déclenche ces phases dans l'ordre :
+
+- `pre_create` - avant `git worktree add` (le worktree n'existe pas encore).
+- `pre_bootstrap` → corps au niveau fichier → `post_bootstrap` - entourant les étapes de copies/guards/no-symlink/fallback.
+- `post_create` - en dernier, une fois le worktree et son bootstrap en place.
+
+(`gwm remove` exécute les deux phases restantes, `pre_remove` et `post_remove`.) Chaque entrée est une table `[[hooks.<phase>]]` avec `name`, `run`, un [prédicat `when:`](/fr/configuration/when-predicates) optionnel (`file_exists:`, `cmd_exists:`, `env_set:`, …), une map `env` optionnelle et une politique `on_fail` - `abort` (par défaut, bloque et rollback), `warn` (signale et continue) ou `ignore` (continue silencieusement) :
+
+```toml
+[[hooks.post_create]]
+name    = "install deps"
+run     = "bun install"
+when    = "file_exists:package.json"
+on_fail = "warn"
+```
+
+Le mécanisme historique `[[bootstrap.command]]` fonctionne toujours - ses étapes sont repliées dans `post_create` - mais il est marqué **historique ; préférez `[[hooks.post_create]]`**, qui vous donne l'ensemble complet des phases et le contrôle `on_fail` par étape.
+
+Sautez le corps de bootstrap (copies/guards/no-symlink/fallback **et** les étapes historiques `[[bootstrap.command]]`) avec `--no-bootstrap`. Notez que cela ne saute **pas** les hooks de cycle de vie natifs `pre_create` / `post_create` - ceux-ci se déclenchent quand même :
+
+```bash
+gwm create feat 42 foo --no-bootstrap
+```
+
+Pour sauter des hooks de cycle de vie, passez `--skip-hooks` avec une liste de phases séparées par des virgules :
+
+```bash
+gwm create feat 42 foo --skip-hooks pre_create,post_create
+```
+
+Pour rattacher le nouveau worktree à une branche locale **existante** du même nom (au lieu d'échouer sur la tête obsolète), passez `--reuse-branch` :
+
+```bash
+gwm create feat 42 foo --reuse-branch
+```
+
+Relancez-le plus tard (par ex. après avoir édité `.gwm.toml`) sans recréer le worktree :
+
+```bash
+gwm bootstrap                  # sur le worktree du CWD
+gwm bootstrap auth             # ...ou sur un nom matché de manière fuzzy
+```
+
+## Ce qui est stocké où
+
+- Le worktree vit dans `<base>/<path_pattern>` - en dehors du checkout principal par défaut, de sorte qu'il survit à un `git clean -fdx` et aux tempêtes de réindexation de l'IDE sur le tree principal.
+- La branche est une branche locale normale - visible dans `git branch`, ignorée par aucune config spéciale.
+- `branch.<name>.gwm-base` enregistre le tronc depuis lequel cette branche a été coupée. Il est utilisé par le [launcher de review](/fr/tui/launchers#résolution-de-la-base) pour calculer `git diff base..head` même après que l'upstream de la branche a disparu.
+- Si vous avez utilisé la convention d'auto-link (`<type>/#<N>-<slug>`), le lien vers l'issue GitHub est dérivé à la volée - aucune config supplémentaire nécessaire. Voir [Intégrations → liaison issue / PR GitHub](/fr/integrations/github-linking).
+
+## Suite
+
+- [Configurer `gcd`](/fr/getting-started/shell-init) pour pouvoir `cd` dans le nouveau worktree en une frappe
+- [Tour du TUI](/fr/tui) - un `gwm` nu ouvre désormais sur votre worktree tout neuf
