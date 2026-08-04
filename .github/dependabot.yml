@@ -1,10 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: 'npm'
-    directories:
-      - '/'
-      - '/packages/ds-shared'
-      - '/sites/gwm'
+    # `/` seul : l'entrée racine résout déjà les workspaces bun, donc lister
+    # aussi les packages sortait chaque bump en double (cf. #36 / #37).
+    directory: '/'
     target-branch: 'dev'
     schedule:
       interval: 'weekly'
@@ -18,6 +17,13 @@ updates:
     commit-message:
       prefix: '⬆️ chore(deps)'
       include: 'scope'
+    ignore:
+      # TypeScript 7 (port natif) casse `astro check` : @astrojs/language-server
+      # plante sur `AstroCheck.getTsconfig` → `Cannot read properties of
+      # undefined (reading 'fileExists')`. À retirer quand le language-server
+      # supportera l'API TS 7 (cf. #39).
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
     groups:
       astro-stack:
         patterns:
