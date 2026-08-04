@@ -1,0 +1,113 @@
+---
+// Sommaire calqué sur celui des articles du portfolio
+// (app/components/blog/Toc.vue) : en-tête « SOMMAIRE » en mono à gauche,
+// pourcentage de lecture en orange à droite, filet de progression d'1px sous
+// l'en-tête. Starlight n'a pas de notion de progression — c'est le script en bas
+// qui l'ajoute, sur le défilement réel de la page.
+//
+// La liste elle-même reste celle de Starlight : elle porte le repérage du titre
+// courant via son élément <starlight-toc>, qu'on ne veut pas réimplémenter.
+import Default from '@astrojs/starlight/components/TableOfContents.astro';
+
+const label = Astro.locals.t('tableOfContents.onThisPage');
+---
+
+<div class="kbrdn-toc">
+  <div class="kbrdn-toc__head">
+    <span class="kbrdn-toc__label">{label}</span>
+    <span class="kbrdn-toc__pct" data-toc-pct>0%</span>
+  </div>
+  <div class="kbrdn-toc__rail">
+    <div class="kbrdn-toc__fill" data-toc-fill></div>
+  </div>
+  <Default />
+</div>
+
+<style>
+  /* Le sommaire de Starlight rend son propre <h2> ; il est remplacé par
+     l'en-tête ci-dessus, qui porte en plus le pourcentage. */
+  .kbrdn-toc :global(h2#starlight__on-this-page) {
+    display: none;
+  }
+
+  .kbrdn-toc__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .kbrdn-toc__label {
+    font-family: var(--sl-font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+
+  .kbrdn-toc__pct {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--sl-color-accent);
+  }
+
+  .kbrdn-toc__rail {
+    position: relative;
+    height: 1px;
+    margin: 0.5rem 0 0.75rem;
+    overflow: hidden;
+    background-color: var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  .kbrdn-toc__fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 0;
+    background-color: var(--sl-color-accent);
+    transition: width 300ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kbrdn-toc__fill {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Progression de lecture = part de la page déjà défilée. Recalculée sur
+  // scroll et resize, dans un rAF pour ne pas relire la mise en page à chaque
+  // événement.
+  const pct = document.querySelector<HTMLElement>('[data-toc-pct]');
+  const fill = document.querySelector<HTMLElement>('[data-toc-fill]');
+
+  if (pct && fill) {
+    let queued = false;
+
+    const update = () => {
+      queued = false;
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - doc.clientHeight;
+      // Page plus courte que la fenêtre : elle est lue de bout en bout, et
+      // diviser par zéro donnerait NaN%.
+      const ratio = scrollable > 0 ? doc.scrollTop / scrollable : 1;
+      const value = Math.round(Math.min(Math.max(ratio, 0), 1) * 100);
+      pct.textContent = `${value}%`;
+      fill.style.width = `${value}%`;
+    };
+
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(update);
+    };
+
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    update();
+  }
+</script>

@@ -1,0 +1,212 @@
+---
+// Sommaire replié, calqué sur celui des articles du portfolio
+// (app/components/blog/MobileToc.vue) : une barre fixée EN BAS de la fenêtre,
+// pas sous la barre du haut. De haut en bas quand elle est ouverte : la liste
+// des titres, puis un filet de progression de 2px, puis la barre toujours
+// visible — libellé mono, titre courant en orange, pourcentage, chevron.
+//
+// Le composant de Starlight est enveloppé, pas réécrit : c'est lui qui porte
+// l'élément `<mobile-starlight-toc>`, donc le repérage du titre courant par
+// IntersectionObserver, la fermeture au clic sur un lien, au clic dehors et à
+// Échap. Le réimplémenter perdrait tout ça. On n'ajoute que ce qu'il n'a pas :
+// le filet de progression et le pourcentage.
+import Default from '@astrojs/starlight/components/MobileTableOfContents.astro';
+---
+
+<div class="kbrdn-mtoc">
+  <div class="kbrdn-mtoc__rail" aria-hidden="true">
+    <span class="kbrdn-mtoc__fill" data-mtoc-fill></span>
+  </div>
+  <Default />
+  <span class="kbrdn-mtoc__pct" data-mtoc-pct aria-hidden="true">0%</span>
+</div>
+
+<style>
+  /* Bandeau fixé en bas, borné à la coquille comme le reste de la page. */
+  .kbrdn-mtoc {
+    position: fixed;
+    z-index: var(--sl-z-index-toc, 7);
+    inset-block-end: 0;
+    inset-inline: var(--kbrdn-gutter, 0px);
+    background-color: color-mix(in srgb, var(--sl-color-bg) 95%, transparent);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+
+  /* Le filet de progression court sur toute la largeur, au-dessus de la barre. */
+  .kbrdn-mtoc__rail {
+    position: relative;
+    height: 2px;
+    background-color: var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+  .kbrdn-mtoc__fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 0;
+    background-color: var(--sl-color-accent);
+    transition: width 300ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kbrdn-mtoc__fill {
+      transition: none;
+    }
+  }
+
+  /* Le pourcentage se pose à droite de la barre, juste avant le chevron : il
+     n'est pas dans le balisage de Starlight, on ne peut pas l'ordonner dedans. */
+  .kbrdn-mtoc__pct {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-end: 2.5rem;
+    height: var(--sl-mobile-toc-height, 3rem);
+    display: flex;
+    align-items: center;
+    font-family: var(--sl-font-mono);
+    font-size: 0.625rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--sl-color-accent);
+    pointer-events: none;
+  }
+
+  /* ── Reprise du balisage de Starlight ────────────────────────────
+     Sa barre est `fixed` sous la barre du haut : elle redevient un simple bloc
+     dans notre bandeau. */
+  .kbrdn-mtoc :global(mobile-starlight-toc nav) {
+    position: static;
+    border-top: 0;
+    background-color: transparent;
+  }
+
+  /* La liste s'ouvre VERS LE HAUT : dans le DOM le résumé précède la liste,
+     on inverse l'axe plutôt que de déplacer les nœuds. */
+  .kbrdn-mtoc :global(#starlight__mobile-toc) {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .kbrdn-mtoc :global(summary) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: var(--sl-mobile-toc-height, 3rem);
+    border-bottom: 0;
+    /* Réserve pour le pourcentage ET le chevron, tous deux posés en absolu à
+       droite : dans le flux ils se chevauchaient de 11px. */
+    padding-inline: 1rem 5rem;
+  }
+
+  /* La pastille bordée de Starlight disparaît : `display: contents` sort ses
+     deux enfants dans le flex du résumé, ce qui permet de renvoyer le chevron
+     à droite comme au portfolio. */
+  .kbrdn-mtoc :global(summary .toggle) {
+    display: contents;
+  }
+  .kbrdn-mtoc :global(summary .toggle) {
+    font-family: var(--sl-font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+  .kbrdn-mtoc :global(summary .caret) {
+    position: absolute;
+    inset-inline-end: 1rem;
+    color: var(--sl-color-gray-3);
+    transform: rotateZ(-90deg);
+    transition: transform 200ms;
+  }
+  .kbrdn-mtoc :global(details[open] .caret) {
+    transform: rotateZ(90deg);
+  }
+  .kbrdn-mtoc :global(summary .display-current) {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    color: var(--sl-color-accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Liste dépliée : elle pousse vers le haut, plafonnée et défilante. */
+  .kbrdn-mtoc :global(.dropdown) {
+    margin-top: 0;
+    max-height: 16rem;
+    border: 0;
+    border-bottom: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    padding: 0.5rem 0;
+    background-color: transparent;
+    box-shadow: none;
+  }
+  /* Starlight écarte le libellé de sa coche de fin par `space-between`, ce qui
+     rejetait le texte à droite de la ligne. Le repère passant à gauche, les
+     libellés se lisent alignés en colonne. */
+  .kbrdn-mtoc :global(.dropdown a) {
+    border-top: 0;
+    justify-content: flex-start;
+    gap: 0;
+    padding-block: 0.375rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-3);
+  }
+  /* Le titre courant : chevron plein à gauche et fond d'accent dilué, à la
+     place de la coche que Starlight pose à droite. */
+  .kbrdn-mtoc :global(.dropdown a[aria-current='true']) {
+    color: var(--sl-color-accent);
+    background-color: color-mix(in srgb, var(--sl-color-accent) 10%, transparent);
+  }
+  .kbrdn-mtoc :global(.dropdown a[aria-current='true']::after) {
+    display: none;
+  }
+  /* Le repère est réservé sur TOUTES les lignes, transparent quand la ligne
+     n'est pas courante : sinon le libellé actif se décalait seul vers la
+     droite et la colonne perdait son alignement (le portfolio pose la même
+     cale vide, `<span class="shrink-0 mr-1.5 w-2" />`). */
+  .kbrdn-mtoc :global(.dropdown a::before) {
+    content: '▸';
+    flex-shrink: 0;
+    margin-inline-end: 0.375rem;
+    color: transparent;
+  }
+  .kbrdn-mtoc :global(.dropdown a[aria-current='true']::before) {
+    color: var(--sl-color-accent);
+  }
+</style>
+
+<script>
+  // Même progression que le sommaire de bureau : la part de la page déjà
+  // défilée, recalculée dans un rAF pour ne pas relire la mise en page à
+  // chaque événement.
+  const pct = document.querySelector<HTMLElement>('[data-mtoc-pct]');
+  const fill = document.querySelector<HTMLElement>('[data-mtoc-fill]');
+
+  if (pct && fill) {
+    let queued = false;
+
+    const update = () => {
+      queued = false;
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - doc.clientHeight;
+      const ratio = scrollable > 0 ? doc.scrollTop / scrollable : 1;
+      const value = Math.round(Math.min(Math.max(ratio, 0), 1) * 100);
+      pct.textContent = `${value}%`;
+      fill.style.width = `${value}%`;
+    };
+
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(update);
+    };
+
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    update();
+  }
+</script>

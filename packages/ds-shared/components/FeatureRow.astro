@@ -1,0 +1,77 @@
+---
+// Ligne de feature numérotée : un grand numéro gris à gauche, le titre et le
+// texte au centre. Reprend la façon dont le portfolio pose ses listes (numéro
+// en mono, titre court, corps gris) sans carte ni ombre.
+interface Props {
+  /** Numéro affiché à gauche, déjà formaté (« 01 »). */
+  n: string;
+  title: string;
+}
+
+const { n, title } = Astro.props;
+---
+
+<div class="kbrdn-feature">
+  <span class="kbrdn-feature__n" aria-hidden="true">{n}</span>
+  <div class="kbrdn-feature__body">
+    <h3 class="kbrdn-feature__title">{title}</h3>
+    <div class="kbrdn-feature__text"><slot /></div>
+  </div>
+</div>
+
+<style>
+  .kbrdn-feature {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+  }
+  .kbrdn-feature:first-of-type {
+    border-top: none;
+  }
+
+  .kbrdn-feature__n {
+    font-family: var(--sl-font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--sl-color-gray-5);
+    flex-shrink: 0;
+    width: 2.5rem;
+  }
+
+  .kbrdn-feature__body {
+    min-width: 0;
+  }
+
+  .kbrdn-feature__title {
+    margin: 0 0 0.375rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sl-color-white);
+    border: none;
+  }
+
+  .kbrdn-feature__text {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: var(--sl-color-gray-2);
+  }
+  /* Pas de largeur propre : c'est la section qui borne (`pad="column"`), et
+     prose comme captures partagent alors exactement les mêmes deux bords. */
+  .kbrdn-feature__text :global(p) {
+    margin: 0;
+  }
+  .kbrdn-feature__text :global(code) {
+    font-family: var(--sl-font-mono);
+    font-size: 0.875em;
+    padding: 0.125rem 0.375rem;
+    background-color: var(--sl-color-gray-6);
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    color: var(--sl-color-accent-high);
+  }
+</style>
