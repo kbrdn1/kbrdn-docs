@@ -1,13 +1,45 @@
 /* gwm — override produit par-dessus le thème partagé (@kbrdn/ds-shared).
-   Accent vert, clin d'œil au branding git / terminal. */
-:root {
-  --sl-color-accent-low: #1a2e05;
-  --sl-color-accent: #4d7c0f;
-  --sl-color-accent-high: #d9f99d;
+   gwm adopte l'identité « Claude Dark » du portfolio (orange Claude) telle quelle :
+   aucun accent spécifique au produit n'est défini ici pour l'instant.
+
+   Ce qui suit ne concerne que la page d'accueil : les captures du binaire y
+   portent la démonstration, comme la maquette de herdr.dev porte la sienne — à
+   la différence près qu'ici ce sont de vraies captures, pas une réplique DOM
+   qui dérive dès la version suivante. */
+
+/* Grille de captures — deux colonnes au-delà de 45rem, une seule en dessous.
+   Les cadres portent déjà leurs filets, la grille ne fait qu'espacer. */
+.gwm-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+@media (min-width: 45rem) {
+  .gwm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-:root[data-theme='light'] {
-  --sl-color-accent-low: #d9f99d;
-  --sl-color-accent: #3f6212;
-  --sl-color-accent-high: #1a2e05;
+/* Ligne d'état sous le bloc d'installation : mono, gris, séparateurs médians.
+   C'est le pendant du « macOS · Linux · Windows beta · Apache 2.0 » de herdr —
+   des faits vérifiables plutôt qu'un compteur d'étoiles. */
+.sl-markdown-content p.gwm-meta {
+  margin: 0.75rem 0 0;
+  font-family: var(--sl-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--sl-color-gray-3);
+}
+.sl-markdown-content p.gwm-meta a {
+  color: var(--sl-color-gray-3);
+}
+.sl-markdown-content p.gwm-meta a:hover {
+  color: var(--sl-color-accent);
+}
+
+/* Une capture posée dans le corps d'une ligne de feature : elle respire du
+   texte au-dessus, sans jamais coller au filet de la ligne suivante. */
+.kbrdn-feature__text .gwm-capture {
+  margin-top: 0.875rem;
 }
