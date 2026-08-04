@@ -1,0 +1,14 @@
+# Sans ce fichier, l'adresse /robots.txt répond 404 et Cloudflare y colle sa
+# « Content Signals Policy », qui ne porte aucune directive : tout est autorisé
+# par défaut et le sitemap n'est signalé nulle part.
+#
+# Le crawl reste ouvert partout, y compris sur gwm-docs.pages.dev. Ce n'est pas
+# un oubli : c'est `public/_headers` qui écarte cette adresse, par un en-tête
+# `X-Robots-Tag: noindex` que le robot doit pouvoir venir lire. L'interdire ici
+# le rendrait invisible et l'adresse resterait indexée.
+User-agent: *
+Allow: /
+
+# En absolu, et sur le domaine de production : servi depuis n'importe quel hôte,
+# ce fichier désigne toujours le site canonique.
+Sitemap: https://gwm-docs.kbrdn.dev/sitemap-index.xml

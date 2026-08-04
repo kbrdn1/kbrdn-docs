@@ -1,0 +1,31 @@
+# Cloudflare Pages sert le MÊME build sur plusieurs hôtes : le domaine de
+# production (gwm-docs.kbrdn.dev), l'adresse du projet (gwm-docs.pages.dev) et
+# une adresse par déploiement de prévisualisation. Sans distinction, le site
+# existe en double aux yeux d'un moteur, et les deux copies se concurrencent sur
+# les mêmes requêtes.
+#
+# Les prévisualisations sont déjà couvertes : Cloudflare y ajoute lui-même
+# `x-robots-tag: noindex` (mesuré sur dev.gwm-docs.pages.dev). Le trou est
+# l'adresse de production du projet, qui, elle, est indexable.
+#
+# Ce fichier est le seul endroit de la chaîne qui connaisse l'hôte. Un
+# `robots.txt` est un fichier statique : il est servi à l'identique sur les deux
+# domaines, donc il ne peut pas en exclure un seul. Les URL absolues sont
+# permises ici (doc Cloudflare : elles doivent commencer par `https`, un seul
+# `*` par motif).
+#
+# ⚠️ Ne PAS doubler ceci d'un `Disallow:` visant pages.dev dans robots.txt : un
+# chemin interdit au crawl n'est jamais lu, donc l'en-tête `noindex` ci-dessous
+# ne serait jamais vu et l'adresse resterait indexée, sans même une description.
+# L'ordre correct est : crawl autorisé, indexation refusée par l'en-tête.
+#
+# La racine est écrite à part, et ce n'est pas de la redondance : la doc dit du
+# splat qu'il « matche gloutonnement tous les caractères », sans jamais dire
+# s'il en matche zéro. Si `/*` exige un chemin non vide, la page d'accueil, la
+# plus exposée du lot, serait la seule à passer entre les mailles. Une règle sur
+# les cent permises est un prix nul pour ne pas parier là-dessus.
+https://gwm-docs.pages.dev/
+  X-Robots-Tag: noindex
+
+https://gwm-docs.pages.dev/*
+  X-Robots-Tag: noindex
