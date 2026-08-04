@@ -1,5 +1,5 @@
 # Cloudflare Pages sert le MÊME build sur plusieurs hôtes : le domaine de
-# production (gwm-docs.kbrdn.dev), l'adresse du projet (gwm-docs.pages.dev) et
+# production (gwm.kbrdn.dev), l'adresse du projet (gwm-docs.pages.dev) et
 # une adresse par déploiement de prévisualisation. Sans distinction, le site
 # existe en double aux yeux d'un moteur, et les deux copies se concurrencent sur
 # les mêmes requêtes.

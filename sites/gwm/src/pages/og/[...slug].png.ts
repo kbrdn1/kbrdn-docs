@@ -27,7 +27,7 @@ export const GET: APIRoute = async ({ props, site }) => {
     version: release.version,
     // `site` est posé dans astro.config.mjs ; le pied de carte affiche l'hôte
     // qu'on veut voir indexé, le même que les URLs canoniques.
-    hote: site?.host ?? 'gwm-docs.kbrdn.dev',
+    hote: site?.host ?? 'gwm.kbrdn.dev',
   });
   return new Response(new Uint8Array(png), { headers: { 'Content-Type': 'image/png' } });
 };

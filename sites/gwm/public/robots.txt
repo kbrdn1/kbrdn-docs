@@ -11,4 +11,4 @@ Allow: /
 
 # En absolu, et sur le domaine de production : servi depuis n'importe quel hôte,
 # ce fichier désigne toujours le site canonique.
-Sitemap: https://gwm-docs.kbrdn.dev/sitemap-index.xml
+Sitemap: https://gwm.kbrdn.dev/sitemap-index.xml
