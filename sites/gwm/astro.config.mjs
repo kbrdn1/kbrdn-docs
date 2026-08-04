@@ -2,7 +2,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
-import remarkGfm from 'remark-gfm';
 import { claudeDark, claudeLight } from '@kbrdn/ds-shared/ec-theme.mjs';
 import { createLastmodLookup } from './src/lib/sitemap-lastmod.mjs';
 
@@ -21,13 +20,6 @@ export default defineConfig({
   // elle doit être celle qu'on veut voir indexée. La pages.dev continue d'être
   // servie en parallèle, elle ne se retire pas.
   site: 'https://gwm.kbrdn.dev',
-
-  // GFM (tables, strikethrough, task lists…) n'est pas actif par défaut sur
-  // cette combinaison Astro 6 / Starlight 0.39 — sans ça, les tables Markdown
-  // se rendent en pipes bruts. remark-gfm rebranche le parsing GFM.
-  markdown: {
-    remarkPlugins: [remarkGfm],
-  },
 
   integrations: [
     // Le sitemap est normalement posé par Starlight, qui s'efface dès qu'une
