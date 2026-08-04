@@ -3,6 +3,16 @@ title: gwm
 description: Git Worktree Manager - un CLI Rust et une TUI ratatui pour gérer les worktrees Git de tous vos projets, avec un bootstrap par dépôt.
 template: splash
 tableOfContents: false
+# Cf. la landing anglaise : sans surcharge, Starlight sort `gwm | gwm` sur la
+# home, dont le titre vaut le nom du site. Le `title` frontmatter reste « gwm »
+# (le Hero l'affiche), seul le head change.
+head:
+  - tag: title
+    content: gwm - gestionnaire de worktrees Git (CLI + TUI)
+  - tag: meta
+    attrs:
+      property: og:title
+      content: gwm - gestionnaire de worktrees Git (CLI + TUI)
 hero:
   tagline: Gérez vos worktrees Git partout, en CLI comme en TUI.
   actions:
