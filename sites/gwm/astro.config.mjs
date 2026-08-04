@@ -59,6 +59,7 @@ export default defineConfig({
       // Composants partagés (overrides) servis depuis le package du monorepo,
       // + Hero custom local répliquant l'identité du portfolio kbrdn.dev.
       components: {
+        Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
         Footer: '@kbrdn/ds-shared/components/Footer.astro',
         TableOfContents: '@kbrdn/ds-shared/components/TableOfContents.astro',

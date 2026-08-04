@@ -23,6 +23,7 @@
 import satori from 'satori';
 import sharp from 'sharp';
 import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 const L = 1200;
 const H = 630;
@@ -51,8 +52,16 @@ const T = {
   badgeFond: 'rgba(212,130,93,0.15)',
 };
 
-const FENIX = new URL('../../public/fonts/Fenix-Regular.ttf', import.meta.url);
-const LOGO = new URL('../assets/gwm-logo-dark.svg', import.meta.url);
+// Résolus depuis le cwd — la racine du projet Astro — et pas depuis
+// `import.meta.url` : au build, ce module est bundlé dans
+// `dist/.prerender/chunks/`, d'où les chemins relatifs pointent à côté (ENOENT
+// sur le logo, puis sur la police). Le cwd est le répertoire du package parce
+// que `bun --filter` y lance `astro` — c'est le cas des trois invocations
+// réelles : `bun run build` à la racine, `bun --filter='@kbrdn/docs-gwm' run
+// build` de `deploy.yml`, et `astro dev`. Cloudflare Pages ne construit pas
+// lui-même, `deploy.yml` lui pousse le `dist/` déjà bâti.
+const FENIX = resolve('public/fonts/Fenix-Regular.ttf');
+const LOGO = resolve('src/assets/gwm-logo-dark.svg');
 
 /** Le cadre du kit, en SVG : ce que satori ne sait pas dessiner. */
 function cadreSvg(): string {
