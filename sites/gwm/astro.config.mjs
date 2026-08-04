@@ -1,8 +1,16 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 import remarkGfm from 'remark-gfm';
 import { claudeDark, claudeLight } from '@kbrdn/ds-shared/ec-theme.mjs';
+import { createLastmodLookup } from './src/lib/sitemap-lastmod.mjs';
+
+// Les locales servies sous un préfixe de chemin. L'anglais n'y figure pas : il
+// est à la racine, et c'est ce qui en fait la cible du `x-default` ci-dessous.
+const PREFIXED_LOCALES = { fr: 'fr' };
+
+const lastmodOf = createLastmodLookup();
 
 // Docs du produit gwm. Hérite du design system partagé (@kbrdn/ds-shared)
 // pour la consistance (footer, tokens), puis surcharge l'accent + la landing.
@@ -22,6 +30,42 @@ export default defineConfig({
   },
 
   integrations: [
+    // Le sitemap est normalement posé par Starlight, qui s'efface dès qu'une
+    // intégration `@astrojs/sitemap` est déclarée ici (integrations/sitemap.ts).
+    // On reprend donc la main, à la seule condition de reproduire la config i18n
+    // qu'il passait — `defaultLocale` est la *clé* de locale, pas la langue, et
+    // c'est elle qui décide quelles URLs sont alternates les unes des autres.
+    sitemap({
+      i18n: {
+        defaultLocale: 'root',
+        locales: { root: 'en', ...PREFIXED_LOCALES },
+      },
+
+      serialize(item) {
+        // `x-default` désigne la page à servir pour une langue qu'on ne couvre
+        // pas. C'est la version racine qu'on veut là, et on la reconnaît à
+        // l'absence de préfixe de locale — pas à sa langue : `lang === 'en'`
+        // ne l'identifie que par coïncidence de la config du moment.
+        //
+        // `links` est le même tableau pour toutes les URLs d'un groupe (il est
+        // mémoïsé côté @astrojs/sitemap) : on le copie, sinon chaque page du
+        // groupe empile un x-default de plus dans le tableau des suivantes.
+        const alternates = item.links ?? [];
+        const root = alternates.find(
+          ({ url }) =>
+            !Object.keys(PREFIXED_LOCALES).some((prefix) =>
+              new URL(url).pathname.startsWith(`/${prefix}/`),
+            ),
+        );
+        if (root) item.links = [...alternates, { url: root.url, lang: 'x-default' }];
+
+        const lastmod = lastmodOf(new URL(item.url).pathname);
+        if (lastmod) item.lastmod = lastmod;
+
+        return item;
+      },
+    }),
+
     starlight({
       title: 'gwm',
       description:

@@ -32,6 +32,13 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
   config panel, doctor report, bootstrap report, trust prompt, on-disk layout,
   `gwm tui keys` output), each flagged with a `TODO` to swap for a real
   capture/asciinema in a follow-up.
+- gwm site: sitemap now carries `hreflang="x-default"` (pointing at the
+  prefix-less English URL) and a per-page `lastmod`, dated from the last commit
+  touching the page's source file — the French fallback pages resolve to their
+  English source. The site declares its own `@astrojs/sitemap` integration,
+  which Starlight steps aside for, reproducing its i18n config verbatim. On a
+  shallow checkout `lastmod` is omitted rather than uniform-and-wrong, hence
+  `fetch-depth: 0` on the deploy workflow.
 
 ### Changed
 
