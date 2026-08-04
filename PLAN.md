@@ -99,8 +99,10 @@ pipeline ; Cloudflare Pages est le runtime.
       → croiser systématiquement avec le repo `gwm-cli`.
 - [ ] Créer le projet Cloudflare Pages `gwm-docs`, secrets +
       `DEPLOY_ENABLED=true`, vérifier le déploiement `main`.
-- [ ] Domaine : `gwm-docs.kbrdn.dev` (tranché ; §7 garde la comparaison).
-- [ ] Mettre `site:` dans `astro.config.mjs` à l'URL de prod.
+- [x] Domaine : `gwm.kbrdn.dev` (tranché ; §7 garde la comparaison). À ne pas
+      confondre avec `gwm-docs.pages.dev`, qui est le nom du projet Cloudflare
+      et reste servi en parallèle sans pouvoir être retiré.
+- [x] Mettre `site:` dans `astro.config.mjs` à l'URL de prod.
 
 ### Phase 2 — enrichir le design system
 

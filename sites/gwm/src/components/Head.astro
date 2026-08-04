@@ -1,0 +1,27 @@
+---
+// Head de Starlight + les métas d'image sociale, qu'il ne pose pas : il déclare
+// `twitter:card: summary_large_image` mais aucune image, donc les partages
+// sortaient sans visuel. La carte est celle rendue par
+// `src/pages/og/[...slug].png.ts`, une par page.
+import StarlightHead from '@astrojs/starlight/components/Head.astro';
+import { cheminCarte, titreCarte } from '../lib/og-page';
+
+const { entry } = Astro.locals.starlightRoute;
+// URL absolue obligatoire : les crawlers sociaux ne résolvent pas le relatif.
+// `site` est posé dans astro.config.mjs — sans lui, pas de canonique non plus,
+// donc on retombe simplement sur le head nu plutôt que de casser le build.
+const carte = Astro.site ? new URL(cheminCarte(entry.id), Astro.site).href : undefined;
+---
+
+<StarlightHead />
+{
+  carte && (
+    <>
+      <meta property="og:image" content={carte} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={titreCarte(entry.data)} />
+      <meta name="twitter:image" content={carte} />
+    </>
+  )
+}

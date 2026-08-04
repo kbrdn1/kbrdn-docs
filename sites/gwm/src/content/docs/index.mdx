@@ -3,6 +3,19 @@ title: gwm
 description: Git Worktree Manager - a Rust CLI and ratatui TUI that manages git worktrees across every project, with a per-repo bootstrap.
 template: splash
 tableOfContents: false
+# Starlight compose `<title>{title} | {siteTitle}</title>` sans cas particulier
+# pour la home : le titre de la landing valant le nom du site, elle sortait
+# `gwm | gwm`. Le `title` frontmatter ne bouge pas — le Hero et la nav
+# l'affichent tel quel — donc c'est le head qu'on surcharge, et Starlight
+# déduplique par balise (`title`, `meta[property]`), ces entrées remplacent
+# les siennes. Même traitement pour `og:title`, qui reprend `title` brut.
+head:
+  - tag: title
+    content: gwm - Git Worktree Manager (CLI + TUI)
+  - tag: meta
+    attrs:
+      property: og:title
+      content: gwm - Git Worktree Manager (CLI + TUI)
 hero:
   tagline: Manage your git worktrees anywhere, from the CLI or the TUI.
   actions:
@@ -205,6 +218,37 @@ the rest each take a colour, and four presets ship in the binary.
 
 Set one in `.gwm.toml`, override any single role on top of it - see
 [Themes](/tui/themes/).
+
+</Section>
+
+<Section pad="column" label="In herdr" id="herdr">
+
+[herdr](https://herdr.dev) is a terminal multiplexer, and `herdr-plugin-gwm`
+drives gwm from inside it: create, switch, remove, materialise a PR with `gwm
+review`, `exec` and `clean` across worktrees, plus gwm's own TUI in a pane.
+
+gwm stays the single source of truth. The plugin never creates a worktree on the
+herdr side - it adopts what gwm produced and closes the reflection when gwm
+removes it, so the two can't drift apart.
+
+```bash
+herdr plugin install kbrdn1/herdr-plugin-gwm
+```
+
+<p class="gwm-meta">
+  herdr ≥ 0.7.4 · <code>gwm</code> on PATH · jq · fzf · macOS · Linux · MIT ·{' '}
+  <a href="/integrations/herdr/">every action, in detail →</a>
+</p>
+
+<RepoCard
+  owner="kbrdn1"
+  repo="herdr-plugin-gwm"
+  description="herdr plugin that drives gwm for git worktree management - gwm stays the source of truth, herdr adopts."
+  language="Shell"
+  languageColor="#89e051"
+  license="MIT"
+  cta="View on GitHub"
+/>
 
 </Section>
 
