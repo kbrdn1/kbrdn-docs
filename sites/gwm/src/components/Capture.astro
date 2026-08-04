@@ -1,0 +1,135 @@
+---
+// Cadre de capture — une vraie capture du binaire, encadrée comme un bloc de
+// code Expressive Code : coins nets, filet `--kbrdn-border-color`, pas d'ombre,
+// bandeau mono en haut qui porte la commande. Les deux cadres doivent se lire
+// comme un seul système, d'où les mêmes jetons que `expressiveCode.styleOverrides`
+// (astro.config.mjs).
+//
+// Les GIF passent en <img> brut : le service d'images d'Astro réencode en webp
+// et perd l'animation. Les PNG passent par <Image> (sharp est une dépendance du
+// site) — les captures font 1500px de large, sans dimensions intrinsèques la
+// page saute au chargement.
+import { Image } from 'astro:assets';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  /** Commande affichée dans le bandeau, sans le `$`. */
+  cmd?: string;
+  /** Étiquette à droite du bandeau (« TUI », « CLI »…). */
+  tag?: string;
+  /** Légende sous le cadre. */
+  caption?: string;
+  /** `eager` pour la capture au-dessus de la ligne de flottaison. */
+  loading?: 'lazy' | 'eager';
+}
+
+const { src, alt, cmd, tag, caption, loading = 'lazy' } = Astro.props;
+const isAnimated = src.format === 'gif';
+---
+
+<figure class="gwm-capture">
+  {
+    cmd && (
+      <div class="gwm-capture__bar">
+        <span class="gwm-capture__prompt" aria-hidden="true">
+          $
+        </span>
+        <span class="gwm-capture__cmd">{cmd}</span>
+        {tag && <span class="gwm-capture__tag">{tag}</span>}
+      </div>
+    )
+  }
+
+  <div class="gwm-capture__frame">
+    {
+      isAnimated ? (
+        <img src={src.src} width={src.width} height={src.height} {alt} {loading} decoding="async" />
+      ) : (
+        <Image
+          {src}
+          {alt}
+          {loading}
+          decoding="async"
+          widths={[640, 960, 1280, src.width]}
+          sizes="(min-width: 50rem) 62rem, 100vw"
+        />
+      )
+    }
+  </div>
+
+  {caption && <figcaption class="gwm-capture__caption">{caption}</figcaption>}
+</figure>
+
+<style>
+  .gwm-capture {
+    margin: 0;
+  }
+
+  /* Bandeau de commande, calé sur le `figcaption.header` d'Expressive Code :
+     même mono, même filet, fond légèrement enfoncé. */
+  .gwm-capture__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    background-color: var(--sl-color-gray-6);
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    border-bottom: none;
+  }
+  .gwm-capture__prompt {
+    color: var(--sl-color-accent);
+    font-weight: 700;
+  }
+  .gwm-capture__cmd {
+    color: var(--sl-color-gray-2);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gwm-capture__tag {
+    margin-inline-start: auto;
+    padding-inline: 0.4rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+    flex-shrink: 0;
+  }
+
+  /* Le filet du cadre porte tout : l'image en dedans n'a pas de bordure à elle
+     (la prose de Starlight en pose une sur tout <img>, cf. theme.css). */
+  .gwm-capture__frame {
+    border: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    background-color: #262626;
+    line-height: 0;
+  }
+  .gwm-capture__frame :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: none !important;
+  }
+
+  /* En thème clair, le filet vaut #e5e5e5 : une capture de terminal sombre
+     flotterait sur le fond de page. On remonte d'un cran sur l'échelle de gris,
+     uniquement pour ces cadres. */
+  :global(:root[data-theme='light']) .gwm-capture__bar,
+  :global(:root[data-theme='light']) .gwm-capture__frame {
+    border-color: var(--sl-color-gray-5);
+  }
+
+  .gwm-capture__caption {
+    margin-top: 0.625rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-3);
+  }
+</style>

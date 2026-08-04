@@ -1,0 +1,214 @@
+---
+// Bandeau de chiffres sous le hero, calqué sur la « strip » de herdr.dev :
+// quatre cellules séparées par un filet, gros nombre puis libellé mono avec une
+// icône. Adapté à gwm : herdr y met de la preuve sociale (étoiles, installs),
+// gwm n'a pas ces ordres de grandeur — on y met de la preuve de SURFACE, ce que
+// l'outil couvre réellement. Aucun chiffre n'est arrondi à la hausse.
+//
+// Ce qui bouge est DÉRIVÉ du contenu du site, donc juste après chaque
+// `bun run sync:gwm` sans intervention :
+//   - les sous-commandes, comptées dans les pages de référence CLI ;
+//   - les versions publiées, comptées dans le changelog.
+// Ce qui ne bouge presque jamais est écrit ici, avec sa source citée.
+import { getCollection } from 'astro:content';
+
+const docs = await getCollection('docs');
+const fr = (Astro.currentLocale || '').startsWith('fr');
+
+// Sous-commandes : chaque page de `cli/reference/` titre ses commandes en
+// `### \`gwm <verbe>\``. On dédoublonne, une commande pouvant être citée dans
+// deux pages (`gwm list` apparaît dans worktrees et dans services).
+const COMMAND_HEADING = /^#+ `gwm ([a-z][a-z-]*)/gm;
+const commands = new Set<string>();
+for (const entry of docs) {
+  if (!/^(fr\/)?cli\/reference\//.test(entry.id)) continue;
+  for (const m of (entry.body ?? '').matchAll(COMMAND_HEADING)) commands.add(m[1]);
+}
+
+// Versions publiées : une page par version, nommée `X-Y-Z.md`. La page d'index
+// du changelog ne matche pas le motif, elle ne se compte donc pas toute seule.
+const releases = docs.filter((e) => /^changelog\/\d+-\d+-\d+$/.test(e.id)).length;
+
+// Tests : nombre réel de tests enregistrés, relevé par
+// `cargo test -- --list | grep -c ': test$'` sur gwm-cli à la v1.6.0 — donc ce
+// que `cargo test` exécute vraiment, pas un comptage de marqueurs `#[test]`.
+// ⚠ /development/testing/ annonce encore « ~1900 » : ce chiffre date de la
+// v1.0.0 et vit dans gwm-cli, il se corrigera à la prochaine passe de sync.
+const TESTS = 2566;
+
+// Étoiles GitHub : relevées au build. L'API publique est limitée à 60 appels
+// par heure et par IP, et un build ne doit jamais tomber pour ça — en cas
+// d'échec on retombe sur la dernière valeur connue plutôt que d'afficher zéro.
+const STARS_FALLBACK = 123; // `gh api repos/kbrdn1/gwm-cli`, 2026-08-04
+let stars = STARS_FALLBACK;
+try {
+  const res = await fetch('https://api.github.com/repos/kbrdn1/gwm-cli', {
+    headers: { accept: 'application/vnd.github+json', 'user-agent': 'kbrdn-docs' },
+    signal: AbortSignal.timeout(4000),
+  });
+  if (res.ok) {
+    const json = await res.json();
+    if (typeof json.stargazers_count === 'number') stars = json.stargazers_count;
+  }
+} catch {
+  // Réseau coupé, quota atteint, dépôt renommé : on garde la valeur figée.
+}
+
+// Groupement à l'anglaise dans les deux langues : en chasse fixe, l'espace
+// insécable du français vaut un caractère plein et « 2 566 » se lit comme deux
+// nombres collés.
+const n = (v: number) => v.toLocaleString('en-US');
+
+// Les canaux d'installation ne sont pas ici : la ligne sous le bloc Install les
+// annonce déjà (« eleven install channels → »), à trois écrans d'intervalle.
+const stats = [
+  {
+    value: n(stars),
+    label: fr ? 'étoiles github' : 'github stars',
+    href: 'https://github.com/kbrdn1/gwm-cli/stargazers',
+    icon: 'M12 3l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.85 6.2 20.9l1.1-6.45-4.7-4.6 6.5-.95z',
+  },
+  {
+    value: n(commands.size),
+    label: fr ? 'sous-commandes cli' : 'cli subcommands',
+    href: fr ? '/fr/cli/reference/' : '/cli/reference/',
+    icon: 'M4 6l6 6-6 6M13 18h7',
+  },
+  {
+    value: n(releases),
+    label: fr ? 'versions publiées' : 'released versions',
+    href: '/changelog/',
+    icon: 'M3 3h8l10 10-8 8L3 11V3ZM7.5 7.5h.01',
+  },
+  {
+    value: n(TESTS),
+    label: fr ? 'tests, 3 plateformes' : 'tests on 3 platforms',
+    href: fr ? '/fr/development/testing/' : '/development/testing/',
+    icon: 'M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M8 3h8M7 15h10',
+  },
+];
+---
+
+{
+  /* `not-content` sur l'ENVELOPPE, pas sur les liens : la règle de prose de
+    Starlight s'écrit `a:not(:where(.not-content *))`, elle exclut les
+    descendants et pas le porteur de la classe. Sans elle, les chiffres et les
+    libellés sortent en orange souligné. */
+}
+<div class="kbrdn-stats not-content">
+  <div class="kbrdn-stats__inner">
+    {
+      stats.map((s) => (
+        <a class="kbrdn-stats__cell" href={s.href}>
+          <span class="kbrdn-stats__value">{s.value}</span>
+          <span class="kbrdn-stats__label">
+            <svg class="kbrdn-stats__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d={s.icon}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="square"
+              />
+            </svg>
+            {s.label}
+          </span>
+        </a>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  /* Même coquille que le hero et les sections : contenu centré sur 64rem, pour
+     que les colonnes tombent sur la même grille que les libellés de section en
+     dessous. Aucun filet en propre : le trait du dessus appartient au hero
+     (`border-bottom` + `.kbrdn-hero::after`), celui du dessous à la section qui
+     suit (`border-top` + `.kbrdn-section::before`). En ajouter un ici les
+     doublerait — et ce sont eux qui traversent les gouttières. */
+  .kbrdn-stats {
+    position: relative;
+    width: 100%;
+  }
+  /* La bande prend toute la coquille — c'est une frise, pas une colonne de
+     lecture : elle tranche volontairement avec les sections centrées. */
+  .kbrdn-stats__inner {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Aucun rembourrage sur la bande elle-même : ce sont les cellules qui le
+     portent, les quatre pareil. Les colonnes restent donc régulières d'un bout
+     à l'autre et le premier chiffre tombe à la même verticale que le texte des
+     sections, sans double écart au bord de la coquille. */
+  @media (min-width: 45rem) {
+    .kbrdn-stats__inner {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* Les cellules sont séparées par un filet, jamais bordées à l'extérieur : le
+     premier de chaque rangée n'en porte pas, sinon on doublerait le filet de la
+     coquille. En deux colonnes ça vise les cellules impaires, en quatre la
+     première seulement. */
+  .kbrdn-stats__cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    /* Même rembourrage vertical que `.kbrdn-section__inner` (1.5rem) : la bande
+       doit tenir le même rythme que les sections en dessous. */
+    /* Rembourrage identique des quatre côtés sur TOUTES les cellules, y compris
+       celle de bord : c'est ce qui donne des colonnes régulières et écarte le
+       premier chiffre du filet de la coquille au lieu de l'y coller. */
+    padding: 1.5rem;
+    border-inline-start: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    text-decoration: none;
+    transition: background-color 200ms;
+  }
+  /* Les filets ne servent qu'à SÉPARER : pas de trait sur le bord extérieur,
+     sinon on double celui de la coquille. En deux colonnes ça vise la cellule
+     de gauche de chaque rangée, en quatre la première seulement. */
+  .kbrdn-stats__cell:nth-child(odd) {
+    border-inline-start: none;
+  }
+  @media (min-width: 45rem) {
+    .kbrdn-stats__cell:nth-child(odd) {
+      border-inline-start: 1px solid var(--kbrdn-border-color, var(--sl-color-gray-5));
+    }
+    .kbrdn-stats__cell:first-child {
+      border-inline-start: none;
+    }
+  }
+  .kbrdn-stats__cell:hover {
+    background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+  }
+
+  .kbrdn-stats__value {
+    font-family: var(--sl-font-mono);
+    font-size: clamp(1.75rem, calc(1rem + 2vw), 2.5rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--sl-color-white);
+  }
+  .kbrdn-stats__cell:hover .kbrdn-stats__value {
+    color: var(--sl-color-accent);
+  }
+
+  .kbrdn-stats__label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    color: var(--sl-color-gray-3);
+  }
+  .kbrdn-stats__icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    flex-shrink: 0;
+    color: var(--sl-color-accent);
+  }
+</style>
