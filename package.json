@@ -10,6 +10,7 @@
     "sites/*"
   ],
   "scripts": {
+    "sync:gwm": "bun scripts/sync-gwm-docs.mjs",
     "dev": "bun --filter='@kbrdn/docs-gwm' run dev",
     "dev:gwm": "bun --filter='@kbrdn/docs-gwm' run dev",
     "build": "bun --filter='*' run build",

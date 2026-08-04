@@ -5,12 +5,21 @@
   "type": "module",
   "description": "Shared Starlight design system: theme tokens, component overrides, reusable MDX components.",
   "exports": {
+    "./ec-theme.mjs": "./ec-theme.mjs",
     "./styles/theme.css": "./styles/theme.css",
     "./components/Footer.astro": "./components/Footer.astro",
-    "./components/RepoCard.astro": "./components/RepoCard.astro"
+    "./components/TableOfContents.astro": "./components/TableOfContents.astro",
+    "./components/MobileTableOfContents.astro": "./components/MobileTableOfContents.astro",
+    "./components/RepoCard.astro": "./components/RepoCard.astro",
+    "./components/Header.astro": "./components/Header.astro",
+    "./components/Section.astro": "./components/Section.astro",
+    "./components/FeatureRow.astro": "./components/FeatureRow.astro"
   },
   "peerDependencies": {
     "@astrojs/starlight": ">=0.39.0",
     "astro": ">=6.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/starlight": "^0.39.3"
   }
 }
