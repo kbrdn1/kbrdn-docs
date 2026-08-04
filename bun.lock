@@ -25,6 +25,7 @@
       "name": "@kbrdn/docs-gwm",
       "version": "0.0.0",
       "dependencies": {
+        "@astrojs/sitemap": "^3.7.3",
         "@astrojs/starlight": "^0.41.6",
         "@fontsource-variable/inter": "^5.2.6",
         "@kbrdn/ds-shared": "workspace:*",
