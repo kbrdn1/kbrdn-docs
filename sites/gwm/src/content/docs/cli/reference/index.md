@@ -9,7 +9,7 @@ sidebar:
 
 Bare `gwm` (no subcommand) opens the [TUI](/tui) on the current repo.
 
-![`gwm list`: the worktree table on stdout, with the `*` current marker and per-worktree status](../../../assets/captures/cli-list.png)
+![`gwm list`: the worktree table on stdout, with the `*` current marker and per-worktree status](../../../../assets/captures/cli-list.png)
 
 - [Setup and configuration](./setup/)
 - [Worktree lifecycle](./worktrees/)

@@ -9,7 +9,7 @@ sidebar:
 
 `gwm` seul (sans sous-commande) ouvre le [TUI](/fr/tui) sur le dépôt courant.
 
-![`gwm list` : la table des worktrees sur la sortie standard, avec le marqueur `*` du worktree courant et le statut de chacun](../../../../assets/captures/cli-list.png)
+![`gwm list` : la table des worktrees sur la sortie standard, avec le marqueur `*` du worktree courant et le statut de chacun](../../../../../assets/captures/cli-list.png)
 
 - [Installation et configuration](./setup/)
 - [Cycle de vie des worktrees](./worktrees/)
