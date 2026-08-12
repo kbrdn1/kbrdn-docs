@@ -11,7 +11,7 @@ Added by [#30](https://github.com/kbrdn1/gwm-cli/issues/30).
 
 The `d` confirm overlay has two modes, picked automatically based on whether `D` (toggle "delete branch on remove") was pressed earlier in the session.
 
-## Classic mode - `delete branch on remove` OFF
+## Classic mode: `delete branch on remove` OFF
 
 Single keystroke:
 
@@ -20,7 +20,7 @@ Single keystroke:
 
 Same as the pre-#30 behaviour. Removing a worktree without dropping its branch is cheap (just an entry in `.git/worktrees/`) and the branch survives, so there's nothing to safeguard against.
 
-## Countdown mode - `delete branch on remove` ON
+## Countdown mode: `delete branch on remove` ON
 
 When `D` is armed, the overlay shows the branch about to disappear plus a two-stage `arm` step:
 
@@ -49,5 +49,5 @@ See [Configuration → `.gwm.toml` schema](/configuration/gwm-toml#tui) for the 
 
 ## Related
 
-- [Keybindings → confirm-delete overlay](/tui/keybindings#confirm-delete-overlay) - the keys this page describes
-- [CLI → `gwm remove`](/cli/reference#gwm-remove-pattern---delete-branch---dry-run) - same destructive action, but from the CLI (no countdown; the flag is `--delete-branch` explicit)
+- [Keybindings → confirm-delete overlay](/tui/keybindings#confirm-delete-overlay): the keys this page describes
+- [CLI → `gwm remove`](/cli/reference#gwm-remove-pattern---delete-branch---dry-run): same destructive action, but from the CLI (no countdown; the flag is `--delete-branch` explicit)
