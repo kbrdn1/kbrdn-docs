@@ -17,11 +17,12 @@ Bare `gwm` (no subcommand) opens the [TUI](/tui) on the current repo.
 - [Diagnostics and services](./services/)
 - [History, undo and trust](./safety/)
 - [Customisation](./customisation/)
+- [Other commands](./other/)
 
 ## Exit codes
 
-| Code | Meaning                                                               |
-| :--- | :-------------------------------------------------------------------- |
-| `0`  | success - also "all green" for `gwm doctor`                           |
-| `1`  | recoverable failure - fuzzy miss, ambiguous match, doctor Warning     |
-| `2`  | hard failure - bootstrap `✗`, doctor Failure, unrecoverable git error |
+| Code | Meaning                                                              |
+| :--- | :------------------------------------------------------------------- |
+| `0`  | success, also "all green" for `gwm doctor`                           |
+| `1`  | recoverable failure: fuzzy miss, ambiguous match, doctor Warning     |
+| `2`  | hard failure: bootstrap `✗`, doctor Failure, unrecoverable git error |

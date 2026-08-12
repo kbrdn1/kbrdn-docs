@@ -17,11 +17,12 @@ sidebar:
 - [Diagnostic et services](./services/)
 - [Historique, annulation et confiance](./safety/)
 - [Personnalisation](./customisation/)
+- [Autres commandes](./other/)
 
 ## Codes de sortie
 
 | Code | Signification                                                              |
 | :--- | :------------------------------------------------------------------------- |
-| `0`  | succès - aussi « tout au vert » pour `gwm doctor`                          |
-| `1`  | échec récupérable - échec fuzzy, correspondance ambiguë, Warning du doctor |
-| `2`  | échec dur - bootstrap `✗`, Failure du doctor, erreur git irrécupérable     |
+| `0`  | succès, aussi « tout au vert » pour `gwm doctor`                           |
+| `1`  | échec récupérable : échec fuzzy, correspondance ambiguë, Warning du doctor |
+| `2`  | échec dur : bootstrap `✗`, Failure du doctor, erreur git irrécupérable     |
