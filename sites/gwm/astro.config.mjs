@@ -60,8 +60,14 @@ export default defineConfig({
 
     starlight({
       title: 'gwm',
+      // Repli seulement : chaque page porte sa propre `description` (celles de
+      // gwm-cli voyagent dans le frontmatter au moment du sync, les deux
+      // `index.mdx` ont la leur), donc cette ligne n'est servie sur aucune page
+      // aujourd'hui. Écrite en anglais malgré tout, parce que le jour où une
+      // page l'atteindrait ce serait une page sans description, et la racine du
+      // site est anglaise.
       description:
-        'Git Worktree Manager — CLI + TUI pour gérer les worktrees Git, avec bootstrap par repo.',
+        'Git Worktree Manager: a Rust CLI and ratatui TUI to manage git worktrees across projects, with a per-repo bootstrap.',
       // Logo officiel du produit, repris de gwm-cli/docs/_assets (deux variantes :
       // traits clairs sur fond sombre, traits sombres sur fond clair). Remplace
       // le carré vert de placeholder, qui n'était dans aucune charte.

@@ -39,12 +39,12 @@ jobs:
       # Ce checkout-ci pousse : il garde le token que `actions/checkout`
       # injecte. Il vient en premier, sinon son nettoyage d'espace de travail
       # effacerait la copie de gwm-cli.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: main
 
       - name: checkout kbrdn1/gwm-cli
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: kbrdn1/gwm-cli
           ref: main
