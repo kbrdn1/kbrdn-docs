@@ -30,6 +30,8 @@ gwm agents detach feat-42 <id>   # retirer cette épingle-là
 gwm agents detach feat-42        # tout retirer — retour à l'auto-détection pure
 ```
 
+![`gwm agents` : les sessions groupées par worktree, avec l'agent, sa fraîcheur, sa dernière activité, son id et son nom](../../../../../assets/captures/cli-agents.png)
+
 **L'auto-détection est le défaut ; une épingle est un override.** Une épingle
 couvre les cas que le répertoire de travail enregistré ne peut pas : agent
 lancé depuis un sous-répertoire, worktree déplacé, session voulue sur un
@@ -53,6 +55,8 @@ principalement un point d'injection déterministe pour les tests et la CI.
 ## `gwm doctor [--format=text|json]`
 
 Lance 8 vérifications de santé ; rapporte chacune avec `✓ / ! / ✗` ; sort `0 / 1 / 2`. Conçu pour la CI et les hooks de pre-commit. Voir [Intégrations → `gwm doctor`](/fr/integrations/doctor) pour le détail par vérification.
+
+![`gwm doctor` : les huit vérifications avec leur statut `✓ / ! / ✗`](../../../../../assets/captures/doctor.png)
 
 `--format=json` (issue #38) émet le tableau de vérifications plus les agrégats `severity` et `exit_code`, avec le schéma à [`docs/schema/doctor.schema.json`](https://github.com/kbrdn1/gwm-cli/blob/main/docs/schema/doctor.schema.json). Le **code de sortie du processus est identique** à la forme texte (le JSON le porte aussi comme champ), donc `gwm doctor --format=json` fonctionne toujours dans un garde `if` :
 

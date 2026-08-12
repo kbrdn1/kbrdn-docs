@@ -9,6 +9,10 @@ sidebar:
 
 La version complète annotée vit à [`examples/gwm.toml.example`](https://github.com/kbrdn1/gwm-cli/blob/main/examples/gwm.toml.example), et `gwm init` écrit ce fichier inchangé à la racine de votre dépôt.
 
+Le panneau Settings de la TUI (`4`) est ce même schéma, résolu : chaque clé avec la valeur en vigueur et sa provenance, éditable sur place.
+
+![Le panneau Settings sur son onglet Worktree : base, path_pattern et branch_pattern avec leurs valeurs résolues](../../../../assets/captures/config-panel.png)
+
 Utilisez `gwm config` pour des lectures scriptables et des éditions sûres :
 
 ```bash

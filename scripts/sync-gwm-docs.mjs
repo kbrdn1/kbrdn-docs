@@ -253,14 +253,23 @@ for (const f of await walk(SRC)) {
   // l'index de la doc in-repo est un sommaire, il ne les remplace pas.
   if (out.endsWith('/docs/index.md') || out.endsWith('/docs/fr/index.md')) continue;
 
-  const text = rewriteCaptures(convert(await readFile(f, 'utf8'), { order, isFr }), out);
+  const converted = convert(await readFile(f, 'utf8'), { order, isFr });
 
   // La référence CLI fait ~790 lignes et 40 sous-commandes : illisible d'un
   // bloc, et son sommaire écrase tous les autres. Elle part en sous-pages.
   if (/\/cli\/reference\.md$/.test(out)) {
-    ported += await splitCliReference(text, out, isFr);
+    // Ces sous-pages vivent un cran plus bas que `reference.md`
+    // (`cli/reference/<slug>.md`), donc leurs liens de captures se calculent
+    // depuis ce répertoire-là. Réécrire avant le split produisait un `../` de
+    // moins et un `ImageNotFound` au build Astro, qui fait échouer le
+    // déploiement entier. Latent tant qu'aucune image ne vivait dans la
+    // référence CLI ; gwm-cli#524 en a ajouté trois d'un coup.
+    const inner = join(out.replace(/\.md$/, ''), 'page.md');
+    ported += await splitCliReference(rewriteCaptures(converted, inner), out, isFr);
     continue;
   }
+
+  const text = rewriteCaptures(converted, out);
 
   await mkdir(dirname(out), { recursive: true });
   await writeFile(out, text);
