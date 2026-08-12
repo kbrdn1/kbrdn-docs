@@ -27,7 +27,8 @@ const rootPages = () =>
     .map((e) => e.name.replace(/\.md$/, ''));
 
 /** Les `slug: '…'` déclarés dans la sidebar. */
-const declaredSlugs = () => [...readFileSync(CONFIG, 'utf8').matchAll(/slug:\s*'([^']+)'/g)].map((m) => m[1]);
+const declaredSlugs = () =>
+  [...readFileSync(CONFIG, 'utf8').matchAll(/slug:\s*'([^']+)'/g)].map((m) => m[1]);
 
 describe('pages racine et sidebar', () => {
   test('chaque page racine est déclarée dans la sidebar', () => {
