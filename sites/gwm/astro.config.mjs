@@ -148,6 +148,15 @@ export default defineConfig({
           items: [{ autogenerate: { directory: 'development' } }],
         },
         { label: 'Roadmap', translations: { fr: 'Roadmap' }, slug: 'roadmap' },
+        // Les pages racine de `gwm-cli/docs` (celles qui ne vivent pas dans un
+        // dossier de section) n'ont aucun `autogenerate` pour les ramasser :
+        // chacune se liste ici à la main, sous le slug que `stripOrder`
+        // produit. En ajouter une côté gwm-cli sans toucher ce fichier la
+        // publie bien à son URL mais la laisse hors de la navigation, donc
+        // introuvable autrement qu'en connaissant déjà le lien.
+        // `root-pages.test.mjs` fait échouer ce cas au lieu de le laisser
+        // passer en silence.
+        { label: 'Comparison', translations: { fr: 'Comparaison' }, slug: 'comparison' },
         {
           label: 'Changelog',
           translations: { fr: 'Changelog' },
