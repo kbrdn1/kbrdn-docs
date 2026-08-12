@@ -29,6 +29,8 @@ gwm agents detach feat-42 <id>   # remove that one pin
 gwm agents detach feat-42        # remove every pin — back to pure auto-detection
 ```
 
+![`gwm agents`: sessions grouped per worktree, with agent, freshness, last activity, id and name](../../../assets/captures/cli-agents.png)
+
 **Auto-detection is the default; a pin is an override.** A pin covers the
 cases the recorded working directory cannot: an agent launched from a
 subdirectory, a moved worktree, a session you want on a specific worktree
@@ -50,6 +52,8 @@ mainly a deterministic seam for tests and CI.
 ## `gwm doctor [--format=text|json]`
 
 Run 8 health checks; report each with `✓ / ! / ✗`; exit `0 / 1 / 2`. Designed for CI and pre-commit hooks. See [Integrations → `gwm doctor`](/integrations/doctor) for the per-check breakdown.
+
+![`gwm doctor`: the eight checks with their `✓ / ! / ✗` status](../../../assets/captures/doctor.png)
 
 `--format=json` (issue #38) emits the checks array plus aggregate `severity` and `exit_code`, with the schema at [`docs/schema/doctor.schema.json`](https://github.com/kbrdn1/gwm-cli/blob/main/docs/schema/doctor.schema.json). The **process exit code is identical** to the text form (the JSON also carries it as a field), so `gwm doctor --format=json` still works in an `if`-guard:
 
