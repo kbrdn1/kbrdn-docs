@@ -7,7 +7,7 @@ sidebar:
 
 ## `gwm review <PR#> [--name <branch>] [--bootstrap] [--skip-hooks <phases>]` (issue #308)
 
-Matérialise une PR GitHub existante dans un worktree isolé - récupère le head de la PR, attache un worktree, lie la PR, et vous reviewez le code du contributeur en quelques secondes.
+Matérialise une PR GitHub existante dans un worktree isolé : récupère le head de la PR, attache un worktree, lie la PR, et vous reviewez le code du contributeur en quelques secondes.
 
 ```bash
 gwm review 310                          # fetch PR #310 into review/pr-310-<author>-<slug>
@@ -23,7 +23,7 @@ gwm review 310 --bootstrap              # ...and run bootstrap + lifecycle hooks
 | `--bootstrap`           | Lance bootstrap + hooks de cycle de vie contre le code de la PR après création (désactivé par défaut)                              |
 | `--skip-hooks <PHASES>` | Saute les phases de hook de cycle de vie séparées par des virgules (par ex. `pre_create,post_create`)                              |
 
-**Sûr par défaut :** le bootstrap et les hooks de cycle de vie ne sont **pas** lancés. Un worktree de review contient le code d'un contributeur (possiblement issu d'un fork), et ces étapes exécutent des commandes contre lui (`npm install`, `composer install`, `direnv allow`, hooks `post_create` …) - c'est-à-dire du code arbitraire. Passez `--bootstrap` pour l'activer une fois que vous faites assez confiance à la PR pour la mettre en place. C'est distinct du bloc de config `[review]` (qui pilote la touche lanceur de review `R` du TUI) ; `gwm review` est la sous-commande de matérialisation de worktree.
+**Sûr par défaut :** le bootstrap et les hooks de cycle de vie ne sont **pas** lancés. Un worktree de review contient le code d'un contributeur (possiblement issu d'un fork), et ces étapes exécutent des commandes contre lui (`npm install`, `composer install`, `direnv allow`, hooks `post_create` …), c'est-à-dire du code arbitraire. Passez `--bootstrap` pour l'activer une fois que vous faites assez confiance à la PR pour la mettre en place. C'est distinct du bloc de config `[review]` (qui pilote la touche lanceur de review `R` du TUI) ; `gwm review` est la sous-commande de matérialisation de worktree.
 
 ## `gwm pr [--draft] [--base <ref>] [--render]`
 
@@ -59,7 +59,7 @@ gwm link pr 61                 # link a PR
 gwm link issue 42 --worktree feat-auth      # ...or to a fuzzy-matched worktree
 ```
 
-Le lien est stocké dans `git config branch.<name>.gwm-issue` / `gwm-pr` - local, par branche, aucun fichier supplémentaire. Les numéros d'issue sont **détectés automatiquement** depuis les branches `<type>/#<N>-<slug>`, donc `gwm link issue <N>` n'est nécessaire que pour les overrides explicites. Les numéros de PR ne sont pas détectés automatiquement.
+Le lien est stocké dans `git config branch.<name>.gwm-issue` / `gwm-pr` : local, par branche, aucun fichier supplémentaire. Les numéros d'issue sont **détectés automatiquement** depuis les branches `<type>/#<N>-<slug>`, donc `gwm link issue <N>` n'est nécessaire que pour les overrides explicites. Les numéros de PR ne sont pas détectés automatiquement.
 
 ## `gwm unlink {issue|pr} [--worktree <pattern>]`
 
@@ -70,7 +70,7 @@ gwm unlink issue               # remove the issue link (auto-detect resurfaces)
 gwm unlink pr                  # remove the PR link
 ```
 
-Idempotent - sûr à exécuter quand rien n'est lié.
+Idempotent : sûr à exécuter quand rien n'est lié.
 
 ## `gwm open {issue|pr} [--worktree <pattern>] [--print-url]`
 
@@ -99,7 +99,7 @@ Se dégrade proprement vers une sortie lien-local-uniquement quand `gh` manque o
 
 ## `gwm labels {list|push}`
 
-Gère l'ensemble déclaratif de labels GitHub depuis `.gwm.toml`. Déclarez une fois les labels que vous voulez dans `[[labels]]`, poussez-les vers le remote `origin` upstream au besoin - plus de dérive entre dépôts. Sans bloc `[[labels]]` dans `.gwm.toml`, les deux sous-commandes sont des no-ops (`0 labels declared, nothing to push`) et ne délèguent jamais à `gh`.
+Gère l'ensemble déclaratif de labels GitHub depuis `.gwm.toml`. Déclarez une fois les labels que vous voulez dans `[[labels]]`, poussez-les vers le remote `origin` upstream au besoin. Plus de dérive entre dépôts. Sans bloc `[[labels]]` dans `.gwm.toml`, les deux sous-commandes sont des no-ops (`0 labels declared, nothing to push`) et ne délèguent jamais à `gh`.
 
 ```bash
 gwm labels list                       # show the diff against the remote
@@ -112,7 +112,7 @@ gwm labels push --random-colors       # random pastel for entries with no `color
 | Flag              | Action                                                                                                                                                                        |
 | :---------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--dry-run`       | Affiche le plan sans muter le remote. Lit tout de même les labels distants via `gh label list` pour calculer le diff ; seuls les appels create / update / delete sont sautés. |
-| `--prune`         | Supprime sur le remote les labels non déclarés dans `.gwm.toml` (destructif - opt-in)                                                                                         |
+| `--prune`         | Supprime sur le remote les labels non déclarés dans `.gwm.toml` (destructif, opt-in)                                                                                          |
 | `--random-colors` | Utilise un pastel aléatoire pour les entrées sans champ `color` (surcharge le hash déterministe)                                                                              |
 
 Les sigils de sortie de `list` reflètent les groupes de diff :
@@ -140,7 +140,7 @@ gwm milestones push --prune             # also delete milestones not in config
 | Flag        | Action                                                                                                                                                                                  |
 | :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--dry-run` | Affiche le plan sans muter le remote. Lit tout de même les milestones distants via `gh api …/milestones` pour calculer le diff ; seuls les appels create / update / delete sont sautés. |
-| `--prune`   | Supprime sur le remote les milestones non déclarés dans `.gwm.toml` (destructif - opt-in)                                                                                               |
+| `--prune`   | Supprime sur le remote les milestones non déclarés dans `.gwm.toml` (destructif, opt-in)                                                                                                |
 
 Les sigils de sortie de `list` reflètent les groupes de diff :
 

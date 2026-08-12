@@ -7,7 +7,7 @@ sidebar:
 
 ## `gwm review <PR#> [--name <branch>] [--bootstrap] [--skip-hooks <phases>]` (issue #308)
 
-Materialise an existing GitHub PR into an isolated worktree - fetch the PR head, attach a worktree, link the PR, and you're reviewing the contributor's code in seconds.
+Materialise an existing GitHub PR into an isolated worktree: fetch the PR head, attach a worktree, link the PR, and you're reviewing the contributor's code in seconds.
 
 ```bash
 gwm review 310                          # fetch PR #310 into review/pr-310-<author>-<slug>
@@ -23,7 +23,7 @@ gwm review 310 --bootstrap              # ...and run bootstrap + lifecycle hooks
 | `--bootstrap`           | Run bootstrap + lifecycle hooks against the PR's code after creation (off by default)                                |
 | `--skip-hooks <PHASES>` | Skip the comma-separated lifecycle hook phases (e.g. `pre_create,post_create`)                                       |
 
-**Safe-by-default:** bootstrap and lifecycle hooks are **not** run. A review worktree holds a contributor's (possibly fork) code, and those steps execute commands against it (`npm install`, `composer install`, `direnv allow`, `post_create` hooks …) - i.e. arbitrary code. Pass `--bootstrap` to opt in once you trust the PR enough to set it up. This is distinct from the `[review]` config block (which drives the TUI `R` review-launcher key); `gwm review` is the worktree-materialisation subcommand.
+**Safe-by-default:** bootstrap and lifecycle hooks are **not** run. A review worktree holds a contributor's (possibly fork) code, and those steps execute commands against it (`npm install`, `composer install`, `direnv allow`, `post_create` hooks …), i.e. arbitrary code. Pass `--bootstrap` to opt in once you trust the PR enough to set it up. This is distinct from the `[review]` config block (which drives the TUI `R` review-launcher key); `gwm review` is the worktree-materialisation subcommand.
 
 ## `gwm pr [--draft] [--base <ref>] [--render]`
 
@@ -59,7 +59,7 @@ gwm link pr 61                 # link a PR
 gwm link issue 42 --worktree feat-auth      # ...or to a fuzzy-matched worktree
 ```
 
-The link is stored in `git config branch.<name>.gwm-issue` / `gwm-pr` - local, per-branch, no extra file. Issue numbers are **auto-detected** from `<type>/#<N>-<slug>` branches, so `gwm link issue <N>` is only needed for explicit overrides. PR numbers are not auto-detected.
+The link is stored in `git config branch.<name>.gwm-issue` / `gwm-pr`: local, per-branch, no extra file. Issue numbers are **auto-detected** from `<type>/#<N>-<slug>` branches, so `gwm link issue <N>` is only needed for explicit overrides. PR numbers are not auto-detected.
 
 ## `gwm unlink {issue|pr} [--worktree <pattern>]`
 
@@ -70,7 +70,7 @@ gwm unlink issue               # remove the issue link (auto-detect resurfaces)
 gwm unlink pr                  # remove the PR link
 ```
 
-Idempotent - safe to run when nothing is linked.
+Idempotent: safe to run when nothing is linked.
 
 ## `gwm open {issue|pr} [--worktree <pattern>] [--print-url]`
 
@@ -99,7 +99,7 @@ Degrades gracefully to local-link-only output when `gh` is missing or the repo h
 
 ## `gwm labels {list|push}`
 
-Manage the declarative GitHub label set from `.gwm.toml`. Declare the labels you want once in `[[labels]]`, push them to the upstream `origin` remote as needed - no more drift across repos. Without a `[[labels]]` block in `.gwm.toml`, both subcommands are no-ops (`0 labels declared, nothing to push`) and never shell out to `gh`.
+Manage the declarative GitHub label set from `.gwm.toml`. Declare the labels you want once in `[[labels]]`, push them to the upstream `origin` remote as needed. No more drift across repos. Without a `[[labels]]` block in `.gwm.toml`, both subcommands are no-ops (`0 labels declared, nothing to push`) and never shell out to `gh`.
 
 ```bash
 gwm labels list                       # show the diff against the remote
@@ -112,7 +112,7 @@ gwm labels push --random-colors       # random pastel for entries with no `color
 | Flag              | Action                                                                                                                                                          |
 | :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--dry-run`       | Print the plan without mutating the remote. Still reads remote labels via `gh label list` to compute the diff; only create / update / delete calls are skipped. |
-| `--prune`         | Delete labels on the remote that aren't declared in `.gwm.toml` (destructive - opt-in)                                                                          |
+| `--prune`         | Delete labels on the remote that aren't declared in `.gwm.toml` (destructive, opt-in)                                                                           |
 | `--random-colors` | Use a random pastel for entries with no `color` field (overrides the deterministic hash)                                                                        |
 
 `list` output sigils mirror the diff buckets:
@@ -140,7 +140,7 @@ gwm milestones push --prune             # also delete milestones not in config
 | Flag        | Action                                                                                                                                                                    |
 | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `--dry-run` | Print the plan without mutating the remote. Still reads remote milestones via `gh api …/milestones` to compute the diff; only create / update / delete calls are skipped. |
-| `--prune`   | Delete milestones on the remote that aren't declared in `.gwm.toml` (destructive - opt-in)                                                                                |
+| `--prune`   | Delete milestones on the remote that aren't declared in `.gwm.toml` (destructive, opt-in)                                                                                 |
 
 `list` output sigils mirror the diff buckets:
 
