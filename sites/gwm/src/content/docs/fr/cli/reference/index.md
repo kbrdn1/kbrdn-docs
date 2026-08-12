@@ -17,7 +17,6 @@ sidebar:
 - [Diagnostic et services](./services/)
 - [Historique, annulation et confiance](./safety/)
 - [Personnalisation](./customisation/)
-- [Autres commandes](./other/)
 
 ## Codes de sortie
 

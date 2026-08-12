@@ -86,7 +86,23 @@ const CLI_GROUPS = [
     slug: 'worktrees',
     title: 'Worktree lifecycle',
     fr: 'Cycle de vie des worktrees',
-    cmds: ['create', 'new', 'bootstrap', 'sync', 'remove', 'prune', 'switch', 'path', 'cd', 'list'],
+    // `note` (gwm-cli#515) atterrit ici plutôt que dans « Customisation » : la
+    // commande prend un slug de worktree et lit ce qui y est attaché, comme
+    // `path` / `cd` / `list`, là où « Customisation » regroupe ce qui règle
+    // l'outil lui-même.
+    cmds: [
+      'create',
+      'new',
+      'bootstrap',
+      'sync',
+      'remove',
+      'prune',
+      'switch',
+      'path',
+      'cd',
+      'list',
+      'note',
+    ],
   },
   {
     slug: 'github',

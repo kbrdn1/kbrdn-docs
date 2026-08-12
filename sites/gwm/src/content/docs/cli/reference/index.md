@@ -17,7 +17,6 @@ Bare `gwm` (no subcommand) opens the [TUI](/tui) on the current repo.
 - [Diagnostics and services](./services/)
 - [History, undo and trust](./safety/)
 - [Customisation](./customisation/)
-- [Other commands](./other/)
 
 ## Exit codes
 
