@@ -72,6 +72,18 @@ export default defineConfig({
       },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kbrdn1/gwm-cli' }],
 
+      // Preuve de propriété pour Bing Webmaster Tools, qui alimente aussi
+      // DuckDuckGo. Bing la demande sur la page d'accueil ; la poser ici la met
+      // sur toutes les pages, ce qui coûte une ligne de `<head>` et survit à un
+      // changement de page d'accueil. À ne pas retirer après vérification : Bing
+      // la relit et révoque la propriété si elle disparaît.
+      head: [
+        {
+          tag: 'meta',
+          attrs: { name: 'msvalidate.01', content: 'D60164A67DB052E103480F719101AC8A' },
+        },
+      ],
+
       // Mêmes langues et même répartition que la doc in-repo : anglais à la
       // racine, français sous /fr/. Sans déclarer les locales, Starlight sert
       // son UI (« On this page », « Previous »…) en anglais pour tout le monde.
