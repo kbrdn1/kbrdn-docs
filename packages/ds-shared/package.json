@@ -1,6 +1,6 @@
 {
   "name": "@kbrdn/ds-shared",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Shared Starlight design system: theme tokens, component overrides, reusable MDX components.",
