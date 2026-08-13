@@ -46,6 +46,12 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 
 ### Changed
 
+- gwm landings: a seventh feature row for agent sessions — the four detected
+  backends, the three surfaces, the `a` overlay — using the capture shipped by
+  gwm-cli 1.7.1. It is what the repo's own description leads on and the landings
+  did not mention it. Homepage stats refreshed against gwm-cli 1.7.1 (2 860
+  tests, from the CI run rather than a local `cargo test --list`), and the
+  `gwm-cli` repo card now mirrors the upstream description.
 - `@kbrdn/ds-shared`: three surface levels instead of one flat wash — a sunken
   shell (page background, gutters, side panes), the reading column unchanged,
   and raised content blocks (code, captures). Content images now sit on a mount
@@ -119,6 +125,12 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 
 ### Fixed
 
+- gwm landings (both locales): two TUI shortcuts that gwm-cli 1.7.0 changed and
+  the hand-written landings kept advertising — `Space` no longer cycles the
+  sidebar layout (that moved to `z`; `Space` marks rows for the batch delete),
+  and `O` is the fullscreen open dispatch, a shell by default, not "opens your
+  editor". The landings are the only pages `bun run sync:gwm` preserves, so
+  nothing else caught the drift.
 - gwm site: Markdown tables (and other GFM constructs) now render. On this Astro
   6.4 / Starlight 0.39 setup GFM was not active by default — `remark-gfm` was
   absent from the markdown pipeline, so every table on every page rendered as
