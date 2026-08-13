@@ -16,9 +16,9 @@
 //     signaler. Satori façonne le texte depuis un buffer explicite et sort des
 //     glyphes déjà convertis en tracés.
 //
-// Trois polices, les mêmes rôles que sur le site : Fenix en display (titre,
-// wordmark), Inter pour le corps, Monaspace Krypton en mono (libellés, badge,
-// hôte) — c'est-à-dire la typographie du kit, qui pose ses chips en mono.
+// Trois familles, les mêmes rôles que sur le site : Fenix en display pour le
+// seul titre de page, Inter pour le corps, Monaspace Krypton en mono pour le
+// wordmark (en 700, comme `.site-title`), les libellés, le badge et le pied.
 //
 // Satori rejette le woff2 (« Unsupported OpenType signature wOF2 ») et casse
 // sur la table `fvar` du Krypton variable : les fichiers de `public/fonts` ne
@@ -68,6 +68,9 @@ const T = {
 const FENIX = resolve('public/fonts/Fenix-Regular.ttf');
 const INTER = resolve('src/assets/fonts/Inter-Regular.ttf');
 const KRYPTON = resolve('src/assets/fonts/MonaspaceKrypton-Regular.otf');
+// Le wordmark est en mono *bold* (`.site-title` du thème partagé) : sans la
+// graisse 700 en fichier, satori retomberait sur la 400 sans le dire.
+const KRYPTON_BOLD = resolve('src/assets/fonts/MonaspaceKrypton-Bold.otf');
 const LOGO = resolve('src/assets/gwm-logo-dark.svg');
 
 /** Le cadre du kit, en SVG : ce que satori ne sait pas dessiner. */
@@ -105,7 +108,7 @@ function cadreSvg(): string {
 // Rendus une seule fois pour tout le build : identiques sur les 133 cartes.
 let cadreCache: string | undefined;
 let logoCache: string | undefined;
-let policesCache: [fenix: Buffer, inter: Buffer, krypton: Buffer] | undefined;
+let policesCache: [fenix: Buffer, inter: Buffer, krypton: Buffer, kryptonGras: Buffer] | undefined;
 
 const enDataUri = (png: Buffer) => `data:image/png;base64,${png.toString('base64')}`;
 
@@ -121,7 +124,12 @@ async function ressources() {
   );
   // Les trois lectures ensemble : mémoïsées d'un bloc, elles ne peuvent pas
   // se désynchroniser d'un rendu à l'autre.
-  policesCache ??= await Promise.all([readFile(FENIX), readFile(INTER), readFile(KRYPTON)]);
+  policesCache ??= await Promise.all([
+    readFile(FENIX),
+    readFile(INTER),
+    readFile(KRYPTON),
+    readFile(KRYPTON_BOLD),
+  ]);
   return { cadre: cadreCache, logo: logoCache, polices: policesCache };
 }
 
@@ -152,10 +160,12 @@ export interface DonneesCarte {
   version?: string;
   /** Hôte affiché en pied de carte. */
   hote: string;
+  /** Chemin de la page sur le site (`/tui/agent-sessions/`), pied à droite. */
+  chemin: string;
 }
 
 function carte(
-  { titre, description, section, version, hote }: DonneesCarte,
+  { titre, description, section, version, hote, chemin }: DonneesCarte,
   res: { cadre: string; logo: string },
 ): Noeud {
   // Colonne de contenu, en retrait des filets verticaux du cadre.
@@ -180,7 +190,20 @@ function carte(
         bloc({ justifyContent: 'space-between', alignItems: 'center', paddingTop: '26px' }, [
           bloc({ alignItems: 'center' }, [
             image(res.logo, 56, 56),
-            bloc({ fontSize: '38px', color: T.texte, marginLeft: '18px' }, 'gwm'),
+            // Le wordmark du site : mono Krypton 700, interlettrage serré
+            // (`.site-title` de ds-shared, repris de `blog@kbrdn1` du
+            // portfolio). Fenix ne porte que le titre de la page.
+            bloc(
+              {
+                fontSize: '38px',
+                color: T.texte,
+                marginLeft: '18px',
+                fontFamily: 'Krypton',
+                fontWeight: 700,
+                letterSpacing: '-1px',
+              },
+              'gwm',
+            ),
             // Badge de version à côté du wordmark, comme le kit le pose.
             ...(version
               ? [
@@ -235,14 +258,22 @@ function carte(
             : []),
         ]),
 
-        // Pied : l'adresse, pour que la carte se rattache au site même recadrée.
+        // Pied : l'adresse à gauche, le chemin de la page à droite — les deux
+        // se lisent comme une URL, pour que la carte se rattache au site même
+        // recadrée et dise DE QUELLE page elle parle. À droite il n'y avait
+        // qu'un filet décoratif, qui n'apprenait rien.
         bloc({ justifyContent: 'space-between', alignItems: 'center', paddingBottom: '24px' }, [
-          // L'hôte est une adresse : mono, comme partout ailleurs sur le site.
+          // Une adresse : mono, comme partout ailleurs sur le site.
           bloc({ fontSize: '19px', color: T.faible, fontFamily: 'Krypton' }, hote),
           bloc({ alignItems: 'center' }, [
             bloc(
-              { width: '28px', height: '1px', backgroundColor: T.angle, marginRight: '10px' },
-              '',
+              {
+                fontSize: '19px',
+                color: T.faible,
+                fontFamily: 'Krypton',
+                marginRight: '12px',
+              },
+              tronquer(chemin, 46),
             ),
             bloc({ width: '8px', height: '8px', backgroundColor: T.accent }, ''),
           ]),
@@ -255,7 +286,7 @@ function carte(
 /** Rend la carte en PNG 1200x630, le format que lisent X, LinkedIn et Slack. */
 export async function rendreCarte(donnees: DonneesCarte): Promise<Buffer> {
   const res = await ressources();
-  const [fenix, inter, krypton] = res.polices;
+  const [fenix, inter, krypton, kryptonGras] = res.polices;
   const svg = await satori(carte(donnees, res) as never, {
     width: L,
     height: H,
@@ -263,6 +294,7 @@ export async function rendreCarte(donnees: DonneesCarte): Promise<Buffer> {
       { name: 'Fenix', data: fenix, weight: 400, style: 'normal' },
       { name: 'Inter', data: inter, weight: 400, style: 'normal' },
       { name: 'Krypton', data: krypton, weight: 400, style: 'normal' },
+      { name: 'Krypton', data: kryptonGras, weight: 700, style: 'normal' },
     ],
   });
   return sharp(Buffer.from(svg)).png().toBuffer();

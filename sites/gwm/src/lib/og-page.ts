@@ -18,6 +18,19 @@ export const carteSlug = (id: string) => id || 'index';
 export const cheminCarte = (id: string) => `/og/${carteSlug(id)}.png`;
 
 /**
+ * Chemin de la PAGE sur le site, celui qu'affiche le pied de carte. Même forme
+ * que la canonique posée par Starlight — segments de l'id, barre oblique
+ * finale, `/` seul pour la landing.
+ *
+ * La landing anglaise est le seul id à valoir `index` (les landings de section
+ * et la landing française sortent en `changelog`, `cli/reference`, `fr`) : sans
+ * ce cas, sa carte annonce `/index/`, une URL qui n'existe pas. L'id vide est
+ * couvert aussi, c'est la forme qu'a prise la même page selon la version du
+ * loader — même prudence que `carteSlug`.
+ */
+export const cheminPage = (id: string) => (!id || id === 'index' ? '/' : `/${id}/`);
+
+/**
  * Titre porté par la carte : celui que la page pose dans son `head` si elle le
  * surcharge, sinon son titre. Les deux landings surchargent — leur `title`
  * vaut « gwm », le wordmark du Hero — donc sans ça leur carte s'annoncerait

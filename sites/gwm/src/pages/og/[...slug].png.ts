@@ -4,7 +4,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { rendreCarte } from '../../lib/og-card';
-import { carteSlug, sectionCarte, titreCarte } from '../../lib/og-page';
+import { carteSlug, cheminPage, sectionCarte, titreCarte } from '../../lib/og-page';
 import release from '../../data/gwm-release.json';
 
 export async function getStaticPaths() {
@@ -15,6 +15,7 @@ export async function getStaticPaths() {
       titre: titreCarte(page.data),
       description: page.data.description,
       section: sectionCarte(page.id),
+      chemin: cheminPage(page.id),
     },
   }));
 }
@@ -28,6 +29,7 @@ export const GET: APIRoute = async ({ props, site }) => {
     // `site` est posé dans astro.config.mjs ; le pied de carte affiche l'hôte
     // qu'on veut voir indexé, le même que les URLs canoniques.
     hote: site?.host ?? 'gwm.kbrdn.dev',
+    chemin: props.chemin,
   });
   return new Response(new Uint8Array(png), { headers: { 'Content-Type': 'image/png' } });
 };

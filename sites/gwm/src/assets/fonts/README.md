@@ -9,7 +9,8 @@ demande.
 | Fichier                        | Rôle sur la carte                    | Source                                                                                        |
 | ------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------- |
 | `Inter-Regular.ttf`            | description (corps de texte du site) | [rsms/inter](https://github.com/rsms/inter) `Inter-4.1.zip`, `extras/ttf/`                    |
-| `MonaspaceKrypton-Regular.otf` | section, badge de version, hôte      | [githubnext/monaspace](https://github.com/githubnext/monaspace) `monaspace-static-v1.400.zip` |
+| `MonaspaceKrypton-Regular.otf` | section, badge de version, pied      | [githubnext/monaspace](https://github.com/githubnext/monaspace) `monaspace-static-v1.400.zip` |
+| `MonaspaceKrypton-Bold.otf`    | wordmark « gwm » (700)               | idem                                                                                          |
 
 Les deux sont sous **SIL Open Font License 1.1** (`Inter-LICENSE.txt`,
 `Monaspace-LICENSE.txt`).
