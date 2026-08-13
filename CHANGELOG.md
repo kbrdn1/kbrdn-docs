@@ -46,6 +46,12 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 
 ### Changed
 
+- `@kbrdn/ds-shared`: three surface levels instead of one flat wash — a sunken
+  shell (page background, gutters, side panes), the reading column unchanged,
+  and raised content blocks (code, captures). Content images now sit on a mount
+  with a lighter border, so screenshots read as *on* the page rather than *in*
+  it. Acts on the site half of ratatui maintainer feedback (`gwm-cli#544`,
+  axis 4). Same hue, both themes.
 - gwm site: renamed `guides/getting-started` to `guides/prise-en-main` and
   wired the splash hero action to the new slug.
 - gwm docs: filled the `guides/installation` page (converted to `.mdx`) with the
