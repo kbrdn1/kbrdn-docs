@@ -7,11 +7,12 @@ identique sur tous les produits.
 
 ## Contenu
 
-| Export                        | Rôle                                                                        |
-| ----------------------------- | --------------------------------------------------------------------------- |
-| `./styles/theme.css`          | Tokens de base (accents, rayons). Chargé en premier, surchargé par produit. |
-| `./components/Footer.astro`   | Override du footer Starlight (ligne commune).                               |
-| `./components/RepoCard.astro` | Composant MDX réutilisable (carte dépôt GitHub).                            |
+| Export                         | Rôle                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `./styles/theme.css`           | Tokens de base (accents, rayons). Chargé en premier, surchargé par produit.                             |
+| `./components/Footer.astro`    | Override du footer Starlight (ligne commune).                                                           |
+| `./components/RepoCard.astro`  | Composant MDX réutilisable (carte dépôt GitHub).                                                        |
+| `./components/ImageZoom.astro` | Zoom des images de contenu : clic → modale `<dialog>`. Ne rend rien, se monte depuis le `Head` du site. |
 
 ## Utilisation depuis un site
 
