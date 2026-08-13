@@ -34,6 +34,7 @@ import tuiHero from '../../../assets/captures/hero.png';
 import createBootstrap from '../../../assets/create-bootstrap.png';
 import trustLedger from '../../../assets/captures/trust-ledger.png';
 import githubLinking from '../../../assets/captures/github-linking.png';
+import agentSessions from '../../../assets/captures/agent-sessions.png';
 import sideBySide from '../../../assets/captures/side-by-side.png';
 import doctor from '../../../assets/captures/doctor.png';
 import palette from '../../../assets/captures/palette.png';
@@ -90,8 +91,9 @@ cargo install gwm-cli
 />
 
 `gwm` seul ouvre la liste. Tout le reste est à une touche : `/` filtre, `2`
-donne le focus à la sidebar, `n` crée, `L` bascule dans lazygit, `O` ouvre le
-worktree dans votre éditeur.
+donne le focus à la sidebar, `n` crée, `N` écrit la note du worktree, `L`
+bascule dans lazygit, `O` ouvre en plein écran sur le worktree - un shell par
+défaut, votre éditeur ou un explorateur si `[tui.open]` le dit.
 
 <Capture
   src={palette}
@@ -156,9 +158,9 @@ clavier à la palette de commandes et aux thèmes.
   <Capture
     src={sideBySide}
     alt="La TUI gwm en disposition côte à côte, sidebar de statut à gauche et liste des worktrees à droite"
-    cmd="gwm  ›  Space"
+    cmd="gwm  ›  z"
     tag="Layout"
-    caption="Space fait tourner la disposition auto → côte à côte → empilé, v bascule la sidebar de gauche à droite."
+    caption="z fait tourner la disposition auto → côte à côte → empilé, v bascule la sidebar de gauche à droite. Space, lui, marque les lignes pour une suppression en lot derrière une seule confirmation."
   />
 </FeatureRow>
 
@@ -179,6 +181,21 @@ clavier à la palette de commandes et aux thèmes.
 <FeatureRow n="06" title="Corvées de flotte sur tous les worktrees">
   `gwm exec -- cargo test` lance une commande dans chaque worktree avec un récapitulatif par
   worktree, et `gwm clean` liste les répertoires de build récupérables avant toute suppression.
+</FeatureRow>
+
+<FeatureRow n="07" title="Quel agent IA travaille où">
+  Claude Code, Codex, opencode et Mistral Vibe sont lus depuis les fichiers de session qu'ils
+  écrivent déjà sur le disque - aucun scan de processus, Windows compris - et ressortent dans une
+  colonne `AGENT`, dans la sidebar, et dans un overlay sur `a`. Une session s'épingle à la main
+  quand la détection ne peut pas savoir.
+
+  <Capture
+    src={agentSessions}
+    alt="L'overlay des sessions d'agents gwm : une ligne par session avec son agent, sa fraîcheur, sa dernière activité et son nom"
+    cmd="gwm  ›  a"
+    tag="Agents"
+    caption="Active en deçà de cinq minutes, inactive au-delà - et une session sans activité depuis trente jours n'est même pas balayée."
+  />
 </FeatureRow>
 
 </Section>
@@ -273,7 +290,7 @@ qu'elle décrit ne peuvent pas diverger.
 <RepoCard
   owner="kbrdn1"
   repo="gwm-cli"
-  description="Git Worktree Manager en Rust (CLI + TUI), libgit2 natif, bootstrap par dépôt."
+  description="Gestionnaire de worktrees git pour le terminal : CLI + TUI en Rust. Crée le worktree, lance la mise en place du projet, lie l'issue, et montre quel agent IA travaille où."
   language="Rust"
   languageColor="#dea584"
   license="MIT"

@@ -37,7 +37,8 @@ kbrdn-docs/
 ### Prerequisites
 
 - [Bun](https://bun.sh) ≥ 1.3 (the only supported toolchain).
-- Optional: Nix — `nix develop` drops you in a shell with bun + node + git.
+- Optional: Nix — `nix develop` drops you in a shell with bun + git (+ curl, jq). No
+  node: every script goes through `bun run`.
 
 ### Commands
 
@@ -137,8 +138,19 @@ gh pr merge <num> --merge   # NOT --squash, NOT --delete-branch
 
 ## Versioning & releases
 
-Versioning is **by branch**, per product — there is no in-tree
-`versioned_docs/` mechanism.
+Two things are versioned here, and they do not move together.
+
+**The platform** — the monorepo itself: `@kbrdn/ds-shared`, the tooling, the
+CI, the generation pipeline. SemVer, tagged `vX.Y.Z` from `v1.0.0` on. Cutting
+one: `[Unreleased]` migrates to `changelogs/X.Y.Z.md`, the workspace
+`package.json` files are bumped, the commit is born on `dev`, `dev` merges into
+`main`, and the tag is pushed **after** that merge so it points at a commit that
+already carries both. The GitHub release is created by hand
+(`gh release create vX.Y.Z --notes-file changelogs/X.Y.Z.md`) — no workflow
+watches tags.
+
+**The product docs** — versioning is **by branch**, per product; there is no
+in-tree `versioned_docs/` mechanism.
 
 - `main` deploys the **latest** docs of every product (production).
 - When a product cuts a version whose docs must be frozen, branch from `main`:

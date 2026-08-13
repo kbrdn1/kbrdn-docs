@@ -29,17 +29,28 @@ for (const entry of docs) {
 // du changelog ne matche pas le motif, elle ne se compte donc pas toute seule.
 const releases = docs.filter((e) => /^changelog\/\d+-\d+-\d+$/.test(e.id)).length;
 
-// Tests : nombre réel de tests enregistrés, relevé par
-// `cargo test -- --list | grep -c ': test$'` sur gwm-cli à la v1.6.0 — donc ce
-// que `cargo test` exécute vraiment, pas un comptage de marqueurs `#[test]`.
+// Tests : nombre réel de tests exécutés, pas un comptage de marqueurs `#[test]`.
+// Relevé sur le dernier run CI vert de gwm-cli sur `main` (v1.7.1, run
+// 31607112982), somme des lignes `test result: ok. N passed` d'un job :
+//
+//   gh run view <id> --repo kbrdn1/gwm-cli --log \
+//     | grep -E 'test result: ok\. [0-9]+ passed' \
+//     | awk -F'\t' '{split($0,a,"ok. "); split(a[2],b," "); s[$1]+=b[1]} \
+//                   END {for (j in s) print j, s[j]}'
+//
+// 2860 sur ubuntu comme sur macos, 2740 sur windows — d'où le libellé « 3
+// plateformes » et la valeur la plus haute, celle des deux plateformes qui
+// font tourner la suite entière. Cette voie remplace le
+// `cargo test -- --list` local de la v1.6.0 : elle ne demande pas de compiler
+// gwm-cli et elle est rejouable par n'importe qui.
 // ⚠ /development/testing/ annonce encore « ~1900 » : ce chiffre date de la
 // v1.0.0 et vit dans gwm-cli, il se corrigera à la prochaine passe de sync.
-const TESTS = 2566;
+const TESTS = 2860;
 
 // Étoiles GitHub : relevées au build. L'API publique est limitée à 60 appels
 // par heure et par IP, et un build ne doit jamais tomber pour ça — en cas
 // d'échec on retombe sur la dernière valeur connue plutôt que d'afficher zéro.
-const STARS_FALLBACK = 123; // `gh api repos/kbrdn1/gwm-cli`, 2026-08-04
+const STARS_FALLBACK = 128; // `gh api repos/kbrdn1/gwm-cli`, 2026-08-13
 let stars = STARS_FALLBACK;
 try {
   const res = await fetch('https://api.github.com/repos/kbrdn1/gwm-cli', {

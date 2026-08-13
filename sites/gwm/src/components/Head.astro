@@ -4,6 +4,10 @@
 // sortaient sans visuel. La carte est celle rendue par
 // `src/pages/og/[...slug].png.ts`, une par page.
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
+// Ne rend rien : apporte le style et le script qui rendent les captures de la
+// doc zoomables. Monté ici parce que c'est le seul override qui existe sur
+// toutes les pages, y compris les landings.
+import ImageZoom from '@kbrdn/ds-shared/components/ImageZoom.astro';
 import { cheminCarte, titreCarte } from '../lib/og-page';
 
 const { entry } = Astro.locals.starlightRoute;
@@ -14,6 +18,7 @@ const carte = Astro.site ? new URL(cheminCarte(entry.id), Astro.site).href : und
 ---
 
 <StarlightHead />
+<ImageZoom />
 {
   carte && (
     <>

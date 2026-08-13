@@ -61,6 +61,25 @@
   --kbrdn-stripe-color: #333333;
   --kbrdn-corner-color: #2a2a2a;
   --kbrdn-border-color: #2a2a2a;
+
+  /* ── Trois niveaux de surface ──
+     Retour de joshka (ratatui) sur gwm-cli#544 : « fairly uniform brown and
+     flat […] something to help the screenshots pop from the background ». Le
+     site n'avait qu'un seul niveau — fond, colonne et blocs tous à #1a1a1a,
+     filets à #2a2a2a — donc une capture de TUI, elle-même quasi noire, était
+     DANS la page au lieu d'être SUR la page.
+
+       sunken  la coquille : fond de page, gouttières, volets latéraux
+       bg      la colonne de lecture (inchangé, --sl-color-black)
+       raised  ce qui porte du contenu : captures, blocs de code
+
+     L'écart est volontairement court (6 points de luminance) : il donne la
+     profondeur sans virer au gris, la charte reste celle du portfolio. */
+  --kbrdn-surface-sunken: #141414;
+  --kbrdn-surface-raised: #212121;
+  /* Portée large et diffuse : sur fond sombre, c'est l'ombre qui détache
+     l'image, le filet ne fait que la délimiter. */
+  --kbrdn-shadow-raised: 0 10px 30px rgb(0 0 0 / 55%);
   /* La grille de fond a sa propre valeur : la couleur des bordures est trop
      contrastée en light (#e5e5e5 sur #f5f5f5 passe, #d4d4d4 assombrit la page). */
   --kbrdn-grid-color: #2a2a2a;
@@ -108,6 +127,14 @@
   --kbrdn-corner-color: #d4d4d4;
   --kbrdn-border-color: #e5e5e5;
   --kbrdn-grid-color: #e8e8e8;
+
+  /* Mêmes trois niveaux qu'en sombre, mais l'ordre s'inverse : ici c'est le
+     blanc pur qui est « au-dessus » de la colonne cassée à #f5f5f5, et la
+     coquille qui descend. L'ombre, elle, ne se transpose pas — 55% de noir sur
+     un fond clair fait une tache. */
+  --kbrdn-surface-sunken: #ecebe8;
+  --kbrdn-surface-raised: #ffffff;
+  --kbrdn-shadow-raised: 0 6px 18px rgb(0 0 0 / 10%);
 
   /* Sémantiques light — variantes assombries (cf. `:root .claude-code`). */
   --sl-color-blue: #2563eb;
@@ -186,6 +213,11 @@ a.action,
 }
 
 .page {
+  /* La coquille passe en retrait. Les volets latéraux et le sommaire sont
+     transparents (plus bas), donc ils héritent de ce niveau : la colonne de
+     lecture, elle, garde `--sl-color-bg` sur `.main-pane` et ressort. C'est ce
+     seul écart qui remplace l'aplat d'avant. */
+  background-color: var(--kbrdn-surface-sunken);
   background-image:
     linear-gradient(var(--kbrdn-grid-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--kbrdn-grid-color) 1px, transparent 1px);
@@ -679,10 +711,25 @@ starlight-lang-select select {
   font-style: italic;
 }
 
-/* Images bordées pleine largeur (prose.css :139-148). */
+/* Images bordées pleine largeur (prose.css :139-148), posées SUR la page.
+   Le filet passe de `--kbrdn-border-color` (#2a2a2a) à `--sl-color-gray-5`
+   (#3a3a3a) : sur un fond #1a1a1a, le premier était à 1 point de luminance du
+   fond de la capture, il ne délimitait rien. Le fond `raised` ne se voit que
+   sous une image transparente — sans lui, un PNG à fond alpha se découpe dans
+   la page. */
 .sl-markdown-content img:not(:where(.not-content *)) {
   width: 100%;
-  border: 1px solid var(--kbrdn-border-color);
+  border: 1px solid var(--sl-color-gray-5);
+  /* Le passe-partout, et c'est LUI qui fait le travail en sombre : une ombre
+     noire sur un fond #1a1a1a ne se voit pas — mesuré, la première version
+     n'avait qu'un filet et une ombre, et le rendu était indistinguable de
+     l'avant. Ce qui détache une surface sur un thème sombre, c'est ce qui est
+     plus CLAIR qu'elle : d'où la marge intérieure remplie en `raised`, qui
+     encadre la capture d'un liseré #212121. L'ombre reste pour le thème clair,
+     où elle porte réellement. */
+  padding: 6px;
+  background-color: var(--kbrdn-surface-raised);
+  box-shadow: var(--kbrdn-shadow-raised);
 }
 
 /* Lien d'ancre au survol d'un titre. Starlight le dimensionne en `em` sur le

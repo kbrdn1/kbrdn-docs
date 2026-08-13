@@ -1,6 +1,6 @@
 {
   "name": "@kbrdn/ds-shared",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Shared Starlight design system: theme tokens, component overrides, reusable MDX components.",
@@ -12,6 +12,7 @@
     "./components/MobileTableOfContents.astro": "./components/MobileTableOfContents.astro",
     "./components/RepoCard.astro": "./components/RepoCard.astro",
     "./components/Header.astro": "./components/Header.astro",
+    "./components/ImageZoom.astro": "./components/ImageZoom.astro",
     "./components/Section.astro": "./components/Section.astro",
     "./components/FeatureRow.astro": "./components/FeatureRow.astro"
   },
