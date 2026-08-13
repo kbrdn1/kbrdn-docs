@@ -66,8 +66,12 @@ const settingsFor = (palette) => [
 ];
 
 // Dark — Claude Dark pur du portfolio (neutral-950 fond, neutral-300 texte).
+// Le fond n'est plus celui de la page : un bloc de code porte du contenu, il
+// se pose donc au niveau `--kbrdn-surface-raised` du thème (#212121) comme les
+// captures. À #1a1a1a il se confondait avec la colonne de lecture — c'est la
+// moitié « uniform and flat » du retour de joshka (gwm-cli#544).
 const dark = {
-  bg: '#1a1a1a',
+  bg: '#212121',
   fg: '#b0b0b0',
   keyword: '#d4825d',
   string: '#86e89a',
@@ -80,7 +84,9 @@ const dark = {
 
 // Light — variantes assombries du même mapping (cf. `:root .claude-code` côté portfolio).
 const light = {
-  bg: '#f5f5f5',
+  // Idem en clair, où « au-dessus » veut dire plus clair que la colonne
+  // (#f5f5f5) : le blanc pur de `--kbrdn-surface-raised`.
+  bg: '#ffffff',
   fg: '#374151',
   keyword: '#c15f3c',
   string: '#16a34a',
