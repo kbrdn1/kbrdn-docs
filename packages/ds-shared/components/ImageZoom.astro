@@ -1,0 +1,152 @@
+---
+// Zoom des images de contenu, repris du portfolio kbrdn.dev : ses images de
+// billet portent `cursor-zoom-in` et déclenchent une modale, le clic ouvre
+// l'image en grand. Ici la modale est un `<dialog>` ouvert par `showModal()` —
+// il apporte l'échappement au clavier, le piège de focus, la restitution du
+// focus au retour et le backdrop sans une ligne de JS pour ça.
+//
+// Le composant ne rend aucun balisage : il n'apporte qu'un style global et un
+// script. Il se monte donc depuis le `Head` du site, et la modale est créée au
+// premier clic — une page qui n'a pas de capture n'en paie pas le DOM.
+//
+// Pourquoi ici et pas dans le site : c'est la couche de consistance. Un
+// deuxième produit hérite du comportement en montant le même composant.
+---
+
+<style is:global>
+  /* Images de contenu seulement. Le `:not(a) >` écarte celles qui sont déjà
+     dans un lien : un clic dessus doit suivre le lien, pas ouvrir une modale.
+     Les logos, la nav et le Hero vivent hors de `.sl-markdown-content`. */
+  .sl-markdown-content :not(a) > img {
+    cursor: zoom-in;
+  }
+
+  /* Le dialogue natif arrive avec une bordure, un fond et un `max-width` par
+     défaut : tout est remis à plat, l'image porte le cadre à elle seule. */
+  .kbrdn-zoom {
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    border: none;
+    background: transparent;
+    overflow: visible;
+    /* Ce qui centre un dialogue modal, c'est le `margin: auto` de la feuille
+       du navigateur, contre son `inset: 0`. La remise à plat de Starlight
+       (`*{margin:0}`) l'écrase, et la modale se colle en haut à gauche — vu au
+       rendu, pas déduit. Le rétablir ici est la seule façon de récupérer le
+       centrage sans repositionner la modale à la main. */
+    margin: auto;
+  }
+
+  .kbrdn-zoom::backdrop {
+    /* Le noir du thème, pas le gris par défaut du navigateur. */
+    background: rgb(0 0 0 / 82%);
+  }
+
+  .kbrdn-zoom__image {
+    display: block;
+    /* Contenue dans la fenêtre, marge visible tout autour pour que le clic sur
+       le fond reste atteignable au doigt comme à la souris. */
+    max-width: 92vw;
+    max-height: 92vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    cursor: zoom-out;
+    /* Coins nets — signature du thème (`--kbrdn-radius: 0`). */
+    border: 1px solid var(--sl-color-gray-5, #3a3a3a);
+  }
+
+  /* Fondu à l'ouverture. `allow-discrete` + `@starting-style` sont ce qui rend
+     un `<dialog>` animable ; là où c'est ignoré, la modale apparaît d'un coup,
+     ce qui reste correct. */
+  .kbrdn-zoom,
+  .kbrdn-zoom::backdrop {
+    opacity: 0;
+    transition:
+      opacity 150ms ease-out,
+      overlay 150ms allow-discrete,
+      display 150ms allow-discrete;
+  }
+
+  .kbrdn-zoom[open],
+  .kbrdn-zoom[open]::backdrop {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .kbrdn-zoom[open],
+    .kbrdn-zoom[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kbrdn-zoom,
+    .kbrdn-zoom::backdrop {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const CONTENU = '.sl-markdown-content img';
+
+  // Une seule modale pour toute la page, créée au premier clic.
+  let modale: HTMLDialogElement | undefined;
+  let agrandie: HTMLImageElement | undefined;
+
+  function ouvrir(source: HTMLImageElement) {
+    if (!modale || !agrandie) {
+      modale = document.createElement('dialog');
+      modale.className = 'kbrdn-zoom';
+      agrandie = document.createElement('img');
+      agrandie.className = 'kbrdn-zoom__image';
+      modale.append(agrandie);
+      // Le fond d'un dialogue modal n'est pas un élément : les clics dessus
+      // arrivent sur le dialogue lui-même. Un seul écouteur ferme donc au clic
+      // sur le fond comme sur l'image (qui porte `cursor: zoom-out`).
+      modale.addEventListener('click', () => modale?.close());
+      document.body.append(modale);
+    }
+
+    // `currentSrc` est la variante que le navigateur a réellement choisie dans
+    // le `srcset` posé par Astro ; `src` seul rouvrirait parfois une autre
+    // densité que celle déjà en cache.
+    agrandie.src = source.currentSrc || source.src;
+    agrandie.alt = source.alt;
+    modale.showModal();
+  }
+
+  function zoomable(cible: EventTarget | null): HTMLImageElement | undefined {
+    const image = (cible as Element | null)?.closest?.(CONTENU) as HTMLImageElement | null;
+    // Image-lien : le lien gagne.
+    return image && !image.closest('a') ? image : undefined;
+  }
+
+  // Délégation : un écouteur pour toute la page, et les images injectées après
+  // coup (Pagefind, îlots) sont couvertes sans réenregistrement.
+  document.addEventListener('click', (evenement) => {
+    const image = zoomable(evenement.target);
+    if (image) ouvrir(image);
+  });
+
+  // Une image n'est pas actionnable au clavier : sans ces attributs, le zoom
+  // n'existerait qu'à la souris. `role="button"` fait porter le nom accessible
+  // par l'`alt`, qui décrit déjà la capture.
+  document.addEventListener('keydown', (evenement) => {
+    if (evenement.key !== 'Enter' && evenement.key !== ' ') return;
+    const image = zoomable(document.activeElement);
+    if (!image) return;
+    // Espace ferait défiler la page.
+    evenement.preventDefault();
+    ouvrir(image);
+  });
+
+  for (const image of document.querySelectorAll<HTMLImageElement>(CONTENU)) {
+    if (image.closest('a')) continue;
+    image.tabIndex = 0;
+    image.setAttribute('role', 'button');
+    image.setAttribute('aria-haspopup', 'dialog');
+  }
+</script>
