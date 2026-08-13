@@ -14,6 +14,10 @@ tracks changes to the platform itself (structure, shared package, tooling, CI).
 - Bun-workspaces monorepo scaffold (`packages/*`, `sites/*`).
 - `@kbrdn/ds-shared` shared design system: base theme tokens, Starlight
   `Footer` override, reusable `RepoCard` MDX component.
+- `@kbrdn/ds-shared`: `ImageZoom` — content images open full size in a native
+  `<dialog>` overlay (click, or Enter/Space on the focused image; Esc or a
+  click on the backdrop closes). Same behaviour as the blog images on
+  kbrdn.dev. Images already wrapped in a link are left alone.
 - `@kbrdn/docs-gwm` — first Starlight site (gwm), latest-only, with splash
   landing, install & getting-started guides, product accent theme.
 - Tooling: oxlint, prettier (+ astro plugin), `astro check`; aggregate

@@ -12,6 +12,7 @@
     "./components/MobileTableOfContents.astro": "./components/MobileTableOfContents.astro",
     "./components/RepoCard.astro": "./components/RepoCard.astro",
     "./components/Header.astro": "./components/Header.astro",
+    "./components/ImageZoom.astro": "./components/ImageZoom.astro",
     "./components/Section.astro": "./components/Section.astro",
     "./components/FeatureRow.astro": "./components/FeatureRow.astro"
   },
