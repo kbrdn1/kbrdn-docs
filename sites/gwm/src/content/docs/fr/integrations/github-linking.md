@@ -9,7 +9,7 @@ Ajouté par [#67](https://github.com/kbrdn1/gwm-cli/issues/67) / [#68](https://g
 
 Chaque worktree peut être lié à une issue GitHub et / ou à une pull request. La liaison alimente le bloc `Issue / PR` en temps réel dans la [barre latérale du TUI](/fr/tui/sidebar#bloc-issue--pr) et apparaît dans `gwm status` pour le scripting.
 
-![Le panneau Issue·PR avec une issue auto-liée et une PR ouverte détectée via gh](../../../../assets/captures/github-linking.png)
+![Le panneau Issue·PR avec une PR ouverte détectée via gh et son état CI en direct](../../../../assets/captures/github-linking.png)
 
 ## Modèle de stockage
 
