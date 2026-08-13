@@ -16,10 +16,15 @@
 //     signaler. Satori façonne le texte depuis un buffer explicite et sort des
 //     glyphes déjà convertis en tracés.
 //
-// Une seule police, et c'est mesuré : satori rejette le woff2 (« Unsupported
-// OpenType signature wOF2 »), or Inter et Monaspace ne sont distribuées qu'en
-// woff2 ici. Fenix est le seul TTF du dépôt, et c'est la police des titres du
-// site, donc la carte reste dans la voix.
+// Trois polices, les mêmes rôles que sur le site : Fenix en display (titre,
+// wordmark), Inter pour le corps, Monaspace Krypton en mono (libellés, badge,
+// hôte) — c'est-à-dire la typographie du kit, qui pose ses chips en mono.
+//
+// Satori rejette le woff2 (« Unsupported OpenType signature wOF2 ») et casse
+// sur la table `fvar` du Krypton variable : les fichiers de `public/fonts` ne
+// conviennent donc pas. Les instances statiques amont sont vendorées à part,
+// sous `src/assets/fonts` (voir son README). Fenix fait exception : le TTF
+// servi au site est déjà statique, un seul exemplaire suffit.
 import satori from 'satori';
 import sharp from 'sharp';
 import { readFile } from 'node:fs/promises';
@@ -61,6 +66,8 @@ const T = {
 // build` de `deploy.yml`, et `astro dev`. Cloudflare Pages ne construit pas
 // lui-même, `deploy.yml` lui pousse le `dist/` déjà bâti.
 const FENIX = resolve('public/fonts/Fenix-Regular.ttf');
+const INTER = resolve('src/assets/fonts/Inter-Regular.ttf');
+const KRYPTON = resolve('src/assets/fonts/MonaspaceKrypton-Regular.otf');
 const LOGO = resolve('src/assets/gwm-logo-dark.svg');
 
 /** Le cadre du kit, en SVG : ce que satori ne sait pas dessiner. */
@@ -98,7 +105,7 @@ function cadreSvg(): string {
 // Rendus une seule fois pour tout le build : identiques sur les 133 cartes.
 let cadreCache: string | undefined;
 let logoCache: string | undefined;
-let policeCache: Buffer | undefined;
+let policesCache: [fenix: Buffer, inter: Buffer, krypton: Buffer] | undefined;
 
 const enDataUri = (png: Buffer) => `data:image/png;base64,${png.toString('base64')}`;
 
@@ -112,8 +119,10 @@ async function ressources() {
       .png()
       .toBuffer(),
   );
-  policeCache ??= await readFile(FENIX);
-  return { cadre: cadreCache, logo: logoCache, police: policeCache };
+  // Les trois lectures ensemble : mémoïsées d'un bloc, elles ne peuvent pas
+  // se désynchroniser d'un rendu à l'autre.
+  policesCache ??= await Promise.all([readFile(FENIX), readFile(INTER), readFile(KRYPTON)]);
+  return { cadre: cadreCache, logo: logoCache, polices: policesCache };
 }
 
 /** Coupe au dernier mot entier, pour ne pas trancher au milieu d'un terme. */
@@ -183,6 +192,8 @@ function carte(
                       border: `1px solid ${T.badgeBord}`,
                       padding: '5px 12px',
                       marginLeft: '18px',
+                      // Le chip du kit : mono Krypton, interlettrage 0.05em.
+                      fontFamily: 'Krypton',
                       letterSpacing: '1px',
                     },
                     `v${version}`,
@@ -190,13 +201,11 @@ function carte(
                 ]
               : []),
           ]),
-          // Le kit met ses libellés en mono Krypton ; impossible ici et c'est
-          // mesuré, pas un choix : Krypton est une police VARIABLE, et le
-          // parser d'opentype.js embarqué dans satori casse sur sa table
-          // `fvar` (les noms d'axes manquent). L'interlettrage large garde
-          // l'allure mono du kit avec la seule police disponible.
+          // Libellé en mono Krypton, comme le kit pose les siens. Son
+          // interlettrage est 0.05em, soit ~1px ici : les 4px d'avant
+          // compensaient l'absence de mono, ils feraient double emploi.
           bloc(
-            { fontSize: '17px', color: T.accent, letterSpacing: '4px' },
+            { fontSize: '17px', color: T.accent, fontFamily: 'Krypton', letterSpacing: '1px' },
             (section ?? 'DOCUMENTATION').toUpperCase(),
           ),
         ]),
@@ -211,7 +220,15 @@ function carte(
           ...(description
             ? [
                 bloc(
-                  { fontSize: '27px', color: T.attenue, lineHeight: 1.45, marginTop: '24px' },
+                  {
+                    fontSize: '27px',
+                    color: T.attenue,
+                    lineHeight: 1.45,
+                    marginTop: '24px',
+                    // Corps de texte : Inter, comme le site. Fenix est une
+                    // display, elle porte le titre, pas trois lignes de prose.
+                    fontFamily: 'Inter',
+                  },
                   tronquer(description, 130),
                 ),
               ]
@@ -220,7 +237,8 @@ function carte(
 
         // Pied : l'adresse, pour que la carte se rattache au site même recadrée.
         bloc({ justifyContent: 'space-between', alignItems: 'center', paddingBottom: '24px' }, [
-          bloc({ fontSize: '19px', color: T.faible }, hote),
+          // L'hôte est une adresse : mono, comme partout ailleurs sur le site.
+          bloc({ fontSize: '19px', color: T.faible, fontFamily: 'Krypton' }, hote),
           bloc({ alignItems: 'center' }, [
             bloc(
               { width: '28px', height: '1px', backgroundColor: T.angle, marginRight: '10px' },
@@ -237,10 +255,15 @@ function carte(
 /** Rend la carte en PNG 1200x630, le format que lisent X, LinkedIn et Slack. */
 export async function rendreCarte(donnees: DonneesCarte): Promise<Buffer> {
   const res = await ressources();
+  const [fenix, inter, krypton] = res.polices;
   const svg = await satori(carte(donnees, res) as never, {
     width: L,
     height: H,
-    fonts: [{ name: 'Fenix', data: res.police, weight: 400, style: 'normal' }],
+    fonts: [
+      { name: 'Fenix', data: fenix, weight: 400, style: 'normal' },
+      { name: 'Inter', data: inter, weight: 400, style: 'normal' },
+      { name: 'Krypton', data: krypton, weight: 400, style: 'normal' },
+    ],
   });
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
