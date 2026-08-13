@@ -37,6 +37,7 @@ import tuiHero from '../../assets/captures/hero.png';
 import createBootstrap from '../../assets/create-bootstrap.png';
 import trustLedger from '../../assets/captures/trust-ledger.png';
 import githubLinking from '../../assets/captures/github-linking.png';
+import agentSessions from '../../assets/captures/agent-sessions.png';
 import sideBySide from '../../assets/captures/side-by-side.png';
 import doctor from '../../assets/captures/doctor.png';
 import palette from '../../assets/captures/palette.png';
@@ -92,8 +93,9 @@ cargo install gwm-cli
 />
 
 Bare `gwm` opens the list. Everything else is one key away: `/` filters, `2`
-focuses the sidebar, `n` creates, `L` drops into lazygit, `O` opens the worktree
-in your editor.
+focuses the sidebar, `n` creates, `N` writes the worktree's note, `L` drops into
+lazygit, `O` opens it fullscreen at the worktree - a shell by default, your
+editor or a file browser if `[tui.open]` says so.
 
 <Capture
   src={palette}
@@ -158,9 +160,9 @@ command palette and the theme presets.
   <Capture
     src={sideBySide}
     alt="The gwm TUI in its side-by-side layout, the status sidebar on the left and the worktree list on the right"
-    cmd="gwm  ›  Space"
+    cmd="gwm  ›  z"
     tag="Layout"
-    caption="Space cycles the layout auto → side-by-side → stacked, v flips the sidebar left ↔ right."
+    caption="z cycles the layout auto → side-by-side → stacked, v flips the sidebar left ↔ right. Space marks rows instead, for a batch delete behind one confirm."
   />
 </FeatureRow>
 
@@ -180,6 +182,20 @@ command palette and the theme presets.
 <FeatureRow n="06" title="Fleet chores across worktrees">
   `gwm exec -- cargo test` runs a command in every worktree with a per-worktree rollup, and `gwm
   clean` reports reclaimable build directories before deleting anything.
+</FeatureRow>
+
+<FeatureRow n="07" title="Which AI agent works where">
+  Claude Code, Codex, opencode and Mistral Vibe are read from the session files they already write
+  to disk - no process scan, Windows included - and land in an `AGENT` column, in the sidebar, and
+  in an overlay on `a`. Pin a session by hand when detection can't know.
+
+  <Capture
+    src={agentSessions}
+    alt="The gwm agent sessions overlay: one row per session with its agent, freshness, last activity and name"
+    cmd="gwm  ›  a"
+    tag="Agents"
+    caption="Active under five minutes, idle past it - and a session untouched for thirty days is not even scanned."
+  />
 </FeatureRow>
 
 </Section>
@@ -272,7 +288,7 @@ binary they describe cannot drift apart.
 <RepoCard
   owner="kbrdn1"
   repo="gwm-cli"
-  description="Git Worktree Manager in Rust (CLI + TUI), native libgit2, per-repo bootstrap."
+  description="Git worktree manager for the terminal: CLI + TUI in Rust. Creates the worktree, runs your project setup, links the issue, and shows which AI agent is working where."
   language="Rust"
   languageColor="#dea584"
   license="MIT"
