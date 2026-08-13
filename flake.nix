@@ -17,8 +17,7 @@
           name = "kbrdn-docs";
 
           buildInputs = with pkgs; [
-            # Node / Bun
-            nodejs_24
+            # Bun
             bun
 
             # Tools
@@ -27,9 +26,14 @@
             jq
           ];
 
+          # Le shell ne fournit pas node : Bun est le seul runtime supporté,
+          # tout passe par `bun run <script>`. mkShell n'isole pas le PATH,
+          # donc un node installé sur la machine reste visible ; sur une
+          # machine qui n'en a pas, les shims `#!/usr/bin/env node` de
+          # node_modules/.bin (prettier, astro) ne s'appellent pas nus.
           shellHook = ''
             echo "🔧 kbrdn-docs dev env loaded"
-            echo "   Bun $(bun --version 2>/dev/null) | Node $(node --version 2>/dev/null)"
+            echo "   Bun $(bun --version 2>/dev/null)"
             export PATH="$PWD/node_modules/.bin:$PATH"
           '';
         };

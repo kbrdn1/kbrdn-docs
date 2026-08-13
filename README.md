@@ -33,7 +33,7 @@ bun install
 bun run dev          # gwm dev server on http://localhost:4321
 ```
 
-With Nix: `nix develop` gives you node 24, bun, git, curl and jq, plus `node_modules/.bin` on `PATH`. The repo ships an `.envrc`, so `direnv allow` enters the same shell on `cd`.
+With Nix: `nix develop` gives you bun, git, curl and jq. The shell ships no node — Bun is the only supported runtime, so every script goes through `bun run <script>`. The repo ships an `.envrc`, so `direnv allow` enters the same shell on `cd`.
 
 ## commands
 

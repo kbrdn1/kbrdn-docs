@@ -48,7 +48,7 @@ pipeline ; Cloudflare Pages est le runtime.
 | Lint           | **oxlint**                     | Imposé ; rapide                                             |
 | Format         | **prettier** (+ plugin astro)  | Standard, plugin astro mûr                                  |
 | Type/contenu   | **astro check**                | Couvre `.astro` que oxlint ne parse pas                     |
-| Dev env        | **flake.nix** (bun, node, git) | Shell reproductible                                         |
+| Dev env        | **flake.nix** (bun, git)       | Shell reproductible                                         |
 
 ## 4. Architecture
 

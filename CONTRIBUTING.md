@@ -37,7 +37,8 @@ kbrdn-docs/
 ### Prerequisites
 
 - [Bun](https://bun.sh) ≥ 1.3 (the only supported toolchain).
-- Optional: Nix — `nix develop` drops you in a shell with bun + node + git.
+- Optional: Nix — `nix develop` drops you in a shell with bun + git (+ curl, jq). No
+  node: every script goes through `bun run`.
 
 ### Commands
 
