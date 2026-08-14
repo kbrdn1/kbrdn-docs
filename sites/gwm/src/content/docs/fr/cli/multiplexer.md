@@ -1,6 +1,6 @@
 ---
 title: Intégration tmux / zellij
-description: '`gwm tmux` / `gwm zellij` pour ouvrir un worktree dans une nouvelle fenêtre, un panneau ou un onglet.'
+description: 'gwm tmux / gwm zellij pour ouvrir un worktree dans une nouvelle fenêtre, un panneau ou un onglet.'
 sidebar:
   order: 3
 ---

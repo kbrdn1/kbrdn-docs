@@ -1,6 +1,6 @@
 ---
 title: Historique, annulation et confiance
-description: Référence des sous-commandes - Historique, annulation et confiance.
+description: gwm undo, history et trust - rejouer les opérations récentes, annuler la dernière, et gérer le ledger de confiance TOFU.
 sidebar:
   order: 8
 ---

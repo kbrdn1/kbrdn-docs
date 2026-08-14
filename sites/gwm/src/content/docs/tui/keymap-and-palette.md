@@ -1,6 +1,6 @@
 ---
 title: Keymap & command palette
-description: The remappable [tui.keys] keymap with chord support, and the `:` command palette, both backed by one shared Action dispatcher.
+description: The remappable [tui.keys] keymap with chord support, and the “:” command palette, both backed by one shared Action dispatcher.
 sidebar:
   order: 8
 ---

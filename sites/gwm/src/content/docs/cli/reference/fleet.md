@@ -1,6 +1,6 @@
 ---
 title: Fleet chores and workspace
-description: Subcommand reference - Fleet chores and workspace.
+description: gwm exec and clean, plus workspace mode - run one command across every worktree and reclaim the space taken by build artefacts.
 sidebar:
   order: 5
 ---

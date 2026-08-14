@@ -1,6 +1,6 @@
 ---
 title: Lanceurs configurables (TUI git et review)
-description: Sections `[git_tui]` et `[review]`, avec l'expansion des placeholders, l'overlay PTY embarqué vs plein écran et la chaîne de résolution de la base.
+description: Sections [git_tui] et [review], avec l'expansion des placeholders, l'overlay PTY embarqué vs plein écran et la chaîne de résolution de la base.
 sidebar:
   order: 5
 ---

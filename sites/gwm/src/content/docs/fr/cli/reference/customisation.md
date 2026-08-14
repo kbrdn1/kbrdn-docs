@@ -1,6 +1,6 @@
 ---
 title: Personnalisation
-description: Référence des sous-commandes - Personnalisation.
+description: gwm aliases, theme et tui - les alias de commande, le thème de couleurs basé sur des rôles et les réglages de la TUI.
 sidebar:
   order: 9
 ---

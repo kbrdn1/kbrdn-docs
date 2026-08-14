@@ -1,6 +1,6 @@
 ---
 title: Shell and multiplexers
-description: Subcommand reference - Shell and multiplexers.
+description: gwm completions, shell-init, tmux and zellij - shell completions, the gcd cd helper, and opening a worktree in a multiplexer.
 sidebar:
   order: 6
 ---
@@ -11,7 +11,7 @@ Print a static completion script. Supported shells: `zsh`, `bash`, `fish`, `powe
 
 ## `gwm shell-init <shell>`
 
-Print the `gcd` shell wrapper. Supported shells: `zsh`, `bash`, `fish`, `powershell`. See [Getting Started → Shell init](/getting-started/shell-init).
+Print the `gcd` shell wrapper. Supported shells: `zsh`, `bash`, `fish`, `powershell`. See [Getting started → Shell init](/getting-started/shell-init).
 
 ## `gwm tmux <pattern> [-p|--split]`
 

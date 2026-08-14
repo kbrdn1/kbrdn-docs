@@ -471,7 +471,7 @@ Les surcouches et les modales gardent leur bordure dans les deux cas - un pannea
 
 Une valeur inconnue est une **erreur de config au chargement**. `layout`, `dim_unfocused` et `status_one_line` sont aussi exposés dans le panneau Settings sous l'onglet **TUI** (`4`), où faire défiler le choix s'applique à chaud.
 
-### Dim_unfocused
+### dim_unfocused
 
 `dim_unfocused` atténue le corps du panneau qui n'a pas le focus. **Off par défaut**, et vaut pour les **deux** dispositions : le signal porte sur le focus, pas sur la façon dont un panneau est encadré.
 
@@ -479,7 +479,7 @@ Off par défaut parce que c'est un compromis et non une amélioration nette : le
 
 L'atténuation utilise l'attribut `DIM` du terminal plutôt qu'un repeint en `muted` : le corps garde donc ses couleurs sémantiques - une branche sale reste jaune, un fichier indexé reste cyan. Un terminal qui ignore `DIM` rend comme si l'option était off, où l'aplat de l'en-tête (compact) ou la couleur du filet (bordé) porte encore le signal.
 
-### Status_one_line
+### status_one_line
 
 `status_one_line` (issue [#547](https://github.com/kbrdn1/gwm-cli/issues/547)) replie les quatre valeurs du bloc Status sur une seule ligne. **On par défaut.**
 

@@ -13,6 +13,8 @@ import {
   convert,
   dedash,
   dedashProse,
+  demarkup,
+  descriptionVersion,
   orderOf,
   stripOrder,
   targetFor,
@@ -124,6 +126,37 @@ describe('typographie', () => {
   });
 });
 
+describe('markup du frontmatter', () => {
+  test('le code inline perd ses backticks', () => {
+    // `title` et `description` ne passent pas par le rendu markdown : ils
+    // partent tels quels dans <title> et <meta name="description">, où un
+    // backtick se lit comme une coquille.
+    expect(demarkup('`gwm list --format=names` et la suite')).toBe(
+      'gwm list --format=names et la suite',
+    );
+  });
+
+  test('un span d’un seul caractère passe en guillemets de la langue', () => {
+    // Le backtick portait seul la frontière du jeton : sans lui « la surcouche
+    // a » se lit comme un article, et « la palette de commandes :, tous deux »
+    // comme une phrase tronquée. Les deux cas sont réels (/tui/agent-sessions/
+    // et /tui/keymap-and-palette/).
+    // Insécables échappées à dessein : elles sont tapées littéralement dans
+    // `demarkup`, où rien ne les distingue d'une espace ordinaire à l'œil. Ce
+    // test est le seul endroit qui dit lesquelles sont attendues.
+    expect(demarkup('la surcouche `a`', { isFr: true })).toBe(
+      `la surcouche \u00ab\u00a0a\u00a0\u00bb`,
+    );
+    expect(demarkup('the `a` overlay')).toBe('the “a” overlay');
+  });
+
+  test('les crochets d’une section TOML survivent', () => {
+    // Ils nomment la chose (`[tui.keys]` est le nom de la section) : les
+    // retirer appauvrirait la description au lieu de la nettoyer.
+    expect(demarkup('Le keymap `[tui.keys]`')).toBe('Le keymap [tui.keys]');
+  });
+});
+
 describe('capitalisation des titres', () => {
   test('un mot ordinaire prend la majuscule', () => {
     expect(capitalise('worktrees et branches')).toBe('Worktrees et branches');
@@ -140,6 +173,18 @@ describe('capitalisation des titres', () => {
     // `gwmx` n'est pas `gwm` : sans la borne, le préfixe suffirait à désactiver
     // la capitalisation.
     expect(capitalise('gwmx quelque chose')).toBe('Gwmx quelque chose');
+  });
+
+  test('un identifiant snake_case reste en minuscule sans figurer dans la liste', () => {
+    // Le cas qui a été publié : `file_exists` sortait en `File_exists` sur
+    // /configuration/when-predicates/, EN et FR. La règle est structurelle et
+    // pas lexicale, donc elle doit tenir sur un identifiant que personne n'a
+    // pensé à lister — d'où le second cas, absent de LOWERCASE_IDENTS comme du
+    // reste de la doc.
+    expect(capitalise('file_exists / cmd_exists / env_set')).toBe(
+      'file_exists / cmd_exists / env_set',
+    );
+    expect(capitalise('no_symlink invariants')).toBe('no_symlink invariants');
   });
 
   test('un titre qui n’ouvre pas sur une lettre minuscule est laissé tel quel', () => {
@@ -201,6 +246,34 @@ describe('convert', () => {
     expect(out).toContain('description: "gwm doctor: ce qu’il vérifie"');
   });
 
+  test('les backticks quittent le frontmatter mais pas le corps', () => {
+    // Le corps, lui, est rendu en markdown : y retirer les backticks
+    // transformerait un nom de commande en prose.
+    const out = convert(page('description: voir `gwm list`', 'Lancer `gwm list`.\n'), {});
+    expect(out).toContain('description: Voir gwm list');
+    expect(out).toContain('Lancer `gwm list`.');
+  });
+
+  test('un deux-points libéré par le retrait des backticks fait requoter la valeur', () => {
+    // LE cas discriminant du nouvel ordre normalisation → requotage : retirer
+    // les backticks peut faire apparaître un « : » suivi d'un espace, et une
+    // valeur nue qui en porte un n'est plus du YAML. Juger le quoting sur la
+    // valeur d'origine (l'ordre inverse) publie une page que le build refuse
+    // ensuite de parser.
+    const out = convert(page('description: voir `gwm doctor: 9 checks` en CI', 'Corps.\n'), {});
+    expect(out).toContain('description: "Voir gwm doctor: 9 checks en CI"');
+  });
+
+  test('un deux-points isolé garde ses guillemets et ne requote pas', () => {
+    // Le pendant du cas précédent, et la raison pour laquelle celui-ci ne
+    // suffit pas à couvrir la règle : la description de
+    // /tui/keymap-and-palette/ écrit la palette `` `:` ``, un span d'un seul
+    // caractère. Les guillemets qui remplacent ses backticks rendent le
+    // requotage inutile — le « : » n'est jamais suivi d'un espace.
+    const out = convert(page('description: la palette `:` et ses actions', 'Corps.\n'), {});
+    expect(out).toContain('description: La palette “:” et ses actions');
+  });
+
   test('un frontmatter absent est une erreur, pas un silence', () => {
     expect(() => convert('Pas de frontmatter du tout.\n', {})).toThrow('frontmatter absent');
   });
@@ -226,6 +299,78 @@ describe('convert', () => {
     const out = convert(page('title: TUI', 'Voir [le CLI](/cli/reference).\n'), { isFr: false });
     expect(out).toContain('](/cli/reference)');
     expect(out).not.toContain('/fr/');
+  });
+});
+
+describe('descriptionVersion', () => {
+  test('le résumé se lit dans le paragraphe d’ouverture', () => {
+    const body =
+      '**Security release.** A branch name could inject a command.\n\n### Fixed\n\n- x\n';
+    expect(descriptionVersion('1.6.0', '2026-08-03', body)).toBe(
+      'gwm 1.6.0, released 2026-08-03. Security release. A branch name could inject a command.',
+    );
+  });
+
+  test('un gras d’ouverture n’est pas pris pour une puce', () => {
+    // La régression exacte du premier jet : écarter les blocs qui commencent
+    // par `*` écartait aussi `**gras**`, qui ouvre le résumé de la moitié des
+    // fichiers. Le résumé tombait alors sur un paragraphe du milieu, hors
+    // contexte (« The SSH one is worth spelling out, because… »).
+    const body = '**Le vrai résumé.**\n\n### Added\n\n- une entrée\n\nUn paragraphe du milieu.\n';
+    expect(descriptionVersion('1.1.0', '', body)).toContain('Le vrai résumé.');
+    expect(descriptionVersion('1.1.0', '', body)).not.toContain('milieu');
+  });
+
+  test('sans paragraphe d’ouverture, le titre de la première entrée fait office', () => {
+    // Quatre versions sur vingt-quatre attaquent directement sur `### Added`.
+    const body = '### Added\n\n- **Inline review comments** ([#500](https://x/500)).\n  Détail.\n';
+    expect(descriptionVersion('1.7.0', '2026-08-12', body)).toBe(
+      'gwm 1.7.0, released 2026-08-12. Inline review comments.',
+    );
+  });
+
+  test('la référence d’issue entre parenthèses ne laisse pas de numéro orphelin', () => {
+    const body = 'Un résumé ([#550](https://x/550)) et sa suite.\n';
+    const out = descriptionVersion('1.8.0', '', body);
+    expect(out).not.toContain('550');
+    expect(out).not.toContain('https');
+  });
+
+  test('la coupe tombe sur une frontière de phrase quand il en reste une', () => {
+    const body = `Une première phrase assez longue pour passer le seuil. ${'x'.repeat(300)}\n`;
+    const out = descriptionVersion('1.0.0', '', body, 80);
+    expect(out).toBe('gwm 1.0.0. Une première phrase assez longue pour passer le seuil.');
+    expect(out.length).toBeLessThanOrEqual(80);
+  });
+
+  test('une coupe au mot juste après un point n’écrit pas « courte.… »', () => {
+    // Une phrase courte suivie d'un long paragraphe : trop tôt pour que la
+    // frontière de phrase passe le seuil, donc c'est la coupe au mot qui
+    // s'applique — et elle tombe pile après le point.
+    const body = `Courte. ${'x'.repeat(300)}\n`;
+    const out = descriptionVersion('1.0.0', '', body, 80);
+    expect(out).toBe('gwm 1.0.0. Courte.');
+  });
+
+  test('une coupe en plein mot est signalée par des points de suspension', () => {
+    const body = `un résumé sans ponctuation ${'mot '.repeat(80)}\n`;
+    const out = descriptionVersion('1.0.0', '', body, 60);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(60);
+  });
+
+  test('un résumé non ponctué reçoit son point, un résumé ponctué n’en reçoit pas deux', () => {
+    expect(descriptionVersion('1.0.0', '', '### Added\n\n- **Sans point**\n')).toEndWith(
+      'Sans point.',
+    );
+    expect(descriptionVersion('1.0.0', '', 'Avec point.\n')).toEndWith('Avec point.');
+  });
+
+  test('un corps sans rien d’exploitable rend l’en-tête seul', () => {
+    // Le repli doit rester une phrase valide, pas un en-tête suivi d'un blanc.
+    expect(descriptionVersion('1.0.0', '2026-06-26', '### Added\n\n- une entrée nue\n')).toBe(
+      'gwm 1.0.0, released 2026-06-26.',
+    );
   });
 });
 

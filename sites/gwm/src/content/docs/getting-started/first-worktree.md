@@ -1,6 +1,6 @@
 ---
 title: First worktree
-description: Walkthrough of `gwm create`, covering branch naming, path layout, and the bootstrap pipeline.
+description: Walkthrough of gwm create, covering branch naming, path layout, and the bootstrap pipeline.
 sidebar:
   order: 2
 ---

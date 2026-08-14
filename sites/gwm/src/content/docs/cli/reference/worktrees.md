@@ -1,6 +1,6 @@
 ---
 title: Worktree lifecycle
-description: Subcommand reference - Worktree lifecycle.
+description: gwm create, bootstrap, sync, remove, prune, switch, path, list and note - the whole worktree lifecycle, from creation to cleanup.
 sidebar:
   order: 3
 ---
@@ -66,7 +66,7 @@ The rules are not gated to Windows because a branch travels to a teammate's mach
 
 In the TUI, `Ctrl-T` toggles the create form (and only that form) between the structured triple and a single free-form `Name` field.
 
-End-to-end walkthrough lives in [Getting Started → First worktree](/getting-started/first-worktree).
+End-to-end walkthrough lives in [Getting started → First worktree](/getting-started/first-worktree).
 
 ## `gwm new <type> <desc>`
 
@@ -122,7 +122,7 @@ gwm path auth --format=json    # { "name": ..., "path": ..., "branch": ... }
 
 The default `text` form prints the bare path for `$(...)` consumption. `--format=json` (issue #38) emits the `{ name, path, branch }` triple, with the schema at [`docs/schema/path.schema.json`](https://github.com/kbrdn1/gwm-cli/blob/main/docs/schema/path.schema.json).
 
-Both forms share semantics: fuzzy resolve, exit `0` on a unique hit, `1` on miss / ambiguous / not in a repo. Pair with `gwm shell-init` for the `gcd` one-liner. See [Getting Started → Shell init](/getting-started/shell-init).
+Both forms share semantics: fuzzy resolve, exit `0` on a unique hit, `1` on miss / ambiguous / not in a repo. Pair with `gwm shell-init` for the `gcd` one-liner. See [Getting started → Shell init](/getting-started/shell-init).
 
 ## `gwm note show [<slug>]` (issue #515)
 

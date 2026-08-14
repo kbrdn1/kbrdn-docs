@@ -1,5 +1,5 @@
 ---
-title: Getting Started
+title: Getting started
 description: Install gwm, create your first worktree, and wire up the one-line cd helper.
 sidebar:
   order: 0

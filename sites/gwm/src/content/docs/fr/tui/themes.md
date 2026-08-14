@@ -1,6 +1,6 @@
 ---
 title: Thèmes
-description: Couleurs `[theme]` basées sur des rôles, les presets intégrés, les surcharges par rôle et les formats de valeur nommé / indexé / hex.
+description: Couleurs [theme] basées sur des rôles, les presets intégrés, les surcharges par rôle et les formats de valeur nommé / indexé / hex.
 sidebar:
   order: 7
 ---

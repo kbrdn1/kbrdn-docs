@@ -1,6 +1,6 @@
 ---
 title: GitHub issue / PR linking
-description: Auto-link branches to issues, auto-detect their PR, fetch live state via `gh`, surface in the TUI sidebar.
+description: Auto-link branches to issues, auto-detect their PR, fetch live state via gh, surface in the TUI sidebar.
 sidebar:
   order: 1
 ---

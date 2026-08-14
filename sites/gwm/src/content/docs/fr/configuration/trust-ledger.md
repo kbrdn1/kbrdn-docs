@@ -1,6 +1,6 @@
 ---
 title: Trust ledger TOFU
-description: Modèle de menace, comportement de la barrière, surface CLI et format du ledger pour la protection trust-on-first-use du bootstrap `.gwm.toml`.
+description: Modèle de menace, comportement de la barrière, surface CLI et format du ledger pour la protection trust-on-first-use du bootstrap .gwm.toml.
 sidebar:
   order: 5
 ---

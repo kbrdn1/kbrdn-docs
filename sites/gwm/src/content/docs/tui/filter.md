@@ -1,6 +1,6 @@
 ---
 title: Fuzzy filter
-description: The `/` filter bar, with nucleo-matcher, sticky filters, and Esc semantics.
+description: The “/” filter bar, with nucleo-matcher, sticky filters, and Esc semantics.
 sidebar:
   order: 3
 ---
@@ -45,4 +45,4 @@ When you launch `gwm switch` (or hit bare `gcd` with the [shell-init helper](/ge
 ## Related
 
 - [Keybindings → list view](/tui/keybindings#list-view-default): every key the filter view listens to
-- [Getting Started → Shell init](/getting-started/shell-init): wire up `gcd` for one-keystroke worktree jumping
+- [Getting started → Shell init](/getting-started/shell-init): wire up `gcd` for one-keystroke worktree jumping

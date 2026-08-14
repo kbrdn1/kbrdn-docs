@@ -1,6 +1,6 @@
 ---
 title: Filtre flou
-description: La barre de filtre `/`, avec nucleo-matcher, les filtres persistants et la sémantique d'Esc.
+description: La barre de filtre « / », avec nucleo-matcher, les filtres persistants et la sémantique d'Esc.
 sidebar:
   order: 3
 ---

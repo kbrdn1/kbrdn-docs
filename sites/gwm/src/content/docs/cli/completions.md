@@ -1,6 +1,6 @@
 ---
 title: Shell completions
-description: '`gwm completions <shell>` and dynamic worktree-name completion via `gwm list --format=names`.'
+description: 'gwm completions <shell> and dynamic worktree-name completion via gwm list --format=names.'
 sidebar:
   order: 2
 ---
@@ -64,5 +64,5 @@ complete -c gwm -n "__fish_seen_subcommand_from path cd remove bootstrap sync tm
 
 ## See also
 
-- [Getting Started → Shell init](/getting-started/shell-init): the `gcd` wrapper that ships alongside `completions`
+- [Getting started → Shell init](/getting-started/shell-init): the `gcd` wrapper that ships alongside `completions`
 - [CLI → Subcommand reference](/cli/reference#gwm-list---formattablenames---detect-pr): the `--format=names` output used by the completers

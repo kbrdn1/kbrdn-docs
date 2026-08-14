@@ -1,6 +1,6 @@
 ---
 title: GitLab (multi-forge)
-description: Point gwm at GitLab instead of GitHub, with the `forge` key, the `glab` CLI, and what differs from the GitHub backend.
+description: Point gwm at GitLab instead of GitHub, with the forge key, the glab CLI, and what differs from the GitHub backend.
 sidebar:
   order: 5
 ---

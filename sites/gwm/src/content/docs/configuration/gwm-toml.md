@@ -469,7 +469,7 @@ Overlays and modals keep their border under either value - a panel floating over
 
 An unknown value is a **hard config error at load time**. `layout`, `dim_unfocused` and `status_one_line` are also exposed in the Settings panel under the **TUI** tab (`4`), where cycling the choice applies live.
 
-### Dim_unfocused
+### dim_unfocused
 
 `dim_unfocused` dims the body of whichever pane does not hold focus. **Off by default**, and it applies to **both** layouts - the signal is about focus, not about how a pane is framed.
 
@@ -477,7 +477,7 @@ It ships off because it is a trade-off rather than a strict improvement: the ina
 
 The dimming uses the terminal's `DIM` attribute rather than repainting in `muted`, so the body keeps its semantic colours - a dirty branch stays yellow, a staged file stays cyan. A terminal that ignores `DIM` simply renders as if the option were off, where the header fill (compact) or the border colour (bordered) still carries the signal.
 
-### Status_one_line
+### status_one_line
 
 `status_one_line` (issue [#547](https://github.com/kbrdn1/gwm-cli/issues/547)) folds the Status block's four values onto a single row. **On by default.**
 
