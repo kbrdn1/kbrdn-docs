@@ -14,7 +14,29 @@ version lives in its own file under [`changelogs/`](changelogs/).
 
 ## [Unreleased]
 
+### Added
+
+- Metadata guard on published descriptions (`scripts/lib/metadata-guard.test.mjs`),
+  ported from `gwm-cli`'s own with the same metric and thresholds — 250
+  characters, 0.5 word overlap within a locale. The upstream guard only sees
+  `gwm-cli/docs/`; this one measures the published tree, so it also covers the
+  forty pages `sync-gwm-docs` writes itself and the case where the site lags
+  upstream. Replayed against the pre-fix tree it catches three pairs upstream
+  could not see (`fr/cli/reference/services` ↔ `setup` ↔ `shell`, 0.556)
+  ([#73](https://github.com/kbrdn1/kbrdn-docs/issues/73)).
+
 ### Changed
+
+- Changelog pages now describe themselves. Each carried only
+  `gwm <version>, released <date>.`, so two versions shipped the same day
+  differed by one patch number and the set measured 0.875 word overlap where
+  the guard allows 0.5. The description now quotes the summary the version
+  writes for itself — the opening paragraph for twenty of the twenty-four
+  files, the first entry's bold title for the four that open straight on
+  `### Added`. Nothing is invented: 76 offending pairs drop to 5, all of them
+  versions whose upstream summary is the same RC-promotion sentence, which is
+  why changelogs are exempt from the overlap rule rather than reworded
+  ([#73](https://github.com/kbrdn1/kbrdn-docs/issues/73)).
 
 - gwm docs synced to upstream v1.8.0: the roadmap now leads with the v1.8.0
   density line instead of v1.7.0, `changelog/1-8-0.md` joins the index,
