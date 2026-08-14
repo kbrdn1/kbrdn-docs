@@ -14,6 +14,25 @@ version lives in its own file under [`changelogs/`](changelogs/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `@kbrdn/ds-shared`: the footer's Licence block pointed at
+  `gwm-cli/blob/main/LICENSE`, a path that never existed — the file was
+  `LICENSE.md`, and upstream has since renamed it `LICENSE-MIT`. It now targets
+  the README's `#license` anchor, which survives either name, and reads
+  `MIT OR Apache-2.0`.
+
+### Changed
+
+- gwm docs: the site states the dual `MIT OR Apache-2.0` license
+  ([`gwm-cli#576`](https://github.com/kbrdn1/gwm-cli/pull/576)) — comparison
+  one-liner and table, AUR package contents (both license texts), landing meta
+  line and `gwm-cli` repo card, plus a `License` section in Contributing
+  carrying the contribution terms (no CLA). Mirrors the upstream `docs/` tree,
+  EN and FR. The `herdr-plugin-gwm` card stays MIT — separate repository.
+  `LICENSE-MIT` / `LICENSE-APACHE` resolve once the relicense reaches gwm-cli's
+  `main`.
+
 ## Past releases
 
 - [1.0.0](changelogs/1.0.0.md) — 2026-08-13
