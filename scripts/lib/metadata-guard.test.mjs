@@ -71,12 +71,24 @@ for (const abs of (await walk(DOCS)).sort()) {
   pages.push({
     rel,
     // Le frontmatter est lu à la ligne plutôt que parsé : les guillemets qui
-    // entourent une valeur ne font pas partie de la description publiée.
-    description: line[1].replace(/^['"]|['"]$/g, '').replace(/\\"/g, '"'),
+    // entourent une valeur ne font pas partie de la description publiée, et
+    // les échappements que le script y a mis doivent être défaits — sinon ce
+    // garde mesure une phrase que personne ne lit, et se fait avoir par son
+    // propre parsing. La contre-oblique passe en dernier, sans quoi elle
+    // défait ce que la règle précédente vient d'écrire.
+    description: line[1]
+      .replace(/^['"]|['"]$/g, '')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\'),
     // Les deux locales sont deux sites crawlés séparément : une description
     // partagée entre elles est une traduction, pas un doublon.
     locale: rel.startsWith('fr/') ? 'fr' : 'en',
-    isChangelog: /^changelog\//.test(rel),
+    // Ancré sur le chemin sans locale : il n'existe pas de `fr/changelog/`
+    // aujourd'hui (Starlight sert la version anglaise sous /fr/), mais tester
+    // `^changelog/` rendrait l'exemption anglaise par accident, et le jour où
+    // une traduction arriverait elle tomberait rouge sur une question déjà
+    // tranchée.
+    isChangelog: /^changelog\//.test(rel.replace(/^fr\//, '')),
   });
 }
 

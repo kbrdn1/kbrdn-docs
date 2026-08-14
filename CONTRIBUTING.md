@@ -83,6 +83,11 @@ the summary upstream writes for that version, and three of those summaries are
 literally the same RC-promotion sentence. Making them distinct would mean
 inventing text the changelog does not say.
 
+The guard also runs inside `sync-gwm.yml`, between the conversion and the
+bot's commit. That workflow is the one path that publishes without anyone
+reading the diff, so a description that trips a rule stops the sync instead of
+being deployed and going red on the next PR.
+
 Title casing is deliberately **not** guarded — separating `Getting started`
 from `GitHub issue / PR linking` needs a hand-written list of proper nouns that
 goes stale on the first page named after something not on it. `gwm-cli` made
