@@ -16,7 +16,7 @@ ira vérifier.
 
 ## Les trois en une ligne chacun
 
-- **[gwm](https://github.com/kbrdn1/gwm-cli)** (Rust, MIT) : un CLI et une TUI
+- **[gwm](https://github.com/kbrdn1/gwm-cli)** (Rust, MIT OR Apache-2.0) : un CLI et une TUI
   ratatui dans un seul binaire, bâti sur libgit2 vendorisé, pour ceux qui
   scriptent leurs worktrees autant qu'ils les parcourent.
 - **[lazyworktree](https://github.com/chmouel/lazyworktree)** (Go,
@@ -31,14 +31,14 @@ ira vérifier.
 Mesurés le 2026-08-12 depuis l'API GitHub. Ils bougent, donc considérez-les
 comme un instantané et non comme une affirmation permanente.
 
-|                | gwm        | lazyworktree               | gwq                |
-| :------------- | :--------- | :------------------------- | :----------------- |
-| Étoiles        | 126        | 281                        | 461                |
-| Langage        | Rust       | Go                         | Go                 |
-| Licence        | MIT        | Apache-2.0                 | Apache-2.0         |
-| Premier commit | 2026-05-18 | 2025-12-28                 | 2025-05-26         |
-| Dernier push   | 2026-08-12 | 2026-08-10                 | 2026-05-02         |
-| Interface      | CLI + TUI  | TUI (plus une surface CLI) | CLI + fuzzy finder |
+|                | gwm               | lazyworktree               | gwq                |
+| :------------- | :---------------- | :------------------------- | :----------------- |
+| Étoiles        | 126               | 281                        | 461                |
+| Langage        | Rust              | Go                         | Go                 |
+| Licence        | MIT OR Apache-2.0 | Apache-2.0                 | Apache-2.0         |
+| Premier commit | 2026-05-18        | 2025-12-28                 | 2025-05-26         |
+| Dernier push   | 2026-08-12        | 2026-08-10                 | 2026-05-02         |
+| Interface      | CLI + TUI         | TUI (plus une surface CLI) | CLI + fuzzy finder |
 
 gwq est le leader en étoiles et le plus ancien des trois, et il n'a pas reçu
 de commit depuis le 2026-05-02 : sa dernière version est la v0.1.1.
