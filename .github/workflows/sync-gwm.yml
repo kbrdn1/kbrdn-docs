@@ -75,6 +75,18 @@ jobs:
       - name: formater la sortie
         run: bunx prettier --write sites/gwm/src/content/docs
 
+      # Le garde des métadonnées publiées (`scripts/lib/metadata-guard.test.mjs`)
+      # lit l'arbre généré : il doit tourner ici, entre l'écriture et le
+      # commit, sinon il ne garde rien de ce chemin-ci. C'est pourtant le seul
+      # qui publie sans relecture humaine — une description amont trop longue
+      # ou jumelle d'une autre serait commitée, déployée, et ne virerait au
+      # rouge qu'à la PR suivante, longtemps après avoir été servie.
+      #
+      # Échouer ici laisse le site en retard d'une version, ce qui est le bon
+      # arbitrage : en retard et visible (run rouge) plutôt qu'à jour et faux.
+      - name: garde des métadonnées
+        run: bun test
+
       - name: commit la dérive
         id: commit
         run: |

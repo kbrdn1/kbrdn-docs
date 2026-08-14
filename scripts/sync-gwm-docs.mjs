@@ -33,6 +33,7 @@ import { homedir } from 'node:os';
 import {
   convert,
   dedashProse,
+  descriptionVersion,
   targetFor as targetForIn,
   versionFromCargoToml,
 } from './lib/convert.mjs';
@@ -345,9 +346,14 @@ for (const [i, v] of versions.entries()) {
   // Le point est retiré du nom de fichier : Astro le mange dans le slug et
   // `1.5.0.md` sortirait sur /changelog/150/, illisible.
   const slug = v.replace(/\./g, '-');
+  // La description est lue dans le corps de la version (cf. `descriptionVersion`),
+  // donc elle porte de la prose amont : elle est échappée avant d'entrer dans
+  // la valeur YAML entre guillemets, sans quoi un guillemet ou une contre-oblique
+  // du changelog fermerait la valeur en plein milieu.
+  const description = descriptionVersion(v, date, body).replace(/["\\]/g, '\\$&');
   await writeFile(
     join(CHDIR, `${slug}.md`),
-    `---\ntitle: v${v}\ndescription: "gwm ${v}${date ? `, released ${date}` : ''}."\nsidebar:\n  order: ${i + 2}\n  label: v${v}\n---\n\n${body.trim()}\n`,
+    `---\ntitle: v${v}\ndescription: "${description}"\nsidebar:\n  order: ${i + 2}\n  label: v${v}\n---\n\n${body.trim()}\n`,
   );
   rows.push(`| [v${v}](./${slug}/) | ${date} |`);
 }

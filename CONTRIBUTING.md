@@ -67,6 +67,32 @@ Four gates must pass before a PR is mergeable (CI enforces them):
 
 `.astro` files are type-checked by `astro check`, not oxlint.
 
+### Published metadata
+
+`bun test` (part of `bun run check`) guards what every page puts in
+`<meta name="description">`, since that is what a search result shows:
+
+- **250 characters max** — past that, nothing survives the snippet cut.
+- **no two pages of the same locale describing themselves with the same
+  sentence** — measured as word overlap, 0.5 max. The two locales are crawled
+  as separate sites, so a shared description across them is a translation, not
+  a duplicate.
+
+Changelog pages are exempt from the second rule only: their description quotes
+the summary upstream writes for that version, and three of those summaries are
+literally the same RC-promotion sentence. Making them distinct would mean
+inventing text the changelog does not say.
+
+The guard also runs inside `sync-gwm.yml`, between the conversion and the
+bot's commit. That workflow is the one path that publishes without anyone
+reading the diff, so a description that trips a rule stops the sync instead of
+being deployed and going red on the next PR.
+
+Title casing is deliberately **not** guarded — separating `Getting started`
+from `GitHub issue / PR linking` needs a hand-written list of proper nouns that
+goes stale on the first page named after something not on it. `gwm-cli` made
+the same call.
+
 ## Local hooks
 
 An opt-in POSIX `pre-commit` lives under [`.githooks/`](.githooks/). It is not
