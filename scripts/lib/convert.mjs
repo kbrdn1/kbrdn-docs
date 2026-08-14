@@ -126,6 +126,72 @@ export const demarkup = (s, { isFr } = {}) =>
 export const capitaliseHeadings = (body) =>
   body.replace(/^(#{2,6} )(.+)$/gm, (_m, hashes, text) => hashes + capitalise(text));
 
+// ── Résumé d'une version ───────────────────────────────────────────────────
+// Ce qu'une page de changelog met dans sa `description`. Sans lui, les
+// vingt-quatre pages n'annoncent que `gwm <version>, released <date>.` : deux
+// versions publiées le même jour ne diffèrent alors que par un numéro de
+// correctif, et l'ensemble se mesurait à 0.875 de recouvrement de vocabulaire
+// là où le garde en tolère 0.5.
+//
+// Le résumé se lit dans le fichier plutôt qu'il ne se fabrique. Vingt des
+// vingt-quatre versions ouvrent sur un paragraphe qui dit ce que la version
+// apporte ; les quatre autres attaquent directement sur `### Added`, et c'est
+// alors le titre en gras de leur première entrée qui fait office de résumé.
+// Rien n'est inventé dans les deux cas — une description qui affirme ce que le
+// changelog ne dit pas serait pire que la ressemblance qu'elle corrige.
+function premierResume(body) {
+  for (const bloc of body.split(/\n\s*\n/)) {
+    const t = bloc.trim();
+    // `- ` et `* ` ouvrent une puce ; `**gras**` ouvre au contraire le résumé
+    // de la moitié des fichiers, donc c'est l'espace après l'astérisque qui
+    // discrimine, pas l'astérisque.
+    if (!t || t.startsWith('#') || /^[-*] /.test(t)) continue;
+    return t;
+  }
+  return body.match(/\*\*(.+?)\*\*/)?.[1] ?? '';
+}
+
+// Markdown vers texte nu. Les références d'issue entre parenthèses partent en
+// entier : `([#550](url))` n'apporte rien à un snippet et y laisserait un
+// numéro orphelin.
+const aplatir = (s) =>
+  s
+    .replace(/\(\[[^\]]*\]\([^)]*\)\)/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*/g, '')
+    .replace(/`/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Coupe sur une frontière de phrase quand il en reste une passé la moitié,
+// sinon sur un mot : une description tronquée en plein mot se lit comme un
+// bug d'affichage.
+function borner(s, max) {
+  if (s.length <= max) return s;
+  const dur = s.slice(0, max);
+  const phrase = dur.lastIndexOf('. ');
+  if (phrase > max * 0.4) return dur.slice(0, phrase + 1);
+  const mot = dur.slice(0, dur.lastIndexOf(' ')).replace(/[,;:]$/, '');
+  // La coupe au mot peut tomber juste après un point — une phrase courte
+  // suivie d'un long paragraphe, trop tôt pour passer le seuil ci-dessus.
+  // Ajouter les points de suspension y écrirait « courte.… ».
+  return /[.!?]$/.test(mot) ? mot : `${mot}…`;
+}
+
+/**
+ * Description d'une page de changelog : l'en-tête factuel, puis le résumé que
+ * la version donne d'elle-même, borné pour tenir dans `max` caractères au
+ * total.
+ */
+export function descriptionVersion(version, date, body, max = 250) {
+  const tete = `gwm ${version}${date ? `, released ${date}` : ''}.`;
+  const resume = borner(aplatir(premierResume(body)), max - tete.length - 1);
+  if (!resume) return tete;
+  // Un résumé pris sur un titre d'entrée n'est pas ponctué ; la description
+  // est une phrase, elle se termine.
+  return `${tete} ${resume}${/[.!?…]$/.test(resume) ? '' : '.'}`;
+}
+
 export function convert(raw, { order, isFr }) {
   const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!m) throw new Error('frontmatter absent');

@@ -14,6 +14,7 @@ import {
   dedash,
   dedashProse,
   demarkup,
+  descriptionVersion,
   orderOf,
   stripOrder,
   targetFor,
@@ -298,6 +299,78 @@ describe('convert', () => {
     const out = convert(page('title: TUI', 'Voir [le CLI](/cli/reference).\n'), { isFr: false });
     expect(out).toContain('](/cli/reference)');
     expect(out).not.toContain('/fr/');
+  });
+});
+
+describe('descriptionVersion', () => {
+  test('le résumé se lit dans le paragraphe d’ouverture', () => {
+    const body =
+      '**Security release.** A branch name could inject a command.\n\n### Fixed\n\n- x\n';
+    expect(descriptionVersion('1.6.0', '2026-08-03', body)).toBe(
+      'gwm 1.6.0, released 2026-08-03. Security release. A branch name could inject a command.',
+    );
+  });
+
+  test('un gras d’ouverture n’est pas pris pour une puce', () => {
+    // La régression exacte du premier jet : écarter les blocs qui commencent
+    // par `*` écartait aussi `**gras**`, qui ouvre le résumé de la moitié des
+    // fichiers. Le résumé tombait alors sur un paragraphe du milieu, hors
+    // contexte (« The SSH one is worth spelling out, because… »).
+    const body = '**Le vrai résumé.**\n\n### Added\n\n- une entrée\n\nUn paragraphe du milieu.\n';
+    expect(descriptionVersion('1.1.0', '', body)).toContain('Le vrai résumé.');
+    expect(descriptionVersion('1.1.0', '', body)).not.toContain('milieu');
+  });
+
+  test('sans paragraphe d’ouverture, le titre de la première entrée fait office', () => {
+    // Quatre versions sur vingt-quatre attaquent directement sur `### Added`.
+    const body = '### Added\n\n- **Inline review comments** ([#500](https://x/500)).\n  Détail.\n';
+    expect(descriptionVersion('1.7.0', '2026-08-12', body)).toBe(
+      'gwm 1.7.0, released 2026-08-12. Inline review comments.',
+    );
+  });
+
+  test('la référence d’issue entre parenthèses ne laisse pas de numéro orphelin', () => {
+    const body = 'Un résumé ([#550](https://x/550)) et sa suite.\n';
+    const out = descriptionVersion('1.8.0', '', body);
+    expect(out).not.toContain('550');
+    expect(out).not.toContain('https');
+  });
+
+  test('la coupe tombe sur une frontière de phrase quand il en reste une', () => {
+    const body = `Une première phrase assez longue pour passer le seuil. ${'x'.repeat(300)}\n`;
+    const out = descriptionVersion('1.0.0', '', body, 80);
+    expect(out).toBe('gwm 1.0.0. Une première phrase assez longue pour passer le seuil.');
+    expect(out.length).toBeLessThanOrEqual(80);
+  });
+
+  test('une coupe au mot juste après un point n’écrit pas « courte.… »', () => {
+    // Une phrase courte suivie d'un long paragraphe : trop tôt pour que la
+    // frontière de phrase passe le seuil, donc c'est la coupe au mot qui
+    // s'applique — et elle tombe pile après le point.
+    const body = `Courte. ${'x'.repeat(300)}\n`;
+    const out = descriptionVersion('1.0.0', '', body, 80);
+    expect(out).toBe('gwm 1.0.0. Courte.');
+  });
+
+  test('une coupe en plein mot est signalée par des points de suspension', () => {
+    const body = `un résumé sans ponctuation ${'mot '.repeat(80)}\n`;
+    const out = descriptionVersion('1.0.0', '', body, 60);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(60);
+  });
+
+  test('un résumé non ponctué reçoit son point, un résumé ponctué n’en reçoit pas deux', () => {
+    expect(descriptionVersion('1.0.0', '', '### Added\n\n- **Sans point**\n')).toEndWith(
+      'Sans point.',
+    );
+    expect(descriptionVersion('1.0.0', '', 'Avec point.\n')).toEndWith('Avec point.');
+  });
+
+  test('un corps sans rien d’exploitable rend l’en-tête seul', () => {
+    // Le repli doit rester une phrase valide, pas un en-tête suivi d'un blanc.
+    expect(descriptionVersion('1.0.0', '2026-06-26', '### Added\n\n- une entrée nue\n')).toBe(
+      'gwm 1.0.0, released 2026-06-26.',
+    );
   });
 });
 
