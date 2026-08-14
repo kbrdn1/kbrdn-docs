@@ -15,7 +15,7 @@ exactly the audience that will go and check.
 
 ## The three in one line each
 
-- **[gwm](https://github.com/kbrdn1/gwm-cli)** (Rust, MIT): a CLI and a
+- **[gwm](https://github.com/kbrdn1/gwm-cli)** (Rust, MIT OR Apache-2.0): a CLI and a
   ratatui TUI in one binary, built on vendored libgit2, aimed at people who
   script their worktrees as much as they browse them.
 - **[lazyworktree](https://github.com/chmouel/lazyworktree)** (Go,
@@ -30,14 +30,14 @@ exactly the audience that will go and check.
 Measured 2026-08-12 from the GitHub API. They move, so treat them as a
 snapshot rather than a standing claim.
 
-|              | gwm        | lazyworktree             | gwq                |
-| :----------- | :--------- | :----------------------- | :----------------- |
-| Stars        | 126        | 281                      | 461                |
-| Language     | Rust       | Go                       | Go                 |
-| Licence      | MIT        | Apache-2.0               | Apache-2.0         |
-| First commit | 2026-05-18 | 2025-12-28               | 2025-05-26         |
-| Last push    | 2026-08-12 | 2026-08-10               | 2026-05-02         |
-| Interface    | CLI + TUI  | TUI (plus a CLI surface) | CLI + fuzzy finder |
+|              | gwm               | lazyworktree             | gwq                |
+| :----------- | :---------------- | :----------------------- | :----------------- |
+| Stars        | 126               | 281                      | 461                |
+| Language     | Rust              | Go                       | Go                 |
+| Licence      | MIT OR Apache-2.0 | Apache-2.0               | Apache-2.0         |
+| First commit | 2026-05-18        | 2025-12-28               | 2025-05-26         |
+| Last push    | 2026-08-12        | 2026-08-10               | 2026-05-02         |
+| Interface    | CLI + TUI         | TUI (plus a CLI surface) | CLI + fuzzy finder |
 
 gwq is the star leader and the oldest of the three, and it has not taken a
 commit since 2026-05-02: its latest release is v0.1.1. lazyworktree ships
