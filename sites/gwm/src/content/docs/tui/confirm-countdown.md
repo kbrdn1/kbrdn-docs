@@ -1,6 +1,6 @@
 ---
 title: Confirm-overlay countdown
-description: The safety countdown that gates branch deletion when `D` is armed.
+description: The safety countdown that gates branch deletion when “D” is armed.
 sidebar:
   order: 4
 ---

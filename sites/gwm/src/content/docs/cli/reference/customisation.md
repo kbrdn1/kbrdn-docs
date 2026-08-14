@@ -1,6 +1,6 @@
 ---
 title: Customisation
-description: Subcommand reference - Customisation.
+description: gwm aliases, theme and tui - user-defined command aliases, the role-based colour theme, and the TUI settings.
 sidebar:
   order: 9
 ---

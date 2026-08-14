@@ -1,6 +1,6 @@
 ---
 title: Shell et multiplexeurs
-description: Référence des sous-commandes - Shell et multiplexeurs.
+description: gwm completions, shell-init, tmux et zellij - les complétions de shell, le helper de cd gcd, et l'ouverture d'un worktree dans un multiplexeur.
 sidebar:
   order: 6
 ---

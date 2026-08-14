@@ -1,6 +1,6 @@
 ---
 title: Compte à rebours de la surcouche de confirmation
-description: Le compte à rebours de sécurité qui protège la suppression de branche quand `D` est armé.
+description: Le compte à rebours de sécurité qui protège la suppression de branche quand « D » est armé.
 sidebar:
   order: 4
 ---

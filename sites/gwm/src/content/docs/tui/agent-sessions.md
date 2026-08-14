@@ -1,6 +1,6 @@
 ---
 title: Agent sessions
-description: Which AI agent is working in which worktree, detected from each tool's on-disk session artefacts and surfaced in the table, the sidebar and the `a` overlay.
+description: Which AI agent is working in which worktree, detected from each tool's on-disk session artefacts and surfaced in the table, the sidebar and the “a” overlay.
 sidebar:
   order: 9
 ---

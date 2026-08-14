@@ -16,6 +16,19 @@ version lives in its own file under [`changelogs/`](changelogs/).
 
 ### Fixed
 
+- `sync-gwm-docs`: three defects in metadata served verbatim as `<title>` and
+  `<meta name="description">`. Backticks from the upstream `description:`
+  reached the tag literally, reading as a typo in a search snippet (29 pages) —
+  they are now stripped, except around a single-character span (a key, the
+  filter bar, the palette's colon) where the backtick alone carried the token
+  boundary, which becomes the page language's quotation marks. `capitalise()`
+  published `File_exists`: its guard was a list of proper nouns and could not
+  keep up with compound identifiers, so an underscore now settles it without a
+  list to maintain. The 16 CLI reference pages carried
+  `<section title> - <page title>.`, sixteen near-identical meta descriptions;
+  each group now writes its own, naming its subcommands. Frontmatter is
+  normalised before the requoting decision, since stripping backticks can free
+  a `: ` that plain YAML will not take ([#70](https://github.com/kbrdn1/kbrdn-docs/issues/70)).
 - `@kbrdn/ds-shared`: the footer's Licence block pointed at
   `gwm-cli/blob/main/LICENSE`, a path that never existed — the file was
   `LICENSE.md`, and upstream has since renamed it `LICENSE-MIT`. It now targets

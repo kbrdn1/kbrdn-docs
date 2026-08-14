@@ -1,6 +1,6 @@
 ---
 title: 'prédicats when:'
-description: File_exists / cmd_exists / env_set / env_eq / glob_exists, avec composition !, &&, ||.
+description: file_exists / cmd_exists / env_set / env_eq / glob_exists, avec composition !, &&, ||.
 sidebar:
   order: 4
 ---

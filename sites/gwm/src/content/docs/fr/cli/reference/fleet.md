@@ -1,6 +1,6 @@
 ---
 title: Corvées de flotte et workspace
-description: Référence des sous-commandes - Corvées de flotte et workspace.
+description: gwm exec et clean, plus le mode workspace - lancer une commande sur tous les worktrees et récupérer l'espace pris par les artefacts de build.
 sidebar:
   order: 5
 ---

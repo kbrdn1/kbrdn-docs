@@ -13,6 +13,7 @@ import {
   convert,
   dedash,
   dedashProse,
+  demarkup,
   orderOf,
   stripOrder,
   targetFor,
@@ -124,6 +125,37 @@ describe('typographie', () => {
   });
 });
 
+describe('markup du frontmatter', () => {
+  test('le code inline perd ses backticks', () => {
+    // `title` et `description` ne passent pas par le rendu markdown : ils
+    // partent tels quels dans <title> et <meta name="description">, où un
+    // backtick se lit comme une coquille.
+    expect(demarkup('`gwm list --format=names` et la suite')).toBe(
+      'gwm list --format=names et la suite',
+    );
+  });
+
+  test('un span d’un seul caractère passe en guillemets de la langue', () => {
+    // Le backtick portait seul la frontière du jeton : sans lui « la surcouche
+    // a » se lit comme un article, et « la palette de commandes :, tous deux »
+    // comme une phrase tronquée. Les deux cas sont réels (/tui/agent-sessions/
+    // et /tui/keymap-and-palette/).
+    // Insécables échappées à dessein : elles sont tapées littéralement dans
+    // `demarkup`, où rien ne les distingue d'une espace ordinaire à l'œil. Ce
+    // test est le seul endroit qui dit lesquelles sont attendues.
+    expect(demarkup('la surcouche `a`', { isFr: true })).toBe(
+      `la surcouche \u00ab\u00a0a\u00a0\u00bb`,
+    );
+    expect(demarkup('the `a` overlay')).toBe('the “a” overlay');
+  });
+
+  test('les crochets d’une section TOML survivent', () => {
+    // Ils nomment la chose (`[tui.keys]` est le nom de la section) : les
+    // retirer appauvrirait la description au lieu de la nettoyer.
+    expect(demarkup('Le keymap `[tui.keys]`')).toBe('Le keymap [tui.keys]');
+  });
+});
+
 describe('capitalisation des titres', () => {
   test('un mot ordinaire prend la majuscule', () => {
     expect(capitalise('worktrees et branches')).toBe('Worktrees et branches');
@@ -140,6 +172,18 @@ describe('capitalisation des titres', () => {
     // `gwmx` n'est pas `gwm` : sans la borne, le préfixe suffirait à désactiver
     // la capitalisation.
     expect(capitalise('gwmx quelque chose')).toBe('Gwmx quelque chose');
+  });
+
+  test('un identifiant snake_case reste en minuscule sans figurer dans la liste', () => {
+    // Le cas qui a été publié : `file_exists` sortait en `File_exists` sur
+    // /configuration/when-predicates/, EN et FR. La règle est structurelle et
+    // pas lexicale, donc elle doit tenir sur un identifiant que personne n'a
+    // pensé à lister — d'où le second cas, absent de LOWERCASE_IDENTS comme du
+    // reste de la doc.
+    expect(capitalise('file_exists / cmd_exists / env_set')).toBe(
+      'file_exists / cmd_exists / env_set',
+    );
+    expect(capitalise('no_symlink invariants')).toBe('no_symlink invariants');
   });
 
   test('un titre qui n’ouvre pas sur une lettre minuscule est laissé tel quel', () => {
@@ -199,6 +243,34 @@ describe('convert', () => {
     // Nuxt l'acceptait nue ; le parser YAML d'Astro la lirait comme un mapping.
     const out = convert(page('description: gwm doctor: ce qu’il vérifie', 'Corps.\n'), {});
     expect(out).toContain('description: "gwm doctor: ce qu’il vérifie"');
+  });
+
+  test('les backticks quittent le frontmatter mais pas le corps', () => {
+    // Le corps, lui, est rendu en markdown : y retirer les backticks
+    // transformerait un nom de commande en prose.
+    const out = convert(page('description: voir `gwm list`', 'Lancer `gwm list`.\n'), {});
+    expect(out).toContain('description: Voir gwm list');
+    expect(out).toContain('Lancer `gwm list`.');
+  });
+
+  test('un deux-points libéré par le retrait des backticks fait requoter la valeur', () => {
+    // LE cas discriminant du nouvel ordre normalisation → requotage : retirer
+    // les backticks peut faire apparaître un « : » suivi d'un espace, et une
+    // valeur nue qui en porte un n'est plus du YAML. Juger le quoting sur la
+    // valeur d'origine (l'ordre inverse) publie une page que le build refuse
+    // ensuite de parser.
+    const out = convert(page('description: voir `gwm doctor: 9 checks` en CI', 'Corps.\n'), {});
+    expect(out).toContain('description: "Voir gwm doctor: 9 checks en CI"');
+  });
+
+  test('un deux-points isolé garde ses guillemets et ne requote pas', () => {
+    // Le pendant du cas précédent, et la raison pour laquelle celui-ci ne
+    // suffit pas à couvrir la règle : la description de
+    // /tui/keymap-and-palette/ écrit la palette `` `:` ``, un span d'un seul
+    // caractère. Les guillemets qui remplacent ses backticks rendent le
+    // requotage inutile — le « : » n'est jamais suivi d'un espace.
+    const out = convert(page('description: la palette `:` et ses actions', 'Corps.\n'), {});
+    expect(out).toContain('description: La palette “:” et ses actions');
   });
 
   test('un frontmatter absent est une erreur, pas un silence', () => {

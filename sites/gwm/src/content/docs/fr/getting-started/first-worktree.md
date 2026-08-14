@@ -1,6 +1,6 @@
 ---
 title: Premier worktree
-description: Pas à pas de `gwm create`, couvrant le nommage de branche, l'organisation des chemins et le pipeline de bootstrap.
+description: Pas à pas de gwm create, couvrant le nommage de branche, l'organisation des chemins et le pipeline de bootstrap.
 sidebar:
   order: 2
 ---

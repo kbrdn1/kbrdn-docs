@@ -1,6 +1,6 @@
 ---
 title: Issues, pull requests et reviews
-description: Référence des sous-commandes - Issues, pull requests et reviews.
+description: gwm link, unlink, open, status, labels, milestones, pr et review - relier un worktree à son issue et à sa pull request, sur GitHub ou GitLab.
 sidebar:
   order: 4
 ---

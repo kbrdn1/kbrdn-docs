@@ -1,6 +1,6 @@
 ---
 title: Référence des sous-commandes
-description: Chaque sous-commande `gwm` avec sa synopsis, ses flags, ses codes de sortie et des exemples.
+description: Chaque sous-commande gwm avec sa synopsis, ses flags, ses codes de sortie et des exemples.
 sidebar:
   order: 1
 ---

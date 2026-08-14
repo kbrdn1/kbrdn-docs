@@ -1,6 +1,6 @@
 ---
 title: Liaison issue / PR GitHub
-description: Lier automatiquement les branches aux issues, détecter leur PR, récupérer l'état en temps réel via `gh`, l'afficher dans la barre latérale du TUI.
+description: Lier automatiquement les branches aux issues, détecter leur PR, récupérer l'état en temps réel via gh, l'afficher dans la barre latérale du TUI.
 sidebar:
   order: 1
 ---

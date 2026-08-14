@@ -1,6 +1,6 @@
 ---
 title: Worktree lifecycle
-description: Subcommand reference - Worktree lifecycle.
+description: gwm create, bootstrap, sync, remove, prune, switch, path, list and note - the whole worktree lifecycle, from creation to cleanup.
 sidebar:
   order: 3
 ---

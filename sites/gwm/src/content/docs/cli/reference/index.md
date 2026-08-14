@@ -1,6 +1,6 @@
 ---
 title: Subcommand reference
-description: Every `gwm` subcommand with synopsis, flags, exit codes, and examples.
+description: Every gwm subcommand with synopsis, flags, exit codes, and examples.
 sidebar:
   order: 1
 ---

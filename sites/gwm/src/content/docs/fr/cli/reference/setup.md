@@ -1,6 +1,6 @@
 ---
 title: Installation et configuration
-description: Référence des sous-commandes - Installation et configuration.
+description: gwm init, config, types, commit-prefix et hooks - générer un .gwm.toml, lire la config fusionnée, lister les types de branche et les hooks.
 sidebar:
   order: 2
 ---

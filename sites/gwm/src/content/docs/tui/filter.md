@@ -1,6 +1,6 @@
 ---
 title: Fuzzy filter
-description: The `/` filter bar, with nucleo-matcher, sticky filters, and Esc semantics.
+description: The “/” filter bar, with nucleo-matcher, sticky filters, and Esc semantics.
 sidebar:
   order: 3
 ---
