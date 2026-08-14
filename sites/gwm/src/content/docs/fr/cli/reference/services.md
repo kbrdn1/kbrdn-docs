@@ -1,6 +1,6 @@
 ---
 title: Diagnostic et services
-description: Référence des sous-commandes - Diagnostic et services.
+description: gwm doctor, daemon, statusline et agents - les vérifications de santé, le daemon JSON-RPC, la statusline compacte et les sessions d'agents IA.
 sidebar:
   order: 7
 ---

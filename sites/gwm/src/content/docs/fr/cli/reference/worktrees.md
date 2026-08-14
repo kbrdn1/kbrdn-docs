@@ -1,6 +1,6 @@
 ---
 title: Cycle de vie des worktrees
-description: Référence des sous-commandes - Cycle de vie des worktrees.
+description: gwm create, bootstrap, sync, remove, prune, switch, path, list et note - tout le cycle de vie d'un worktree, de la création au nettoyage.
 sidebar:
   order: 3
 ---

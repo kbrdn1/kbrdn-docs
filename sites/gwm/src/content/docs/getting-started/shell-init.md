@@ -1,6 +1,6 @@
 ---
 title: Shell init (gcd helper)
-description: Wire up `gwm shell-init` so `gcd <pattern>` and `gcd` (no arg) cd into a worktree in one keystroke.
+description: Wire up gwm shell-init so gcd <pattern> and gcd (no arg) cd into a worktree in one keystroke.
 sidebar:
   order: 3
 ---

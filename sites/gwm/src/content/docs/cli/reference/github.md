@@ -1,6 +1,6 @@
 ---
 title: Issues, pull requests and reviews
-description: Subcommand reference - Issues, pull requests and reviews.
+description: gwm link, unlink, open, status, labels, milestones, pr and review - tie a worktree to its issue and its pull request, on GitHub or GitLab.
 sidebar:
   order: 4
 ---

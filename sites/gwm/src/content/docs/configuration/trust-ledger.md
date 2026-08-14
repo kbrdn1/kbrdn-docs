@@ -1,6 +1,6 @@
 ---
 title: TOFU trust ledger
-description: Threat model, gate behaviour, CLI surface, and ledger format for the trust-on-first-use protection on `.gwm.toml` bootstrap.
+description: Threat model, gate behaviour, CLI surface, and ledger format for the trust-on-first-use protection on .gwm.toml bootstrap.
 sidebar:
   order: 5
 ---

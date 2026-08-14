@@ -1,6 +1,6 @@
 ---
 title: Shell init (helper gcd)
-description: Configurez `gwm shell-init` pour que `gcd <pattern>` et `gcd` (sans argument) fassent un cd dans un worktree en une frappe.
+description: Configurez gwm shell-init pour que gcd <pattern> et gcd (sans argument) fassent un cd dans un worktree en une frappe.
 sidebar:
   order: 3
 ---

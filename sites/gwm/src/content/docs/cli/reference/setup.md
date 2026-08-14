@@ -1,6 +1,6 @@
 ---
 title: Setup and configuration
-description: Subcommand reference - Setup and configuration.
+description: gwm init, config, types, commit-prefix and hooks - seed a .gwm.toml, read the merged config, and list branch types and lifecycle hooks.
 sidebar:
   order: 2
 ---

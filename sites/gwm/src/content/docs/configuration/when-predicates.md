@@ -1,6 +1,6 @@
 ---
 title: 'when: predicates'
-description: File_exists / cmd_exists / env_set / env_eq / glob_exists, with !, &&, || composition.
+description: file_exists / cmd_exists / env_set / env_eq / glob_exists, with !, &&, || composition.
 sidebar:
   order: 4
 ---

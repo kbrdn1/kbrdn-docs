@@ -1,6 +1,6 @@
 ---
 title: Sessions d'agents
-description: Quel agent IA travaille dans quel worktree, détecté depuis les artefacts de session sur disque de chaque outil et affiché dans la table, la barre latérale et la surcouche `a`.
+description: Quel agent IA travaille dans quel worktree, détecté depuis les artefacts de session sur disque de chaque outil et affiché dans la table, la barre latérale et la surcouche « a ».
 sidebar:
   order: 9
 ---

@@ -1,6 +1,6 @@
 ---
 title: History, undo and trust
-description: Subcommand reference - History, undo and trust.
+description: gwm undo, history and trust - replay recent operations, undo the last one, and manage the trust-on-first-use ledger.
 sidebar:
   order: 8
 ---

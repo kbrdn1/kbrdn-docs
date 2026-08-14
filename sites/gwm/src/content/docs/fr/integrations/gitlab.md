@@ -1,6 +1,6 @@
 ---
 title: GitLab (multi-forge)
-description: 'Pointer gwm vers GitLab plutôt que GitHub : la clé `forge`, la CLI `glab`, et ce qui diffère du backend GitHub.'
+description: 'Pointer gwm vers GitLab plutôt que GitHub : la clé forge, la CLI glab, et ce qui diffère du backend GitHub.'
 sidebar:
   order: 5
 ---

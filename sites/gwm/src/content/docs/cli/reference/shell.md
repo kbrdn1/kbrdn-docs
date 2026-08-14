@@ -1,6 +1,6 @@
 ---
 title: Shell and multiplexers
-description: Subcommand reference - Shell and multiplexers.
+description: gwm completions, shell-init, tmux and zellij - shell completions, the gcd cd helper, and opening a worktree in a multiplexer.
 sidebar:
   order: 6
 ---
