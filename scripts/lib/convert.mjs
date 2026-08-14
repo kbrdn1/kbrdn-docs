@@ -98,9 +98,30 @@ export function capitalise(text) {
   const m = text.match(/^([a-z])([\w-]*)/);
   if (!m) return text;
   const first = (m[1] + m[2]).toLowerCase();
-  if (LOWERCASE_IDENTS.has(first)) return text;
+  // Le `_` tranche sans liste à tenir : aucun mot n'en porte, tout identifiant
+  // snake_case en porte un. C'est ce qui manquait à LOWERCASE_IDENTS, qui est
+  // une énumération de noms propres et ne pouvait pas suivre `file_exists`,
+  // `cmd_exists`, `env_set` — publiés en `File_exists` jusqu'ici.
+  if (first.includes('_') || LOWERCASE_IDENTS.has(first)) return text;
   return m[1].toUpperCase() + text.slice(1);
 }
+
+// ── Markup dans le frontmatter ─────────────────────────────────────────────
+// `title` et `description` ne sont jamais rendus en markdown : ils partent tels
+// quels dans `<title>` et `<meta name="description">`, donc dans l'onglet du
+// navigateur, le snippet de résultat de recherche et la carte sociale. Un
+// backtick légitime dans la prose amont s'y lit comme une faute de frappe.
+//
+// Seuls les backticks tombent : les crochets d'une section TOML (`[tui.keys]`)
+// nomment la chose, les retirer appauvrirait la description.
+//
+// Sauf quand le span tient en un caractère — une touche, la barre de filtre,
+// le deux-points de la palette. Le backtick y portait seul la frontière du
+// jeton : « la surcouche a » se lit comme un article, « la palette de
+// commandes :, tous deux » comme une phrase tronquée. Ceux-là passent en
+// guillemets de la langue de la page, la description étant de la prose.
+export const demarkup = (s, { isFr } = {}) =>
+  s.replace(/`(.)`/g, isFr ? '« $1 »' : '“$1”').replace(/`/g, '');
 
 export const capitaliseHeadings = (body) =>
   body.replace(/^(#{2,6} )(.+)$/gm, (_m, hashes, text) => hashes + capitalise(text));
@@ -123,10 +144,15 @@ export function convert(raw, { order, isFr }) {
   }
   fm = kept
     .map((l) => {
-      const q = l.match(/^([a-z][\w-]*): (?!["'])(.*: .*)$/);
-      let out = q ? `${q[1]}: "${q[2].replace(/["\\]/g, '\\$&')}"` : l;
-      const t = out.match(/^(title|description): (.*)$/);
-      if (t) out = `${t[1]}: ${capitalise(dedash(t[2]))}`;
+      // Normaliser d'abord, requoter ensuite : `demarkup` peut faire apparaître
+      // un « : » suivi d'un espace là où le backtick l'isolait (`` `:` `` dans
+      // la description de la palette de commandes), et une valeur nue qui en
+      // porte un n'est plus du YAML. Juger le quoting sur la valeur d'origine
+      // laissait donc passer une page que le build refuse ensuite de parser.
+      const t = l.match(/^(title|description): (.*)$/);
+      let out = t ? `${t[1]}: ${demarkup(capitalise(dedash(t[2])), { isFr })}` : l;
+      const q = out.match(/^([a-z][\w-]*): (?!["'])(.*: .*)$/);
+      if (q) out = `${q[1]}: "${q[2].replace(/["\\]/g, '\\$&')}"`;
       return out;
     })
     .join('\n');

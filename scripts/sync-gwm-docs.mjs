@@ -75,17 +75,31 @@ const targetFor = (abs) => targetForIn(abs, { src: SRC, docs: DOCS });
 // `gwm ` dans le titre de section ; l'ordre des groupes est celui du tableau.
 // Une sous-commande apparue en amont sans être listée ici tombe dans « Other »
 // et le script le signale — la table doit alors être mise à jour.
+//
+// `desc` / `descFr` sont écrits à la main, un par groupe, et pas dérivés de
+// `cmds` : cette liste est une table de routage, pas une énumération publiable
+// (le groupe « fleet » y range « Workspace » et « Mode », qui sont les premiers
+// mots d'un titre de section, pas des sous-commandes). Ils partent tels quels
+// en `<meta name="description">` — donc ni backtick ni cadratin, et pas de
+// « : » suivi d'un espace, qui casserait le YAML : ces lignes-là n'ont pas
+// `convert()` derrière elles pour les requoter.
 const CLI_GROUPS = [
   {
     slug: 'setup',
     title: 'Setup and configuration',
     fr: 'Installation et configuration',
+    desc: 'gwm init, config, types, commit-prefix and hooks - seed a .gwm.toml, read the merged config, and list branch types and lifecycle hooks.',
+    descFr:
+      'gwm init, config, types, commit-prefix et hooks - générer un .gwm.toml, lire la config fusionnée, lister les types de branche et les hooks.',
     cmds: ['init', 'config', 'types', 'commit-prefix', 'hooks'],
   },
   {
     slug: 'worktrees',
     title: 'Worktree lifecycle',
     fr: 'Cycle de vie des worktrees',
+    desc: 'gwm create, bootstrap, sync, remove, prune, switch, path, list and note - the whole worktree lifecycle, from creation to cleanup.',
+    descFr:
+      "gwm create, bootstrap, sync, remove, prune, switch, path, list et note - tout le cycle de vie d'un worktree, de la création au nettoyage.",
     // `note` (gwm-cli#515) atterrit ici plutôt que dans « Customisation » : la
     // commande prend un slug de worktree et lit ce qui y est attaché, comme
     // `path` / `cd` / `list`, là où « Customisation » regroupe ce qui règle
@@ -108,12 +122,18 @@ const CLI_GROUPS = [
     slug: 'github',
     title: 'Issues, pull requests and reviews',
     fr: 'Issues, pull requests et reviews',
+    desc: 'gwm link, unlink, open, status, labels, milestones, pr and review - tie a worktree to its issue and its pull request, on GitHub or GitLab.',
+    descFr:
+      'gwm link, unlink, open, status, labels, milestones, pr et review - relier un worktree à son issue et à sa pull request, sur GitHub ou GitLab.',
     cmds: ['link', 'unlink', 'open', 'status', 'labels', 'milestones', 'pr', 'review'],
   },
   {
     slug: 'fleet',
     title: 'Fleet chores and workspace',
     fr: 'Corvées de flotte et workspace',
+    desc: 'gwm exec and clean, plus workspace mode - run one command across every worktree and reclaim the space taken by build artefacts.',
+    descFr:
+      "gwm exec et clean, plus le mode workspace - lancer une commande sur tous les worktrees et récupérer l'espace pris par les artefacts de build.",
     // « Workspace mode » côté anglais, « Mode workspace » côté français : la clé
     // est le premier mot du titre, il y en a donc deux pour la même section.
     cmds: ['exec', 'clean', 'Workspace', 'Mode'],
@@ -122,24 +142,36 @@ const CLI_GROUPS = [
     slug: 'shell',
     title: 'Shell and multiplexers',
     fr: 'Shell et multiplexeurs',
+    desc: 'gwm completions, shell-init, tmux and zellij - shell completions, the gcd cd helper, and opening a worktree in a multiplexer.',
+    descFr:
+      "gwm completions, shell-init, tmux et zellij - les complétions de shell, le helper de cd gcd, et l'ouverture d'un worktree dans un multiplexeur.",
     cmds: ['completions', 'shell-init', 'tmux', 'zellij'],
   },
   {
     slug: 'services',
     title: 'Diagnostics and services',
     fr: 'Diagnostic et services',
+    desc: 'gwm doctor, daemon, statusline and agents - health checks, the JSON-RPC daemon, the compact statusline, and AI agent sessions.',
+    descFr:
+      "gwm doctor, daemon, statusline et agents - les vérifications de santé, le daemon JSON-RPC, la statusline compacte et les sessions d'agents IA.",
     cmds: ['doctor', 'daemon', 'statusline', 'agents'],
   },
   {
     slug: 'safety',
     title: 'History, undo and trust',
     fr: 'Historique, annulation et confiance',
+    desc: 'gwm undo, history and trust - replay recent operations, undo the last one, and manage the trust-on-first-use ledger.',
+    descFr:
+      'gwm undo, history et trust - rejouer les opérations récentes, annuler la dernière, et gérer le ledger de confiance TOFU.',
     cmds: ['undo', 'history', 'trust'],
   },
   {
     slug: 'customisation',
     title: 'Customisation',
     fr: 'Personnalisation',
+    desc: 'gwm aliases, theme and tui - user-defined command aliases, the role-based colour theme, and the TUI settings.',
+    descFr:
+      'gwm aliases, theme et tui - les alias de commande, le thème de couleurs basé sur des rôles et les réglages de la TUI.',
     cmds: ['aliases', 'theme', 'tui'],
   },
 ];
@@ -180,10 +212,10 @@ async function splitCliReference(text, out, isFr) {
   const dir = out.replace(/\.md$/, '');
   await mkdir(dir, { recursive: true });
 
-  const title = isFr ? 'Référence des sous-commandes' : 'Subcommand reference';
   const pages = CLI_GROUPS.filter((g) => buckets.get(g.slug).length).map((g, i) => ({
     slug: g.slug,
     title: isFr ? g.fr : g.title,
+    desc: isFr ? g.descFr : g.desc,
     order: i + 1,
     parts: buckets.get(g.slug),
   }));
@@ -191,6 +223,13 @@ async function splitCliReference(text, out, isFr) {
     pages.push({
       slug: 'other',
       title: isFr ? 'Autres commandes' : 'Other commands',
+      // Page de repli : son contenu n'est connu qu'au moment où une
+      // sous-commande amont échappe à CLI_GROUPS, donc sa description ne peut
+      // pas nommer de commande. Elle dit ce que la page est, et le script
+      // signale déjà le cas pour qu'on range la commande dans un vrai groupe.
+      desc: isFr
+        ? 'Sous-commandes gwm pas encore rangées dans un groupe de la référence, avec synopsis, flags et exemples.'
+        : 'gwm subcommands not yet filed under a reference group, with synopsis, flags and examples.',
       order: pages.length + 1,
       parts: other,
     });
@@ -208,7 +247,7 @@ async function splitCliReference(text, out, isFr) {
   for (const p of pages) {
     await writeFile(
       join(dir, `${p.slug}.md`),
-      `---\ntitle: ${p.title}\ndescription: ${title} - ${p.title}.\nsidebar:\n  order: ${p.order + 1}\n---\n\n${p.parts.join('\n').trim()}\n`,
+      `---\ntitle: ${p.title}\ndescription: ${p.desc}\nsidebar:\n  order: ${p.order + 1}\n---\n\n${p.parts.join('\n').trim()}\n`,
     );
   }
   return pages.length + 1;
