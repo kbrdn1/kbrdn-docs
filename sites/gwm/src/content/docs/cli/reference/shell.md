@@ -11,7 +11,7 @@ Print a static completion script. Supported shells: `zsh`, `bash`, `fish`, `powe
 
 ## `gwm shell-init <shell>`
 
-Print the `gcd` shell wrapper. Supported shells: `zsh`, `bash`, `fish`, `powershell`. See [Getting Started → Shell init](/getting-started/shell-init).
+Print the `gcd` shell wrapper. Supported shells: `zsh`, `bash`, `fish`, `powershell`. See [Getting started → Shell init](/getting-started/shell-init).
 
 ## `gwm tmux <pattern> [-p|--split]`
 

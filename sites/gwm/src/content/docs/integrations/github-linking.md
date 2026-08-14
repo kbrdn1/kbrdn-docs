@@ -13,7 +13,7 @@ Every worktree can be linked to a GitHub issue and / or pull request. The link d
 Since [#419](https://github.com/kbrdn1/gwm-cli/issues/419) this page describes the **GitHub** backend. The storage model, auto-detection and TUI surfaces below are forge-agnostic and apply unchanged to GitLab. See [GitLab (multi-forge)](/integrations/gitlab) for what differs.
 :::
 
-![The Issue·PR pane with an auto-linked issue and a gh-detected open PR](../../../assets/captures/github-linking.png)
+![The Issue·PR pane with a gh-detected open PR and its live CI rollup](../../../assets/captures/github-linking.png)
 
 ## Storage model
 
