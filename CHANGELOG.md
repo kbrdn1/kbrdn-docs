@@ -14,6 +14,17 @@ version lives in its own file under [`changelogs/`](changelogs/).
 
 ## [Unreleased]
 
+### Changed
+
+- gwm docs synced to upstream v1.8.0: the roadmap now leads with the v1.8.0
+  density line instead of v1.7.0, `changelog/1-8-0.md` joins the index,
+  `gwm-release.json` moves to 1.8.0, `configuration/gwm-toml.md` takes the bulk
+  of the schema drift (EN and FR), and 26 captures are regenerated upstream for
+  the compact TUI. Carries the upstream frontmatter fixes from
+  [`gwm-cli#580`](https://github.com/kbrdn1/gwm-cli/pull/580) — `Getting
+  started` in sentence case, a description of its own for `cli/index`, both
+  roadmaps shortened ([#72](https://github.com/kbrdn1/kbrdn-docs/issues/72)).
+
 ### Fixed
 
 - `sync-gwm-docs`: three defects in metadata served verbatim as `<title>` and
