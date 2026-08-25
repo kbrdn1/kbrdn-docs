@@ -22,8 +22,9 @@ version lives in its own file under [`changelogs/`](changelogs/).
   can survive: 4.11:1 on #1a1a1a, 3.87:1 on #f5f5f5. Text usages now go through
   Starlight's own `--sl-color-text-accent`, redeclared on `accent-high` in the
   light block because Starlight rests it back on `--sl-color-accent` there
-  (`props.css:156`); backgrounds, hairlines, badges and every `color-mix()`
-  keep the brand token, so the identity does not move. That one token was the
+  (`props.css:156`); hairlines, badge fills and every `color-mix()` keep the
+  brand token. The one surface that does change is the primary action button,
+  further down this list. That one token was the
   root of 58 failing nodes on `/cli/` in light and 13 in dark, including the
   override that deliberately repainted inline code — the identifiers readers
   retype into a terminal — at 3.20:1
@@ -57,7 +58,24 @@ version lives in its own file under [`changelogs/`](changelogs/).
   that were not ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
 - Site logo drops its redundant `alt` (the site title reads "gwm" right next to
   it, so the brand announced as "gwm gwm"), and the two availability dots stop
-  after three pulses instead of animating forever
+  after three pulses instead of animating forever — three and not four because
+  3 x 1.6s = 4.8s, just under the 5s past which an animation owes the reader a
+  stop control ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- Four more accent-as-text usages closed, all of them invisible at 1440 px and
+  found by replaying the audit at its own two other viewports (320 px reflow,
+  640 px for 200% zoom): the whole mobile table of contents, which is simply
+  not in the DOM above the breakpoint; the hero tagline, which the audit
+  exempted as large text — true only above ~800 px, below which the `clamp`
+  drops it under 24 px and the threshold rises to 4.5:1; the repo card link
+  label; and the primary action button, whose #f5f5f5-on-#c15f3c was 3.87:1 at
+  every width. That button swaps its two states rather than taking a new
+  colour: `accent-high` inverts between themes, so rest gains 11.27:1 in dark
+  and 6.90:1 in light. Its hover keeps the original pair and stays at 3.87:1 —
+  #c15f3c sits mid-scale and no text colour in the charter clears 4.5:1 on it
+  ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- Hero install line can be reached with the keyboard. `overflow-x: auto` makes
+  it scroll below ~340 px, and a scrolling region that no one can focus puts
+  the end of the command out of reach without a mouse (WCAG 2.1.1)
   ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
 
 ## Past releases
