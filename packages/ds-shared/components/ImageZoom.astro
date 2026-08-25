@@ -71,9 +71,14 @@
     font-family: var(--sl-font-mono, monospace);
     font-size: 1.25rem;
     line-height: 1;
-    color: var(--sl-color-white, #f5f5f5);
+    /* Couleurs en dur, pas de jetons : ce bouton flotte sur le backdrop de la
+       modale, qui est noir dans les deux thèmes. `--sl-color-white` s'inverse
+       avec le thème (#1a1a1a en clair) — il donnait un croisillon noir sur
+       fond noir. Ce qui doit gouverner ici, c'est le fond réel, pas le thème
+       de la page derrière. */
+    color: #f5f5f5;
     background: rgb(0 0 0 / 65%);
-    border: 1px solid var(--sl-color-gray-5, #3a3a3a);
+    border: 1px solid rgb(255 255 255 / 35%);
     cursor: pointer;
   }
   .kbrdn-zoom__close:hover {
