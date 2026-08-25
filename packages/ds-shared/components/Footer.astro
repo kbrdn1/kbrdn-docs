@@ -85,6 +85,14 @@ const columns = [
   },
 ];
 
+// Les libellés de colonne étaient des <h2> : huit titres injectés au même
+// niveau que les sections de contenu, donc huit entrées de plus dans le plan
+// du document — sur la page d'accueil, 8 des 24 titres étaient des étiquettes
+// de pied de page (critère 9.1). Ce sont des étiquettes, pas des titres : elles
+// deviennent des <p id> qui NOMMENT leur région via aria-labelledby. Le style
+// ne dépend pas de la balise.
+const columnIds = ['docs', 'reference', 'project', 'links'];
+
 // Le bloc par défaut n'est rendu QUE s'il a quelque chose à montrer. Sur une
 // landing (`template: splash`) il n'y a ni page précédente ni page suivante :
 // Starlight sortait quand même un `<footer class="sl-flex">` vide de 72px, qui
@@ -101,7 +109,7 @@ const hasPagination = Boolean(prev || next);
     <div class="kbrdn-footer__grid">
       <!-- Colonne de gauche : elle porte le filet qui la sépare du centre. -->
       <div class="kbrdn-footer__intro">
-        <h2 class="kbrdn-footer__title">{t.about}</h2>
+        <p class="kbrdn-footer__title">{t.about}</p>
         <p class="kbrdn-footer__blurb">{t.blurb}</p>
         <pre class="kbrdn-footer__cmd"><code>brew install kbrdn1/tap/gwm</code></pre>
       </div>
@@ -109,19 +117,25 @@ const hasPagination = Boolean(prev || next);
       <!-- Centre : sous-grille 2×2 de listes de liens. -->
       <div class="kbrdn-footer__cols">
         {
-          columns.map((col) => (
+          columns.map((col, i) => (
             <div class="kbrdn-footer__col">
-              <h2 class="kbrdn-footer__title">{col.title}</h2>
-              <nav aria-label={col.title}>
-                {col.links.map((l) => (
-                  <a
-                    href={l.href}
-                    target={l.external ? '_blank' : undefined}
-                    rel={l.external ? 'noopener noreferrer' : undefined}
-                  >
-                    {l.label}
-                  </a>
-                ))}
+              <p class="kbrdn-footer__title" id={`footer-${columnIds[i]}`}>
+                {col.title}
+              </p>
+              <nav aria-labelledby={`footer-${columnIds[i]}`}>
+                <ul>
+                  {col.links.map((l) => (
+                    <li>
+                      <a
+                        href={l.href}
+                        target={l.external ? '_blank' : undefined}
+                        rel={l.external ? 'noopener noreferrer' : undefined}
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </nav>
             </div>
           ))
@@ -131,14 +145,14 @@ const hasPagination = Boolean(prev || next);
       <!-- Droite : blocs empilés, comme Localisation / Disponibilité / Email. -->
       <div class="kbrdn-footer__meta">
         <div class="kbrdn-footer__block">
-          <h2 class="kbrdn-footer__title">{t.status}</h2>
+          <p class="kbrdn-footer__title">{t.status}</p>
           <span class="kbrdn-footer__badge">
             <span class="kbrdn-footer__dot" aria-hidden="true"></span>
             {t.maintained}
           </span>
         </div>
         <div class="kbrdn-footer__block">
-          <h2 class="kbrdn-footer__title">{t.licence}</h2>
+          <p class="kbrdn-footer__title">{t.licence}</p>
           <a
             class="kbrdn-footer__value"
             href="https://github.com/kbrdn1/gwm-cli#license"
@@ -147,7 +161,7 @@ const hasPagination = Boolean(prev || next);
           >
         </div>
         <div class="kbrdn-footer__block">
-          <h2 class="kbrdn-footer__title">Contact</h2>
+          <p class="kbrdn-footer__title">Contact</p>
           <a class="kbrdn-footer__value" href="mailto:hello@kbrdn.dev">hello@kbrdn.dev</a>
         </div>
       </div>
@@ -271,10 +285,13 @@ const hasPagination = Boolean(prev || next);
     border: none;
   }
 
-  .kbrdn-footer__col nav {
+  .kbrdn-footer__col nav ul {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .kbrdn-footer__col nav a,
