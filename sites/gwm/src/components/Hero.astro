@@ -320,6 +320,8 @@ const rows = BRANCHES.map((b, i) => {
     inset: 0;
     border-radius: 9999px;
     background: var(--sl-color-accent);
+    /* Trois battements, pas quatre : 3 x 1,6 s = 4,8 s, sous le seuil de 5 s
+       au-dela duquel une animation demande une commande d'arret. */
     animation: kbrdn-ping 1.6s cubic-bezier(0, 0, 0.2, 1) 3;
   }
   @keyframes kbrdn-ping {
