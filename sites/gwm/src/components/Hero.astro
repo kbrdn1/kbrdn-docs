@@ -48,6 +48,24 @@ const CHIPS = ['CLI + TUI', 'libgit2', '.gwm.toml', 'TOFU trust', 'JSON + daemon
 // pied de page partagé (une seule ligne, pas de `brew tap` séparé).
 const INSTALL = 'brew install kbrdn1/tap/gwm';
 
+// Le bouton copier était nommé par un `aria-label` anglais figé, y compris sur
+// /fr/ où le document est en `lang="fr"` — restitué avec la voix française. Il
+// est maintenant nommé par son propre contenu, qui suit la langue de la page
+// (même calcul que le pied de page partagé).
+const fr = (Astro.currentLocale || '').startsWith('fr');
+const t = {
+  copy: fr ? 'copier' : 'copy',
+  copied: fr ? 'copié' : 'copied',
+  // Complète le nom accessible sans alourdir le bouton à l'écran. Le nom
+  // CONTIENT toujours le libellé visible, dans les deux états : c'est ce que
+  // demande la commande vocale (WCAG 2.5.3).
+  what: fr ? " la commande d'installation" : ' the install command',
+  copiedMessage: fr ? "Commande d'installation copiée" : 'Install command copied',
+  failedMessage: fr
+    ? 'Copie impossible, sélectionnez la commande à la main'
+    : 'Copy failed, select the command manually',
+};
+
 // Le motif : le tronc `main` et quatre branches, reprises telles quelles de la
 // capture de la TUI plus bas dans la page — le hero et la capture doivent
 // raconter le même dépôt. Couleurs = jetons sémantiques du thème, donc justes
@@ -110,8 +128,17 @@ const rows = BRANCHES.map((b, i) => {
 
       <div class="kbrdn-hero__cmd">
         <code><span class="kbrdn-hero__prompt" aria-hidden="true">$</span>{INSTALL}</code>
-        <button type="button" data-copy={INSTALL} aria-label="Copy the install command">copy</button
+        <button
+          type="button"
+          data-copy={INSTALL}
+          data-copied-label={t.copied}
+          data-copied-message={t.copiedMessage}
+          data-failed-message={t.failedMessage}
         >
+          <span data-copy-label>{t.copy}</span><span class="sr-only">{t.what}</span>
+        </button>
+        {/* Hors du bouton : dedans, il ferait partie de son nom accessible. */}
+        <span class="sr-only" role="status" data-copy-status></span>
       </div>
 
       {
@@ -183,19 +210,29 @@ const rows = BRANCHES.map((b, i) => {
   // Bouton copier de la commande d'installation. Pas de dépendance : le bouton
   // porte la commande en attribut, l'état revient de lui-même après 1,6 s.
   document.querySelectorAll<HTMLButtonElement>('.kbrdn-hero__cmd button').forEach((btn) => {
+    const label = btn.querySelector<HTMLElement>('[data-copy-label]');
+    const status = btn.parentElement?.querySelector<HTMLElement>('[data-copy-status]');
+    if (!label) return;
+
     btn.addEventListener('click', async () => {
+      // Vidée avant chaque tentative : une région live ne réannonce pas un
+      // texte identique, donc deux copies de suite resteraient muettes.
+      if (status) status.textContent = '';
       try {
         await navigator.clipboard.writeText(btn.dataset.copy ?? '');
-        const before = btn.textContent;
-        btn.textContent = 'copied';
+        const before = label.textContent;
+        label.textContent = btn.dataset.copiedLabel ?? 'copied';
         btn.dataset.copied = 'true';
+        if (status) status.textContent = btn.dataset.copiedMessage ?? '';
         setTimeout(() => {
-          btn.textContent = before;
+          label.textContent = before;
           delete btn.dataset.copied;
         }, 1600);
       } catch {
         // Presse-papiers refusé (contexte non sécurisé) : le texte reste
-        // sélectionnable à la main, on ne ment pas sur le résultat.
+        // sélectionnable à la main, on ne ment pas sur le résultat — et
+        // maintenant on le dit, au lieu d'échouer en silence.
+        if (status) status.textContent = btn.dataset.failedMessage ?? '';
       }
     });
   });
