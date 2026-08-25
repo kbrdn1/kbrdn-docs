@@ -23,8 +23,7 @@ version lives in its own file under [`changelogs/`](changelogs/).
   Starlight's own `--sl-color-text-accent`, redeclared on `accent-high` in the
   light block because Starlight rests it back on `--sl-color-accent` there
   (`props.css:156`); hairlines, badge fills and every `color-mix()` keep the
-  brand token. The one surface that does change is the primary action button,
-  further down this list. That one token was the
+  brand token, so the identity does not move. That one token was the
   root of 58 failing nodes on `/cli/` in light and 13 in dark, including the
   override that deliberately repainted inline code — the identifiers readers
   retype into a terminal — at 3.20:1
@@ -67,11 +66,15 @@ version lives in its own file under [`changelogs/`](changelogs/).
   not in the DOM above the breakpoint; the hero tagline, which the audit
   exempted as large text — true only above ~800 px, below which the `clamp`
   drops it under 24 px and the threshold rises to 4.5:1; the repo card link
-  label; and the primary action button, whose #f5f5f5-on-#c15f3c was 3.87:1 at
-  every width. That button swaps its two states rather than taking a new
-  colour: `accent-high` inverts between themes, so rest gains 11.27:1 in dark
-  and 6.90:1 in light. Its hover keeps the original pair and stays at 3.87:1 —
-  #c15f3c sits mid-scale and no text colour in the charter clears 4.5:1 on it
+  label ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- **Known exception, deliberate.** The primary action button keeps the charter
+  pair — #f5f5f5 on #c15f3c, 3.87:1 against a 4.5:1 threshold. Moving its rest
+  state to `accent-high` would clear it (11.27:1 dark, 6.90:1 light) but turns
+  the call to action into a heavy brown slab in light theme, which is not a
+  trade this site wants to make for its main button. #c15f3c sits mid-scale, so
+  no text colour in the charter clears 4.5:1 on it: the only ways out are pure
+  black (4.97:1) or 18.66px bold text, which would move the button to the 3:1
+  large-text threshold. Left as one known failing node on `/` and `/fr/`
   ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
 - Hero install line can be reached with the keyboard. `overflow-x: auto` makes
   it scroll below ~340 px, and a scrolling region that no one can focus puts

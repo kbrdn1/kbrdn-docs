@@ -891,26 +891,35 @@ starlight-lang-select select {
   color: var(--sl-color-accent);
 }
 
-/* Boutons d'action : les deux états sont inversés par rapport à la version
-   d'origine, qui posait l'orange de marque au repos. #f5f5f5 sur #c15f3c ne
-   donne que 3,87:1 quelle que soit la largeur — axe le manquait à 1440 px, où
-   les pseudo-éléments du hero le classent `incomplete`. `accent-high` s'inverse
-   d'un mode à l'autre (beige #f4c895 en sombre, brun #8b3d24 en clair), donc
-   le repos y gagne 11,27:1 et 6,90:1 sans sortir de la palette.
-   ⚠️ Le survol garde la paire d'origine et reste à 3,87:1 : le fond #c15f3c est
-   au milieu de l'échelle, aucune couleur de texte de la charte ne passe 4,5:1
-   dessus. État transitoire, non tranché ici. */
+/* Boutons d'action : orange plein sur texte clair, comme le CTA du portfolio.
+   Starlight peint le variant `primary` avec --sl-color-text-accent, soit
+   accent-high — un beige clair en dark, hors charte.
+
+   ⚠️ Écart connu, tranché en connaissance de cause : #f5f5f5 sur #c15f3c ne
+   donne que 3,87:1 pour un seuil de 4,5:1 (RGAA 3.2, WCAG 1.4.3). axe le manque
+   à 1440 px — les pseudo-éléments du hero le classent `incomplete` — et le
+   relève à 640 px. Passer le repos sur `accent-high`, qui le fermait (11,27:1
+   en sombre, 6,90:1 en clair), a été écarté : le brun alourdit trop le CTA en
+   thème clair. Le fond #c15f3c est au milieu de l'échelle de luminance, donc
+   aucune couleur de texte de la charte ne passe dessus ; les deux seules
+   sorties, si on reprend le sujet, sont du noir pur (4,97:1) ou un texte à
+   18,66 px gras, qui bascule le bouton au seuil « grand texte » de 3:1 — les
+   couleurs, elles, ne peuvent pas y arriver.
+
+   Le survol, lui, est conforme : `accent-high` s'inverse d'un mode à l'autre
+   (beige #f4c895 en sombre, brun #8b3d24 en clair) et le texte doit suivre,
+   sinon le clair affiche du quasi-noir sur brun. */
 .sl-link-button.primary {
+  background-color: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
+  color: #f5f5f5;
+}
+.sl-link-button.primary:hover {
   background-color: var(--sl-color-accent-high);
   border-color: var(--sl-color-accent-high);
   color: #1a1a1a;
 }
-:root[data-theme='light'] .sl-link-button.primary {
-  color: #f5f5f5;
-}
-.sl-link-button.primary:hover {
-  background-color: var(--sl-color-accent);
-  border-color: var(--sl-color-accent);
+:root[data-theme='light'] .sl-link-button.primary:hover {
   color: #f5f5f5;
 }
 
