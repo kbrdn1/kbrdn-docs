@@ -891,23 +891,26 @@ starlight-lang-select select {
   color: var(--sl-color-accent);
 }
 
-/* Boutons d'action : orange plein sur texte clair, comme le CTA du portfolio.
-   Starlight peint le variant `primary` avec --sl-color-text-accent, soit
-   accent-high — un beige clair en dark, hors charte. */
+/* Boutons d'action : les deux états sont inversés par rapport à la version
+   d'origine, qui posait l'orange de marque au repos. #f5f5f5 sur #c15f3c ne
+   donne que 3,87:1 quelle que soit la largeur — axe le manquait à 1440 px, où
+   les pseudo-éléments du hero le classent `incomplete`. `accent-high` s'inverse
+   d'un mode à l'autre (beige #f4c895 en sombre, brun #8b3d24 en clair), donc
+   le repos y gagne 11,27:1 et 6,90:1 sans sortir de la palette.
+   ⚠️ Le survol garde la paire d'origine et reste à 3,87:1 : le fond #c15f3c est
+   au milieu de l'échelle, aucune couleur de texte de la charte ne passe 4,5:1
+   dessus. État transitoire, non tranché ici. */
 .sl-link-button.primary {
-  background-color: var(--sl-color-accent);
-  border-color: var(--sl-color-accent);
-  color: #f5f5f5;
-}
-/* `accent-high` s'inverse d'un mode à l'autre : beige clair en dark (#f4c895),
-   brun foncé en light (#8b3d24). Le texte du survol doit suivre, sinon le light
-   affiche du quasi-noir sur brun, illisible. */
-.sl-link-button.primary:hover {
   background-color: var(--sl-color-accent-high);
   border-color: var(--sl-color-accent-high);
   color: #1a1a1a;
 }
-:root[data-theme='light'] .sl-link-button.primary:hover {
+:root[data-theme='light'] .sl-link-button.primary {
+  color: #f5f5f5;
+}
+.sl-link-button.primary:hover {
+  background-color: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
   color: #f5f5f5;
 }
 

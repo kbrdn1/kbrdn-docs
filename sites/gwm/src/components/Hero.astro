@@ -375,13 +375,17 @@ const rows = BRANCHES.map((b, i) => {
     color: var(--sl-color-accent);
   }
 
-  /* Tagline en Fenix orange (accent display du portfolio). */
+  /* Tagline en Fenix, accent display du portfolio. Elle n'est du GRAND texte
+     — donc au seuil de 3:1 — qu'au-dessus de ~800 px : en dessous, le `clamp`
+     la fait passer sous 24 px et le seuil remonte à 4,5:1, que l'accent de
+     marque ne tient pas (4,11:1 en sombre, 3,87:1 en clair). Elle prend donc
+     le jeton de texte, conforme à toutes les largeurs. */
   .kbrdn-hero__tagline {
     margin: 0.875rem 0 0;
     font-family: 'Fenix', Georgia, serif;
     font-size: clamp(var(--sl-text-lg), calc(0.5rem + 2vw), var(--sl-text-2xl));
     line-height: 1.3;
-    color: var(--sl-color-accent);
+    color: var(--sl-color-text-accent);
   }
 
   /* Chips de features : mono, cadre net, fond enfoncé. */
