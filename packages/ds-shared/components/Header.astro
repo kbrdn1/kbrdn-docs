@@ -160,6 +160,15 @@ const localised = (href: string) =>
     background-color: color-mix(in srgb, var(--sl-color-gray-5) 30%, transparent);
   }
 
+  /* Les onglets remplissent EXACTEMENT leur parent, et ce parent est en
+     `overflow: hidden` (le garde-fou ci-dessus) : un anneau peint dehors est
+     intégralement rogné — mesuré à 0 px de marge sur les quatre. Il se peint
+     donc à l'intérieur, avec le décalage que Starlight réserve à ce cas, et le
+     garde-fou reste. */
+  .kbrdn-nav__tab:focus-visible {
+    outline-offset: var(--sl-outline-offset-inside);
+  }
+
   /* Onglet courant : texte orange, fond d'accent très dilué, barre de 2px en
      bas (la classe `nav-tab-active` du portfolio). */
   .kbrdn-nav__tab.is-active {
