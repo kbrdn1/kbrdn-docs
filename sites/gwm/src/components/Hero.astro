@@ -60,6 +60,7 @@ const t = {
   // CONTIENT toujours le libellé visible, dans les deux états : c'est ce que
   // demande la commande vocale (WCAG 2.5.3).
   what: fr ? " la commande d'installation" : ' the install command',
+  command: fr ? "Commande d'installation" : 'Install command',
   copiedMessage: fr ? "Commande d'installation copiée" : 'Install command copied',
   failedMessage: fr
     ? 'Copie impossible, sélectionnez la commande à la main'
@@ -127,7 +128,15 @@ const rows = BRANCHES.map((b, i) => {
       </ul>
 
       <div class="kbrdn-hero__cmd">
-        <code><span class="kbrdn-hero__prompt" aria-hidden="true">$</span>{INSTALL}</code>
+        {
+          /* `overflow-x: auto` : sous ~340 px la ligne défile, et une zone qui
+            défile doit pouvoir être atteinte au clavier — sinon son contenu
+            caché est hors de portée sans souris (WCAG 2.1.1). Le `tabindex`
+            la rend focusable, le `role`+`aria-label` la nomment. */
+        }
+        <code tabindex="0" role="group" aria-label={t.command}
+          ><span class="kbrdn-hero__prompt" aria-hidden="true">$</span>{INSTALL}</code
+        >
         <button
           type="button"
           data-copy={INSTALL}
