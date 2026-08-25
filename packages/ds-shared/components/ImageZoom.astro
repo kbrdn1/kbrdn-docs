@@ -24,7 +24,6 @@
   /* Le dialogue natif arrive avec une bordure, un fond et un `max-width` par
      défaut : tout est remis à plat, l'image porte le cadre à elle seule. */
   .kbrdn-zoom {
-    position: relative;
     max-width: none;
     max-height: none;
     padding: 0;
@@ -44,11 +43,20 @@
     background: rgb(0 0 0 / 82%);
   }
 
-  /* Le bouton de fermeture se cale dans le coin de l'image : le dialogue n'a
-     pas de dimension propre, c'est l'image qui la donne. Il est le premier —
-     et le seul — élément focusable, donc `showModal()` lui donne le focus, ce
-     qui rend la commande découvrable au lieu de laisser Échap comme seul
-     moyen sans que rien ne l'indique. */
+  /* Le cadre porte l'ancrage du bouton, et surtout PAS le dialogue : lui donner
+     `position: relative` écrase le `fixed` que le navigateur pose sur un
+     dialogue modal, et la modale retombe dans le flux — elle se place à la fin
+     du body et suit le défilement de la page. */
+  .kbrdn-zoom__frame {
+    position: relative;
+    display: block;
+  }
+
+  /* Le bouton de fermeture se cale dans le coin de l'image : le cadre n'a pas
+     de dimension propre, c'est l'image qui la donne. Il est le premier — et le
+     seul — élément focusable, donc `showModal()` lui donne le focus, ce qui
+     rend la commande découvrable au lieu de laisser Échap comme seul moyen
+     sans que rien ne l'indique. */
   .kbrdn-zoom__close {
     position: absolute;
     top: 0;
@@ -151,7 +159,10 @@
 
       agrandie = document.createElement('img');
       agrandie.className = 'kbrdn-zoom__image';
-      modale.append(fermer, agrandie);
+      const cadre = document.createElement('div');
+      cadre.className = 'kbrdn-zoom__frame';
+      cadre.append(fermer, agrandie);
+      modale.append(cadre);
       // Le fond d'un dialogue modal n'est pas un élément : les clics dessus
       // arrivent sur le dialogue lui-même. Un seul écouteur ferme donc au clic
       // sur le fond, sur l'image (qui porte `cursor: zoom-out`) et sur le
