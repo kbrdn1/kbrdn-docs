@@ -868,6 +868,13 @@ starlight-lang-select select {
   color: var(--sl-color-gray-3);
   font-size: 0.75rem;
 }
+/* Cette réduction à 12 px ramenait les entrées du sommaire à 23 px de haut,
+   soit un pixel sous la cible de pointage minimale de 24 px (WCAG 2.5.8) —
+   `padding-block: 0.25rem` suffisait à la taille d'origine, plus à celle-ci.
+   Le volet de navigation, lui, a son propre rembourrage et passe déjà. */
+.right-sidebar-panel a {
+  padding-block: 0.3rem;
+}
 .right-sidebar-panel a[aria-current='true'],
 .sidebar-content a:hover {
   color: var(--sl-color-text-accent);
