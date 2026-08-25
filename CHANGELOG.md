@@ -80,6 +80,28 @@ version lives in its own file under [`changelogs/`](changelogs/).
   it scroll below ~340 px, and a scrolling region that no one can focus puts
   the end of the command out of reach without a mouse (WCAG 2.1.1)
   ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- Table of contents entries meet the 24px minimum target size. Ours were 23px —
+  Starlight's `padding-block` was sized for its own font, not for the 12px this
+  theme drops the sidebar to. The audit's three URLs each had a single-entry
+  contents list, which is why it never showed up (WCAG 2.5.8)
+  ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- Zoom dialog no longer jumps the page on open, nor drifts as you scroll. Anchoring
+  the new close button with `position: relative` on the `<dialog>` overrode the
+  `fixed` a browser gives a modal dialog, dropping it back into the flow at the
+  end of `<body>`. The anchor moved to an inner frame
+  ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- Footer copyright line reads "Built with Astro and Starlight" again. Astro
+  glues text nodes to the element that follows them, and this paragraph lacked
+  the explicit `{' '}` the one above it already used
+  ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+
+### Changed
+
+- Light theme's background grid and diagonal stripes are visible again. A
+  pattern reads against its own ground, not in the abstract: #e8e8e8 on the
+  #ecebe8 shell gave 1.03:1 where dark posts 1.26:1, eight times less. #d8d8d8
+  restores the ratio the dark theme has
+  ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
 
 ## Past releases
 
