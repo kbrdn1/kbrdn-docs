@@ -90,6 +90,11 @@ version lives in its own file under [`changelogs/`](changelogs/).
   `fixed` a browser gives a modal dialog, dropping it back into the flow at the
   end of `<body>`. The anchor moved to an inner frame
   ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
+- Zoom dialog's close button is visible in light theme. `--sl-color-white`
+  flips with the theme — #1a1a1a in light — so the cross came out black on the
+  button's black pill. That button floats on the modal backdrop, black in both
+  themes, so its colours are now hard-coded to that ground rather than to the
+  page behind it ([#78](https://github.com/kbrdn1/kbrdn-docs/issues/78)).
 - Footer copyright line reads "Built with Astro and Starlight" again. Astro
   glues text nodes to the element that follows them, and this paragraph lacked
   the explicit `{' '}` the one above it already used
