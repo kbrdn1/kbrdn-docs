@@ -113,6 +113,14 @@
   --sl-color-accent: #c15f3c;
   --sl-color-accent-high: #8b3d24;
 
+  /* Starlight repose `--sl-color-text-accent` sur `--sl-color-accent` en clair
+     (props.css :156) alors qu'il vaut `accent-high` en sombre. Un ton unique ne
+     peut pas passer 4,5:1 des deux côtés : #c15f3c donne 4,11:1 sur #1a1a1a et
+     3,87:1 sur #f5f5f5. Le jeton de TEXTE suit donc la palette du thème comme
+     en sombre — #8b3d24 sur #f5f5f5 = 6,90:1 — et `--sl-color-accent` reste la
+     couleur de MARQUE, pour les fonds, les filets et les pastilles. */
+  --sl-color-text-accent: var(--sl-color-accent-high);
+
   --sl-color-white: #1a1a1a;
   --sl-color-gray-1: #242424;
   --sl-color-gray-2: #3a3a3a;
@@ -647,12 +655,12 @@ starlight-lang-select select {
 
 /* Liens : orange souligné, offset 2px (prose.css :64-73). */
 .sl-markdown-content a:not(:where(.not-content *)) {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .sl-markdown-content a:not(:where(.not-content *)):hover {
-  color: var(--sl-color-accent-high);
+  color: var(--sl-color-white);
 }
 
 /* Code inline : bordé, fond enfoncé, texte orange (prose.css :87-101). */
@@ -674,10 +682,6 @@ starlight-lang-select select {
 .sl-markdown-content td:first-child code:not(:where(.not-content *)) {
   white-space: nowrap;
 }
-:root[data-theme='light'] .sl-markdown-content code:not(:where(.not-content *)) {
-  color: var(--sl-color-accent);
-}
-
 /* Citations : filet orange 2px, italique (prose.css :103-110). */
 .sl-markdown-content blockquote:not(:where(.not-content *)) {
   border-inline-start: 2px solid var(--sl-color-accent);
@@ -787,7 +791,7 @@ starlight-lang-select select {
    header portfolio (`text-primary-500 bg-primary-500/5 nav-tab-active`). */
 .sidebar-content a[aria-current='page'] {
   background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
   font-weight: 600;
   border-left: 2px solid var(--sl-color-accent);
   padding-left: calc(0.5rem - 2px);
@@ -850,7 +854,7 @@ starlight-lang-select select {
    robuste qu'une chaîne d'enfants directs (Starlight intercale un
    `<sl-sidebar-state-persist>` entre le cadre et la première liste). */
 .sidebar-content .group-label {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
 }
 .sidebar-content ul ul .group-label {
   color: var(--sl-color-gray-3);
@@ -862,7 +866,7 @@ starlight-lang-select select {
 }
 .right-sidebar-panel a[aria-current='true'],
 .sidebar-content a:hover {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
 }
 /* Chevron des groupes repliables : même gris que les libellés. */
 .sidebar-content summary {
@@ -944,7 +948,7 @@ starlight-lang-select select {
   color: var(--sl-color-white);
 }
 .pagination-links a:hover .link-title {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
 }
 .pagination-links a svg {
   width: 1rem;
