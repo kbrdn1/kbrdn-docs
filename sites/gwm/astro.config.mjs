@@ -74,7 +74,10 @@ export default defineConfig({
       logo: {
         light: './src/assets/gwm-logo-light.svg',
         dark: './src/assets/gwm-logo-dark.svg',
-        alt: 'gwm',
+        // Le `SiteTitle` écrit « gwm » juste à côté : un `alt` qui répète le
+        // nom fait restituer la marque « gwm gwm ». La marque est décorative
+        // ici, comme toutes les autres images d'habillage du dépôt.
+        alt: '',
       },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kbrdn1/gwm-cli' }],
 
