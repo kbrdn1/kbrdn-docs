@@ -7,8 +7,12 @@
 //
 // Les GIF passent en <img> brut : le service d'images d'Astro réencode en webp
 // et perd l'animation. Les PNG passent par <Image> (sharp est une dépendance du
-// site) — les captures font 1500px de large, sans dimensions intrinsèques la
-// page saute au chargement.
+// site) — les captures sont rendues en 2x et font de 1580 à 2760px de large
+// (1980 pour hero, thèmes et sidebar ; 1580 en narrow ; 2760 en side-by-side).
+// Ces largeurs sont mesurées, pas calculées : doubler la taille de police d'une
+// tape vhs déplace la grille du terminal, donc on relève la largeur réelle
+// (1980 et non 2000, 1580 et non 1600) pour que la capture garde son cadrage.
+// Sans dimensions intrinsèques la page saute au chargement.
 import { Image } from 'astro:assets';
 
 interface Props {
