@@ -13,19 +13,22 @@ Print a static completion script. Supported shells: `zsh`, `bash`, `fish`, `powe
 
 Print the `gcd` shell wrapper. Supported shells: `zsh`, `bash`, `fish`, `powershell`. See [Getting started → Shell init](/getting-started/shell-init).
 
-## `gwm tmux <pattern> [-p|--split]`
+## `gwm tmux <pattern> [-p|--split] [--direction <dir>]`
 
 Open the matched worktree in a new tmux window of the **current** session. `--split` substitutes `split-window` for `new-window`. Requires `$TMUX` to be set.
 
 ```bash
-gwm tmux auth                  # new tmux window inside the matched worktree
-gwm tmux auth -p               # split the current pane instead
+gwm tmux auth                     # new tmux window inside the matched worktree
+gwm tmux auth -p                  # split the current pane instead
+gwm tmux auth --direction down    # ...stacked rather than side by side
 ```
+
+`--split` takes its direction from [`[tui] mux_pane_direction`](/configuration/gwm-toml#mux_pane_direction), which defaults to `right` (`split-window -h`). `--direction <dir>` (`right`, `down`, `left`, `up`) overrides it for one invocation and implies `--split`. Before #589 a split carried no flag at all and tmux stacked it.
 
 Outside a tmux session, exits non-zero with a clear error (does not spawn a stray server).
 
-## `gwm zellij <pattern> [-p|--split]`
+## `gwm zellij <pattern> [-p|--split] [--direction <dir>]`
 
-Same as `gwm tmux` but for zellij. Uses `zellij action new-tab --cwd <path>` (requires zellij ≥ 0.40 for the `--cwd` flag) or `new-pane --cwd` with `-p`. Requires `$ZELLIJ`.
+Same as `gwm tmux` but for zellij. Uses `zellij action new-tab --cwd <path>` (requires zellij ≥ 0.40 for the `--cwd` flag) or `new-pane --direction <dir> --cwd <path>` with `-p`. Requires `$ZELLIJ`.
 
-See [CLI → Multiplexer integration](/cli/multiplexer) for the full surface and edge cases.
+The direction is passed rather than left out: without it zellij places the pane in "the biggest available space", which is a layout-dependent answer to a keystroke that should have a fixed one.
