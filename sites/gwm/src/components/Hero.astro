@@ -48,6 +48,25 @@ const CHIPS = ['CLI + TUI', 'libgit2', '.gwm.toml', 'TOFU trust', 'JSON + daemon
 // pied de page partagé (une seule ligne, pas de `brew tap` séparé).
 const INSTALL = 'brew install kbrdn1/tap/gwm';
 
+// Le bouton copier était nommé par un `aria-label` anglais figé, y compris sur
+// /fr/ où le document est en `lang="fr"` — restitué avec la voix française. Il
+// est maintenant nommé par son propre contenu, qui suit la langue de la page
+// (même calcul que le pied de page partagé).
+const fr = (Astro.currentLocale || '').startsWith('fr');
+const t = {
+  copy: fr ? 'copier' : 'copy',
+  copied: fr ? 'copié' : 'copied',
+  // Complète le nom accessible sans alourdir le bouton à l'écran. Le nom
+  // CONTIENT toujours le libellé visible, dans les deux états : c'est ce que
+  // demande la commande vocale (WCAG 2.5.3).
+  what: fr ? " la commande d'installation" : ' the install command',
+  command: fr ? "Commande d'installation" : 'Install command',
+  copiedMessage: fr ? "Commande d'installation copiée" : 'Install command copied',
+  failedMessage: fr
+    ? 'Copie impossible, sélectionnez la commande à la main'
+    : 'Copy failed, select the command manually',
+};
+
 // Le motif : le tronc `main` et quatre branches, reprises telles quelles de la
 // capture de la TUI plus bas dans la page — le hero et la capture doivent
 // raconter le même dépôt. Couleurs = jetons sémantiques du thème, donc justes
@@ -109,9 +128,26 @@ const rows = BRANCHES.map((b, i) => {
       </ul>
 
       <div class="kbrdn-hero__cmd">
-        <code><span class="kbrdn-hero__prompt" aria-hidden="true">$</span>{INSTALL}</code>
-        <button type="button" data-copy={INSTALL} aria-label="Copy the install command">copy</button
+        {
+          /* `overflow-x: auto` : sous ~340 px la ligne défile, et une zone qui
+            défile doit pouvoir être atteinte au clavier — sinon son contenu
+            caché est hors de portée sans souris (WCAG 2.1.1). Le `tabindex`
+            la rend focusable, le `role`+`aria-label` la nomment. */
+        }
+        <code tabindex="0" role="group" aria-label={t.command}
+          ><span class="kbrdn-hero__prompt" aria-hidden="true">$</span>{INSTALL}</code
         >
+        <button
+          type="button"
+          data-copy={INSTALL}
+          data-copied-label={t.copied}
+          data-copied-message={t.copiedMessage}
+          data-failed-message={t.failedMessage}
+        >
+          <span data-copy-label>{t.copy}</span><span class="sr-only">{t.what}</span>
+        </button>
+        {/* Hors du bouton : dedans, il ferait partie de son nom accessible. */}
+        <span class="sr-only" role="status" data-copy-status></span>
       </div>
 
       {
@@ -183,19 +219,29 @@ const rows = BRANCHES.map((b, i) => {
   // Bouton copier de la commande d'installation. Pas de dépendance : le bouton
   // porte la commande en attribut, l'état revient de lui-même après 1,6 s.
   document.querySelectorAll<HTMLButtonElement>('.kbrdn-hero__cmd button').forEach((btn) => {
+    const label = btn.querySelector<HTMLElement>('[data-copy-label]');
+    const status = btn.parentElement?.querySelector<HTMLElement>('[data-copy-status]');
+    if (!label) return;
+
     btn.addEventListener('click', async () => {
+      // Vidée avant chaque tentative : une région live ne réannonce pas un
+      // texte identique, donc deux copies de suite resteraient muettes.
+      if (status) status.textContent = '';
       try {
         await navigator.clipboard.writeText(btn.dataset.copy ?? '');
-        const before = btn.textContent;
-        btn.textContent = 'copied';
+        const before = label.textContent;
+        label.textContent = btn.dataset.copiedLabel ?? 'copied';
         btn.dataset.copied = 'true';
+        if (status) status.textContent = btn.dataset.copiedMessage ?? '';
         setTimeout(() => {
-          btn.textContent = before;
+          label.textContent = before;
           delete btn.dataset.copied;
         }, 1600);
       } catch {
         // Presse-papiers refusé (contexte non sécurisé) : le texte reste
-        // sélectionnable à la main, on ne ment pas sur le résultat.
+        // sélectionnable à la main, on ne ment pas sur le résultat — et
+        // maintenant on le dit, au lieu d'échouer en silence.
+        if (status) status.textContent = btn.dataset.failedMessage ?? '';
       }
     });
   });
@@ -253,7 +299,7 @@ const rows = BRANCHES.map((b, i) => {
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--sl-color-accent);
+    color: var(--sl-color-text-accent);
     border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
     background: color-mix(in srgb, var(--sl-color-accent) 6%, transparent);
   }
@@ -283,7 +329,9 @@ const rows = BRANCHES.map((b, i) => {
     inset: 0;
     border-radius: 9999px;
     background: var(--sl-color-accent);
-    animation: kbrdn-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+    /* Trois battements, pas quatre : 3 x 1,6 s = 4,8 s, sous le seuil de 5 s
+       au-dela duquel une animation demande une commande d'arret. */
+    animation: kbrdn-ping 1.6s cubic-bezier(0, 0, 0.2, 1) 3;
   }
   @keyframes kbrdn-ping {
     75%,
@@ -336,13 +384,17 @@ const rows = BRANCHES.map((b, i) => {
     color: var(--sl-color-accent);
   }
 
-  /* Tagline en Fenix orange (accent display du portfolio). */
+  /* Tagline en Fenix, accent display du portfolio. Elle n'est du GRAND texte
+     — donc au seuil de 3:1 — qu'au-dessus de ~800 px : en dessous, le `clamp`
+     la fait passer sous 24 px et le seuil remonte à 4,5:1, que l'accent de
+     marque ne tient pas (4,11:1 en sombre, 3,87:1 en clair). Elle prend donc
+     le jeton de texte, conforme à toutes les largeurs. */
   .kbrdn-hero__tagline {
     margin: 0.875rem 0 0;
     font-family: 'Fenix', Georgia, serif;
     font-size: clamp(var(--sl-text-lg), calc(0.5rem + 2vw), var(--sl-text-2xl));
     line-height: 1.3;
-    color: var(--sl-color-accent);
+    color: var(--sl-color-text-accent);
   }
 
   /* Chips de features : mono, cadre net, fond enfoncé. */

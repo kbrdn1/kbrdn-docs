@@ -113,6 +113,14 @@
   --sl-color-accent: #c15f3c;
   --sl-color-accent-high: #8b3d24;
 
+  /* Starlight repose `--sl-color-text-accent` sur `--sl-color-accent` en clair
+     (props.css :156) alors qu'il vaut `accent-high` en sombre. Un ton unique ne
+     peut pas passer 4,5:1 des deux côtés : #c15f3c donne 4,11:1 sur #1a1a1a et
+     3,87:1 sur #f5f5f5. Le jeton de TEXTE suit donc la palette du thème comme
+     en sombre — #8b3d24 sur #f5f5f5 = 6,90:1 — et `--sl-color-accent` reste la
+     couleur de MARQUE, pour les fonds, les filets et les pastilles. */
+  --sl-color-text-accent: var(--sl-color-accent-high);
+
   --sl-color-white: #1a1a1a;
   --sl-color-gray-1: #242424;
   --sl-color-gray-2: #3a3a3a;
@@ -126,7 +134,11 @@
   --kbrdn-stripe-color: #dddddd;
   --kbrdn-corner-color: #d4d4d4;
   --kbrdn-border-color: #e5e5e5;
-  --kbrdn-grid-color: #e8e8e8;
+  /* Le motif se mesure contre SON fond, pas dans l'absolu : #e8e8e8 sur la
+     coquille #ecebe8 ne donnait que 1,03:1, quand le sombre pose 1,26:1
+     (#2a2a2a sur #141414). Huit fois moins marqué — la grille et les rayures
+     étaient là, mais invisibles. #d8d8d8 rétablit le même rapport. */
+  --kbrdn-grid-color: #d8d8d8;
 
   /* Mêmes trois niveaux qu'en sombre, mais l'ordre s'inverse : ici c'est le
      blanc pur qui est « au-dessus » de la colonne cassée à #f5f5f5, et la
@@ -647,12 +659,12 @@ starlight-lang-select select {
 
 /* Liens : orange souligné, offset 2px (prose.css :64-73). */
 .sl-markdown-content a:not(:where(.not-content *)) {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .sl-markdown-content a:not(:where(.not-content *)):hover {
-  color: var(--sl-color-accent-high);
+  color: var(--sl-color-white);
 }
 
 /* Code inline : bordé, fond enfoncé, texte orange (prose.css :87-101). */
@@ -674,10 +686,6 @@ starlight-lang-select select {
 .sl-markdown-content td:first-child code:not(:where(.not-content *)) {
   white-space: nowrap;
 }
-:root[data-theme='light'] .sl-markdown-content code:not(:where(.not-content *)) {
-  color: var(--sl-color-accent);
-}
-
 /* Citations : filet orange 2px, italique (prose.css :103-110). */
 .sl-markdown-content blockquote:not(:where(.not-content *)) {
   border-inline-start: 2px solid var(--sl-color-accent);
@@ -787,7 +795,7 @@ starlight-lang-select select {
    header portfolio (`text-primary-500 bg-primary-500/5 nav-tab-active`). */
 .sidebar-content a[aria-current='page'] {
   background-color: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
   font-weight: 600;
   border-left: 2px solid var(--sl-color-accent);
   padding-left: calc(0.5rem - 2px);
@@ -850,7 +858,7 @@ starlight-lang-select select {
    robuste qu'une chaîne d'enfants directs (Starlight intercale un
    `<sl-sidebar-state-persist>` entre le cadre et la première liste). */
 .sidebar-content .group-label {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
 }
 .sidebar-content ul ul .group-label {
   color: var(--sl-color-gray-3);
@@ -860,9 +868,16 @@ starlight-lang-select select {
   color: var(--sl-color-gray-3);
   font-size: 0.75rem;
 }
+/* Cette réduction à 12 px ramenait les entrées du sommaire à 23 px de haut,
+   soit un pixel sous la cible de pointage minimale de 24 px (WCAG 2.5.8) —
+   `padding-block: 0.25rem` suffisait à la taille d'origine, plus à celle-ci.
+   Le volet de navigation, lui, a son propre rembourrage et passe déjà. */
+.right-sidebar-panel a {
+  padding-block: 0.3rem;
+}
 .right-sidebar-panel a[aria-current='true'],
 .sidebar-content a:hover {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
 }
 /* Chevron des groupes repliables : même gris que les libellés. */
 .sidebar-content summary {
@@ -889,15 +904,27 @@ starlight-lang-select select {
 
 /* Boutons d'action : orange plein sur texte clair, comme le CTA du portfolio.
    Starlight peint le variant `primary` avec --sl-color-text-accent, soit
-   accent-high — un beige clair en dark, hors charte. */
+   accent-high — un beige clair en dark, hors charte.
+
+   ⚠️ Écart connu, tranché en connaissance de cause : #f5f5f5 sur #c15f3c ne
+   donne que 3,87:1 pour un seuil de 4,5:1 (RGAA 3.2, WCAG 1.4.3). axe le manque
+   à 1440 px — les pseudo-éléments du hero le classent `incomplete` — et le
+   relève à 640 px. Passer le repos sur `accent-high`, qui le fermait (11,27:1
+   en sombre, 6,90:1 en clair), a été écarté : le brun alourdit trop le CTA en
+   thème clair. Le fond #c15f3c est au milieu de l'échelle de luminance, donc
+   aucune couleur de texte de la charte ne passe dessus ; les deux seules
+   sorties, si on reprend le sujet, sont du noir pur (4,97:1) ou un texte à
+   18,66 px gras, qui bascule le bouton au seuil « grand texte » de 3:1 — les
+   couleurs, elles, ne peuvent pas y arriver.
+
+   Le survol, lui, est conforme : `accent-high` s'inverse d'un mode à l'autre
+   (beige #f4c895 en sombre, brun #8b3d24 en clair) et le texte doit suivre,
+   sinon le clair affiche du quasi-noir sur brun. */
 .sl-link-button.primary {
   background-color: var(--sl-color-accent);
   border-color: var(--sl-color-accent);
   color: #f5f5f5;
 }
-/* `accent-high` s'inverse d'un mode à l'autre : beige clair en dark (#f4c895),
-   brun foncé en light (#8b3d24). Le texte du survol doit suivre, sinon le light
-   affiche du quasi-noir sur brun, illisible. */
 .sl-link-button.primary:hover {
   background-color: var(--sl-color-accent-high);
   border-color: var(--sl-color-accent-high);
@@ -944,7 +971,7 @@ starlight-lang-select select {
   color: var(--sl-color-white);
 }
 .pagination-links a:hover .link-title {
-  color: var(--sl-color-accent);
+  color: var(--sl-color-text-accent);
 }
 .pagination-links a svg {
   width: 1rem;
