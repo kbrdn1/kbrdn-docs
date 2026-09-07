@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "satteri": "^0.9.5",
+    "satteri": "^0.10.5",
     "typescript": "^6.0.3"
   }
 }
