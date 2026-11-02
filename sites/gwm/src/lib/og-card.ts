@@ -20,11 +20,12 @@
 // seul titre de page, Inter pour le corps, Monaspace Krypton en mono pour le
 // wordmark (en 700, comme `.site-title`), les libellés, le badge et le pied.
 //
-// Satori rejette le woff2 (« Unsupported OpenType signature wOF2 ») et casse
-// sur la table `fvar` du Krypton variable : les fichiers de `public/fonts` ne
-// conviennent donc pas. Les instances statiques amont sont vendorées à part,
-// sous `src/assets/fonts` (voir son README). Fenix fait exception : le TTF
-// servi au site est déjà statique, un seul exemplaire suffit.
+// Le Krypton de `public/fonts` est un woff2 variable. Satori lit le woff2
+// depuis 0.55 et ne casse plus sur sa table `fvar`, mais il n'en rend pas les
+// graisses : en 0.63.2, le variable sort plus maigre que l'instance Regular à
+// 400 et reste en deçà du Bold à 700. Les instances statiques amont sont donc
+// vendorées à part, sous `src/assets/fonts` (voir son README). Fenix fait
+// exception : le TTF servi au site est déjà statique, un seul exemplaire suffit.
 import satori from 'satori';
 import sharp from 'sharp';
 import { readFile } from 'node:fs/promises';
