@@ -22,6 +22,6 @@
     "astro": ">=6.0.0"
   },
   "devDependencies": {
-    "@astrojs/starlight": "^0.42.0"
+    "@astrojs/starlight": "^0.42.8"
   }
 }
