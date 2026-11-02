@@ -142,9 +142,14 @@ function tronquer(texte: string, max: number): string {
 }
 
 type Noeud = { type: string; props: Record<string, unknown> };
+// `border-box` explicite : la carte est dessinée avec des hauteurs qui
+// incluent le padding (la colonne fait 630px, retraits compris). C'était le
+// défaut de satori jusqu'en 0.41 ; depuis 0.42 il applique le `content-box`
+// des navigateurs, sans le dire dans ses notes de release. La colonne monte
+// alors à 750px, le corps descend de 60px et le pied sort de la carte.
 const bloc = (style: Record<string, unknown>, children: unknown): Noeud => ({
   type: 'div',
-  props: { style: { display: 'flex', ...style }, children },
+  props: { style: { display: 'flex', boxSizing: 'border-box', ...style }, children },
 });
 const image = (src: string, w: number, h: number, style: Record<string, unknown> = {}): Noeud => ({
   type: 'img',
